@@ -57,6 +57,23 @@ class TestAgent(unittest.TestCase):
         silent_agent.think_and_act([], [], [], [silent_agent], 1280, 720)
         self.assertFalse(silent_agent.is_shouting)
 
+    def test_shout_energy_cost(self):
+        # Agent krzyczący w miejscu (koszt: 0.20 bazowo + 0.20 krzyk = 0.40)
+        shouting_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=1.0)
+        shouter = Agent(shouting_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
+        initial_shouter_energy = shouter.energy
+        shouter.think_and_act([], [], [], [shouter], 1280, 720)
+        shout_loss = initial_shouter_energy - shouter.energy
+        self.assertAlmostEqual(shout_loss, 0.40, places=2)
+
+        # Agent cichy w miejscu (koszt: 0.20 bazowo)
+        silent_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=-1.0)
+        silent_agent = Agent(silent_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
+        initial_silent_energy = silent_agent.energy
+        silent_agent.think_and_act([], [], [], [silent_agent], 1280, 720)
+        silent_loss = initial_silent_energy - silent_agent.energy
+        self.assertAlmostEqual(silent_loss, 0.20, places=2)
+
     def test_hearing_sensors(self):
         # 1. Przypadek, gdy w pobliżu nikt nie krzyczy
         silent_peer = Agent(DummyNetwork(output_shout=-1.0), DummyGenome(), width=1280, height=720, start_pos=(500, 300))

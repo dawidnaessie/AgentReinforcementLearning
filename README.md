@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-2.0.0-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-29%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-30%20passed-brightgreen.svg)
 
 ---
 
@@ -14,7 +14,7 @@
 **AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a continuous environment featuring a **1600 x 720 Research Dashboard** (1280px arena + 320px telemetry & visualizer sidebar).
 
 In **Phase 5 (Communication, UI/UX Modernization & Top 4 Network Visualizer)**, the simulation introduces:
-- **Intra-Species Communication (Shout & Hearing):** Agents can emit acoustic alarm/rally calls, and perceive the direction/distance to the nearest shouting peer.
+- **Intra-Species Communication (Shout & Hearing):** Agents can emit acoustic alarm/rally calls (costing -0.2 energy/frame), and perceive the direction/distance to the nearest shouting peer.
 - **Top 4 NEAT Brains Visualizer:** Real-time rendering of the neural topologies, synaptic weights, and active pathways of the 4 elite genomes.
 - **Research Dashboard UI/UX:** Dark `#0b0c10` simulation arena with subtle grid lines, paired with a `#161b22` sidebar telemetry panel.
 - **Powiększona Arena (1280 x 720):** Przestronny świat zapobiegający stłoczeniu 50 agentów i umożliwiający dynamiczne manewrowanie.
@@ -30,7 +30,7 @@ In **Phase 5 (Communication, UI/UX Modernization & Top 4 Network Visualizer)**, 
 Each agent perceives its surroundings through **25 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]`):
 
 | Input Index | Sensory Signal | Range | Description |
-| :---: | :--- | :---: | :--- |
+| :---: | :--- | :--- | :--- |
 | **1 – 2** | `Velocity (VX, VY)` | `[-1.0, 1.0]` | Current movement speed normalized to maximum velocity |
 | **3** | `Nearest Food #1 Distance` | `[0.0, 1.0]` | Normalized Euclidean distance to the closest food item |
 | **4 – 5** | `Nearest Food #1 Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest food |
@@ -53,14 +53,14 @@ Each agent perceives its surroundings through **25 normalized sensory inputs** (
 ### Action Outputs (3 Neurons with `tanh` activation):
 - **Output 1 (`Ax`):** Horizontal acceleration force `[-1.0, 1.0]`
 - **Output 2 (`Ay`):** Vertical acceleration force `[-1.0, 1.0]`
-- **Output 3 (`Shout`):** Communication trigger `[-1.0, 1.0]`. Emits an acoustic call when `> 0.0`.
+- **Output 3 (`Shout`):** Communication trigger `[-1.0, 1.0]`. Emits an acoustic call when `> 0.0` (costs -0.2 energy/frame).
 
 ---
 
 ## ⚡ Energy, Fitness, Communication & Ecosystem Dynamics
 
-- **Acoustic Communication (Shout):** Agents with `Output 3 > 0.0` broadcast their position with an expanding turquoise acoustic wave.
-- **Strict Hunger Metabolism:** Base loss ($0.20$) + movement cost $(\text{speed}/\text{max})^2 \times 0.08$. Agents must feed to survive.
+- **Acoustic Communication (Shout):** Agents with `Output 3 > 0.0` broadcast their position with an expanding turquoise acoustic wave at an energetic cost of -0.2 energy per frame.
+- **Strict Hunger Metabolism:** Base loss ($0.20$) + sprint cost $(\text{speed}/\text{max})^2 \times 0.08$ + shout cost ($0.20$ if shouting). Agents must feed to survive.
 - **Toxic Edge Zones (50px Margin):** Entering the 50px boundary zone incurs continuous penalties ($-0.5$ energy, $-0.1$ fitness/frame).
 - **Foraging (+15.0 Fitness, +65 Energy):** Consuming a food entity restores vital energy.
 - **Poison Obstacle (-10.0 Fitness, -35 Energy):** Contact with purple square toxins deals severe damage.

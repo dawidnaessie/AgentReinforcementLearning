@@ -278,9 +278,11 @@ class Agent:
         if hit_wall:
             self.genome.fitness -= 0.05
 
-        # 3. Bezwzględny Metabolizm Głodu (0.20 bazowo + sprint)
+        # 3. Bezwzględny Metabolizm Głodu (0.20 bazowo + sprint + krzyk)
         speed_ratio = speed / self.max_speed if self.max_speed > 0 else 0.0
         energy_cost = 0.20 + (speed_ratio ** 2) * 0.08
+        if self.is_shouting:
+            energy_cost += 0.20
         self.energy -= energy_cost
 
         # Kara za przebywanie w toksycznej strefie krawędziowej (margines 50px od ścian, tylko po Grace Period >= 60 klatek / 1.0s)

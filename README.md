@@ -15,13 +15,13 @@
 
 In **Phase 5 (Communication, UI/UX Modernization & Top 4 Network Visualizer)**, the simulation introduces:
 - **Intra-Species Communication (Shout & Hearing):** Agents can emit acoustic alarm/rally calls (costing -0.2 energy/frame), and perceive the direction/distance to the nearest shouting peer.
-- **Top 4 NEAT Brains Visualizer:** Real-time rendering of the neural topologies, synaptic weights, and active pathways of the 4 elite genomes.
+- **Top 4 NEAT Brains Visualizer:** Real-time rendering of neural topologies, synaptic weights, and active pathways for the 4 elite genomes.
 - **Research Dashboard UI/UX:** Dark `#0b0c10` simulation arena with subtle grid lines, paired with a `#161b22` sidebar telemetry panel.
-- **Powiększona Arena (1280 x 720):** Przestronny świat zapobiegający stłoczeniu 50 agentów i umożliwiający dynamiczne manewrowanie.
-- **Klatki Nieśmiertelności / Tryb Ducha (Grace Period - 60 klatek / 1.0s):** Bezpieczne rozproszenie na starcie generacji.
-- **Strict Hunger Metabolism & Toxic Edges:** Eliminuje pasywne kampowanie i wymusza aktywną eksplorację.
-- **Flocking / Herd Defense (+15.0 Fitness for Group):** Zbiorowa obrona stada przed drapieżnikami.
-- **Altruistic Cooperation (+50.0 Fitness):** Dzielenie się energią z głodującymi sojusznikami.
+- **Expanded Arena (1280 x 720):** Spacious world preventing overcrowding among the 50 agents and enabling fluid tactical maneuvering.
+- **Grace Period / Ghost Mode (60 frames / 1.0s):** Safe spawn dispersion at the start of each generation without combat, collisions, or toxic edge penalties.
+- **Strict Hunger Metabolism & Toxic Edges:** Eliminates passive camping and compels active foraging and exploration.
+- **Flocking / Herd Defense (+15.0 Fitness for Group):** Collective herd defense punishing isolated predators attacking defended groups.
+- **Altruistic Cooperation (+50.0 Fitness):** High-energy agents share energy reserves to rescue critically starving allies.
 
 ---
 
@@ -90,26 +90,26 @@ When stopping the simulation, the built-in `EvolutionTracker` outputs a structur
 
 ```text
 =================================================================
-          RAPORT PODSUMOWUJACY EWOLUCJE POPULACJI (ALife)
+          POPULATION EVOLUTION SUMMARY REPORT (ALife)
 =================================================================
- * Liczba ukonczonych generacji:    16
- * Czas trwania calej symulacji:     38.45 s (2.40 s / generacja)
+ * Completed generations:             16
+ * Total simulation runtime:          38.45 s (2.40 s / generation)
 -----------------------------------------------------------------
- * Sredni fitness na starcie (Gen 1):  29.68 pkt
- * Sredni fitness na koncu (Gen 16):  194.45 pkt
- * Wzrost sredniej sprawnosci:       +555.2%
- * Rekordowy wynik (Gen 10):           570.00 pkt
+ * Initial mean fitness (Gen 1):      29.68 pts
+ * Final mean fitness (Gen 16):       194.45 pts
+ * Mean fitness growth:               +555.2%
+ * Peak individual fitness (Gen 10):  570.00 pts
 -----------------------------------------------------------------
- HISTORIA OSTATNICH GENERACJI:
- Gen    | Max Fitness    | Sredni Fitness   | Czas (s)  
+ RECENT GENERATION HISTORY:
+ Gen    | Max Fitness    | Mean Fitness   | Time (s)  
  -------------------------------------------------------
- 9      | 359.55         | 110.68           | 2.23      
- 10     | 570.00         | 164.00           | 2.29      
- 11     | 555.00         | 142.53           | 2.25      
- 12     | 405.00         | 138.99           | 2.17      
+ 9      | 359.55         | 110.68         | 2.23      
+ 10     | 570.00         | 164.00         | 2.29      
+ 11     | 555.00         | 142.53         | 2.25      
+ 12     | 405.00         | 138.99         | 2.17      
  ...
 =================================================================
- Status: Ewolucja zakonczona. Wszystkie dane zostaly podsumowane.
+ Status: Evolution complete. All metrics aggregated.
 =================================================================
 ```
 
@@ -132,7 +132,7 @@ AgentReinforcementLearning/
 │   ├── environment.py       # Pygame lifecycle, HUD, rendering, generation loop
 │   ├── main.py              # NEAT runner, CLI entrypoint, exit handlers
 │   └── stats.py             # EvolutionTracker statistics aggregator & formatter
-└── tests/                   # 100% headless unit test suite (16 tests)
+└── tests/                   # 100% headless unit test suite (30 tests)
     ├── test_agent.py
     ├── test_config.py
     ├── test_entities.py
@@ -182,7 +182,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 The codebase strictly follows **Test-Driven Development (TDD)** and clean separation between domain logic and rendering:
 - Physics, collisions, senses, and genetics are completely testable in **headless mode** without launching a Pygame window.
-- All **16 unit tests** pass in under 2 seconds.
+- All **30 unit tests** pass in under 2 seconds.
 
 ---
 

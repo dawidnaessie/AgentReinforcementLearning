@@ -1,3 +1,4 @@
+import math
 import random
 import pygame
 from typing import List
@@ -57,16 +58,22 @@ class Environment:
                 random.randint(40, self.height - 40)
             )
 
-    def eval_generation(self, nets, genomes, max_frames: int = 600):
+    def eval_generation(self, nets, genomes, max_frames: int = 900):
         """Ewaluuje pojedynczą generację 50 agentów NEAT."""
         self.generation += 1
         self._reset_world_entities()
 
-        # Inicjalizacja agentów dla bieżącej populacji
-        agents: List[Agent] = [
-            Agent(net, genome, self.width, self.height)
-            for net, genome in zip(nets, genomes)
-        ]
+        # Równomierny rozkład startowy agentów wokół centrum planszy (zapobiega losowemu faworyzowaniu)
+        num_agents = len(genomes)
+        center_x, center_y = self.width / 2, self.height / 2
+        spawn_radius = 180.0
+
+        agents: List[Agent] = []
+        for i, (net, genome) in enumerate(zip(nets, genomes)):
+            angle = (2.0 * math.pi * i) / max(1, num_agents)
+            spawn_x = center_x + spawn_radius * math.cos(angle)
+            spawn_y = center_y + spawn_radius * math.sin(angle)
+            agents.append(Agent(net, genome, self.width, self.height, start_pos=(spawn_x, spawn_y)))
 
         frames_lived = 0
         running = True

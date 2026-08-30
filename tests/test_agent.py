@@ -21,7 +21,7 @@ class DummyNetwork:
 
 
 class TestAgent(unittest.TestCase):
-    """Testy jednostkowe klasy Agent (fizyka, zmysły, energia, kolizje, fitness)."""
+    """Testy jednostkowe klasy Agent (fizyka, zmysły, energia, kolizje, reward shaping)."""
 
     def setUp(self):
         self.net = DummyNetwork()
@@ -37,15 +37,15 @@ class TestAgent(unittest.TestCase):
         self.assertLessEqual(self.agent.pos.x, 750)
 
     def test_sensory_inputs_structure_and_bounds(self):
-        foods = [Food(100, 100), Food(500, 500)]
+        foods = [Food(100, 100), Food(500, 500), Food(300, 300)]
         hazards = [Hazard(200, 200)]
         other_agent = Agent(self.net, DummyGenome(), width=800, height=600)
         agents = [self.agent, other_agent]
 
         inputs = self.agent._get_sensory_inputs(foods, hazards, agents, 800, 600)
 
-        # Weryfikacja dokładnej liczby 14 wejść
-        self.assertEqual(len(inputs), 14)
+        # Weryfikacja dokładnej liczby 16 wejść
+        self.assertEqual(len(inputs), 16)
 
         # Weryfikacja zakresów wartości
         for idx, val in enumerate(inputs):
@@ -65,7 +65,18 @@ class TestAgent(unittest.TestCase):
         # Agent powinien ruszyć się w prawo i zużyć energię
         self.assertGreater(self.agent.pos.x, initial_pos_x)
         self.assertLess(self.agent.energy, initial_energy)
-        self.assertGreater(self.agent.genome.fitness, 0.0)  # Premia za krok przetrwania
+
+    def test_reward_shaping_moving_towards_food(self):
+        # Umieszczamy jedzenie po prawej stronie agenta, do którego agent (output_x = 1.0) się zbliża
+        self.agent.pos = pygame.math.Vector2(200, 300)
+        food = Food(300, 300)
+        foods = [food]
+
+        initial_fitness = self.agent.genome.fitness
+        self.agent.think_and_act(foods, [], [self.agent], 800, 600)
+
+        # Zbliżanie się do jedzenia powinno nagrodzić fitness (reward shaping > 0)
+        self.assertGreater(self.agent.genome.fitness, initial_fitness)
 
     def test_food_consumption_reward(self):
         # Umieszczamy jedzenie w dokładnie tym samym miejscu co agent
@@ -79,10 +90,10 @@ class TestAgent(unittest.TestCase):
 
         self.agent.think_and_act(foods, hazards, agents, 800, 600)
 
-        # Agent powinien zjeść jedzenie, zwiększyć energię i otrzymać +15 punktów fitness
+        # Agent powinien zjeść jedzenie, zwiększyć energię i otrzymać punkty fitness (uwzględniając reward shaping i +15 za jedzenie)
         self.assertEqual(self.agent.foods_eaten, 1)
         self.assertGreater(self.agent.energy, 50.0)
-        self.assertGreaterEqual(self.agent.genome.fitness, initial_fitness + 15.0)
+        self.assertGreaterEqual(self.agent.genome.fitness, initial_fitness + 14.0)
 
     def test_hazard_collision_penalty(self):
         # Umieszczamy zagrożenie w miejscu agenta

@@ -30,19 +30,21 @@ The simulation uses the **NEAT (NeuroEvolution of Augmenting Topologies)** algor
 
 ## 👁️ Agent Sensory & Action Space
 
-Each agent perceives its surroundings through **14 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
+Each agent perceives its surroundings through **16 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
 
 | Input Index | Sensory Signal | Range | Description |
 | :---: | :--- | :---: | :--- |
-| **1 – 2** | `Position (X, Y)` | `[0.0, 1.0]` | Normalized 2D coordinates on screen |
-| **3 – 4** | `Velocity (VX, VY)` | `[-1.0, 1.0]` | Current movement speed normalized to maximum velocity |
-| **5** | `Nearest Food Distance` | `[0.0, 1.0]` | Normalized Euclidean distance to the closest food item |
-| **6 – 7** | `Nearest Food Direction (DX, DY)` | `[-1.0, 1.0]` | Normalized direction unit vector pointing toward food |
-| **8** | `Nearest Hazard Distance` | `[0.0, 1.0]` | Normalized distance to the closest mobile hazard |
-| **9 – 10** | `Nearest Hazard Direction (DX, DY)` | `[-1.0, 1.0]` | Normalized direction unit vector pointing toward hazard |
-| **11** | `Nearest Agent Distance` | `[0.0, 1.0]` | Normalized distance to the closest alive competitor/peer |
-| **12 – 13** | `Nearest Agent Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest agent |
-| **14** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
+| **1 – 2** | `Velocity (VX, VY)` | `[-1.0, 1.0]` | Current movement speed normalized to maximum velocity |
+| **3** | `Nearest Food #1 Distance` | `[0.0, 1.0]` | Normalized Euclidean distance to the closest food item |
+| **4 – 5** | `Nearest Food #1 Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest food |
+| **6** | `Secondary Food #2 Distance` | `[0.0, 1.0]` | Normalized distance to 2nd closest food (smoother multi-target route planning) |
+| **7 – 8** | `Secondary Food #2 Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward 2nd closest food |
+| **9** | `Nearest Hazard Distance` | `[0.0, 1.0]` | Normalized distance to the closest mobile hazard |
+| **10 – 11** | `Nearest Hazard Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward hazard |
+| **12** | `Nearest Agent Distance` | `[0.0, 1.0]` | Normalized distance to the closest alive competitor/peer |
+| **13 – 14** | `Nearest Agent Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest agent |
+| **15** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
+| **16** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
 
 ### Action Outputs (2 Neurons with `tanh` activation):
 - **Output 1 (`Ax`):** Horizontal acceleration force `[-1.0, 1.0]`
@@ -50,12 +52,14 @@ Each agent perceives its surroundings through **14 normalized sensory inputs** (
 
 ---
 
-## ⚡ Energy & Fitness Dynamics
+## ⚡ Energy, Fitness & Reward Shaping Dynamics
 
 - **Metabolic Cost:** Every frame consumes a baseline energy amount plus movement cost proportional to speed.
+- **Reward Shaping (Distance Closing Gradient):** In each frame, closing distance toward food provides a direct gradient reward `(prev_dist - new_dist) * 0.08`, guiding agents toward food even before direct contact.
 - **Foraging (+15.0 Fitness, +45 Energy):** Consuming a food entity restores vital energy and grants a large fitness bonus.
 - **Hazards (-5.0 Fitness, -20 Energy):** Contact with wandering red hazards causes damage and fitness penalties.
-- **Lifespan Reward (+0.05 Fitness/step):** Living longer yields incremental rewards, encouraging agents to maintain energy balance.
+- **Wall Collision Penalty (-0.05 Fitness):** Discourages pinning against boundaries.
+- **Lifespan Reward (+0.03 Fitness/step):** Living longer yields incremental rewards, encouraging agents to maintain energy balance.
 - **Death:** When energy hits `0.0`, the agent perishes and ceases activity for the remainder of the generation.
 
 ---

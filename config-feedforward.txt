@@ -8,7 +8,7 @@ no_fitness_termination = False
 [DefaultGenome]
 # Opcje aktywacji węzłów (tanh zwraca wartości od -1 do 1, idealne do wektorów ruchu dx, dy)
 activation_default      = tanh
-activation_mutate_rate  = 0.1
+activation_mutate_rate  = 0.05
 activation_options      = tanh
 
 # Opcje agregacji węzłów
@@ -16,15 +16,15 @@ aggregation_default     = sum
 aggregation_mutate_rate = 0.0
 aggregation_options     = sum
 
-# Bias węzłów
+# Bias węzłów (zoptymalizowane, subtelniejsze mutacje)
 bias_init_mean          = 0.0
 bias_init_stdev         = 1.0
 bias_init_type          = gaussian
 bias_max_value          = 30.0
 bias_min_value          = -30.0
-bias_mutate_power       = 0.5
-bias_mutate_rate        = 0.7
-bias_replace_rate       = 0.1
+bias_mutate_power       = 0.20
+bias_mutate_rate        = 0.35
+bias_replace_rate       = 0.01
 
 # Wzmocnienie sygnału węzłów (response)
 response_init_mean      = 1.0
@@ -36,15 +36,15 @@ response_mutate_power   = 0.0
 response_mutate_rate    = 0.0
 response_replace_rate   = 0.0
 
-# Wagi połączeń (mutacje i inicjalizacja)
+# Wagi połączeń (subtelne mutacje dla zachowania wyuczonych umiejętności)
 weight_init_mean        = 0.0
 weight_init_stdev       = 1.0
 weight_init_type        = gaussian
 weight_max_value        = 30.0
 weight_min_value        = -30.0
-weight_mutate_power     = 0.5
-weight_mutate_rate      = 0.8
-weight_replace_rate     = 0.1
+weight_mutate_power     = 0.20
+weight_mutate_rate      = 0.40
+weight_replace_rate     = 0.01
 
 # Włączanie/wyłączanie połączeń
 enabled_default           = True
@@ -52,49 +52,51 @@ enabled_mutate_rate       = 0.01
 enabled_rate_to_true_add  = 0.0
 enabled_rate_to_false_add = 0.0
 
-# Kompatybilność genetyczna (do podziału na gatunki / specjację)
+# Kompatybilność genetyczna (podział na gatunki i ochrona nisz ekologicznych)
 compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient   = 0.5
 
 # Architektura sieci
-# 14 znormalizowanych wejść percepcyjnych:
-# 1. Pozycja X (0..1)
-# 2. Pozycja Y (0..1)
-# 3. Prędkość X (-1..1)
-# 4. Prędkość Y (-1..1)
-# 5. Dystans do najbliższego pożywienia (0..1)
-# 6. Wektor kierunku do jedzenia X (-1..1)
-# 7. Wektor kierunku do jedzenia Y (-1..1)
-# 8. Dystans do najbliższego zagrożenia (0..1)
-# 9. Wektor kierunku do zagrożenia X (-1..1)
-# 10. Wektor kierunku do zagrożenia Y (-1..1)
-# 11. Dystans do najbliższego innego agenta (0..1)
-# 12. Wektor kierunku do innego agenta X (-1..1)
-# 13. Wektor kierunku do innego agenta Y (-1..1)
-# 14. Poziom energii agenta (0..1)
-# 2 wyjścia sieci: siła ruchu X (-1..1), siła ruchu Y (-1..1)
-num_inputs              = 14
+# 16 znormalizowanych wejść percepcyjnych (Radar & Egocentric Vision):
+# 1. Prędkość VX (-1..1)
+# 2. Prędkość VY (-1..1)
+# 3. Dystans do najbliższego pożywienia #1 (0..1)
+# 4. Wektor kierunku do jedzenia #1 X (-1..1)
+# 5. Wektor kierunku do jedzenia #1 Y (-1..1)
+# 6. Dystans do 2. najbliższego pożywienia #2 (0..1)
+# 7. Wektor kierunku do jedzenia #2 X (-1..1)
+# 8. Wektor kierunku do jedzenia #2 Y (-1..1)
+# 9. Dystans do najbliższego zagrożenia (0..1)
+# 10. Wektor kierunku do zagrożenia X (-1..1)
+# 11. Wektor kierunku do zagrożenia Y (-1..1)
+# 12. Dystans do najbliższego innego agenta (0..1)
+# 13. Wektor kierunku do innego agenta X (-1..1)
+# 14. Wektor kierunku do innego agenta Y (-1..1)
+# 15. Dystans do najbliższej ściany/krawędzi (0..1)
+# 16. Poziom energii agenta (0..1)
+# 2 wyjścia sieci: siła przyspieszenia X (-1..1), siła przyspieszenia Y (-1..1)
+num_inputs              = 16
 num_outputs             = 2
 num_hidden              = 0
 feed_forward            = True
 initial_connection      = full_direct
 
-# Prawdopodobieństwo mutacji węzłów i połączeń
-conn_add_prob           = 0.5
-conn_delete_prob        = 0.2
-node_add_prob           = 0.2
-node_delete_prob        = 0.2
+# Mutacje topologii (stabilny i powolny rozrost)
+conn_add_prob           = 0.10
+conn_delete_prob        = 0.03
+node_add_prob           = 0.02
+node_delete_prob        = 0.02
 
 [DefaultSpeciesSet]
-compatibility_threshold = 3.0
+compatibility_threshold = 2.8
 
 [DefaultStagnation]
 species_fitness_func = max
 max_stagnation       = 20
-species_elitism      = 1
+species_elitism      = 2
 
 [DefaultReproduction]
-# Elitaryzm na poziomie 4 gwarantuje, że 4 najlepsze sieci zawsze przechodzą do następnej generacji bez zmian
+# Elitaryzm na poziomie 4 gwarantuje przejście 4 najlepszych sieci w populacji bez zmian
 elitism            = 4
 survival_threshold = 0.2
 min_species_size   = 2

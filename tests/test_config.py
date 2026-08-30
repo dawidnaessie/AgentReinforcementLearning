@@ -25,7 +25,7 @@ class TestNeatConfig(unittest.TestCase):
         )
 
         # Weryfikacja kluczowych założeń projektowych
-        self.assertEqual(config.genome_config.num_inputs, 14, "Liczba wejść musi wynosić 14.")
+        self.assertEqual(config.genome_config.num_inputs, 16, "Liczba wejść musi wynosić 16.")
         self.assertEqual(config.genome_config.num_outputs, 2, "Liczba wyjść musi wynosić 2.")
         self.assertEqual(config.pop_size, 50, "Wielkość populacji musi wynosić 50.")
         self.assertEqual(config.reproduction_config.elitism, 4, "Elitaryzm musi wynosić 4 (Top 4 bez zmian).")

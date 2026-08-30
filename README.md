@@ -5,30 +5,29 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-2.0.0-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-27%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-29%20passed-brightgreen.svg)
 
 ---
 
 ## 📖 Overview & Core Ideas
 
-**AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a shared 2D continuous environment (**1280 x 720**).
+**AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a continuous environment featuring a **1600 x 720 Research Dashboard** (1280px arena + 320px telemetry & visualizer sidebar).
 
-In **Phase 4 (Flocking Defense, Grace Period & Anti-Exploit Balancing)**, the simulation ensures fair, robust evolution by introducing:
+In **Phase 5 (Communication, UI/UX Modernization & Top 4 Network Visualizer)**, the simulation introduces:
+- **Intra-Species Communication (Shout & Hearing):** Agents can emit acoustic alarm/rally calls, and perceive the direction/distance to the nearest shouting peer.
+- **Top 4 NEAT Brains Visualizer:** Real-time rendering of the neural topologies, synaptic weights, and active pathways of the 4 elite genomes.
+- **Research Dashboard UI/UX:** Dark `#0b0c10` simulation arena with subtle grid lines, paired with a `#161b22` sidebar telemetry panel.
 - **Powiększona Arena (1280 x 720):** Przestronny świat zapobiegający stłoczeniu 50 agentów i umożliwiający dynamiczne manewrowanie.
-- **Klatki Nieśmiertelności / Tryb Ducha (Grace Period - 60 klatek / 1.0s):** Przez pierwszą sekundę po spawnie agenci są nietykalni (brak walki, kradzieży energii i kar krawędziowych), co pozwala na bezpieczne rozproszenie z pozycji startowych.
-- **Strict Hunger Metabolism:** Base drain of $0.20$ energy/frame, preventing passive idling from surviving a 900-frame generation.
-- **Toxic Edge Zones (50px Margin):** Entering the 50px boundary zone incurs continuous penalties ($-0.5$ energy, $-0.1$ fitness/frame), eliminating corner camping.
-- **Flocking / Herd Defense (+15.0 Fitness for Group):** Attacking a peer that is within a cluster of allies triggers collective herd defense, penalizing the predator.
-- **Herd Density Awareness:** Agents sense the local density of their herd to seek protection in numbers.
-- **Altruistic Cooperation (+50.0 Fitness):** High-energy agents transferring vitality to critically starving peers.
-- **Selective Predation (+25.0 Fitness):** Predators must actively hunt isolated, stray prey separated from the safety of the herd.
-- **Frontal Defense (+10.0 Fitness):** Head-on clashes deflecting predatory attacks and rewarding strong defenders.
+- **Klatki Nieśmiertelności / Tryb Ducha (Grace Period - 60 klatek / 1.0s):** Bezpieczne rozproszenie na starcie generacji.
+- **Strict Hunger Metabolism & Toxic Edges:** Eliminuje pasywne kampowanie i wymusza aktywną eksplorację.
+- **Flocking / Herd Defense (+15.0 Fitness for Group):** Zbiorowa obrona stada przed drapieżnikami.
+- **Altruistic Cooperation (+50.0 Fitness):** Dzielenie się energią z głodującymi sojusznikami.
 
 ---
 
 ## 👁️ Agent Sensory & Action Space
 
-Each agent perceives its surroundings through **22 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
+Each agent perceives its surroundings through **25 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]`):
 
 | Input Index | Sensory Signal | Range | Description |
 | :---: | :--- | :---: | :--- |
@@ -44,41 +43,43 @@ Each agent perceives its surroundings through **22 normalized sensory inputs** (
 | **15** | `Nearest Agent Distance` | `[0.0, 1.0]` | Normalized distance to the closest alive competitor/peer |
 | **16 – 17** | `Nearest Agent Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest agent |
 | **18** | `Nearest Ally Critical State` | `{0.0, 1.0}` | Binary flag: `1.0` if closest ally has energy `< 20%` (starving), else `0.0` |
-| **19** | `Nearest Peer Relative Heading` | `[-1.0, 1.0]` | Relative velocity heading dot product: `> 0.0` when peer is fleeing (flank target), `< 0.0` when charging head-on |
+| **19** | `Nearest Peer Relative Heading` | `[-1.0, 1.0]` | Relative velocity heading dot product: `> 0.0` when peer is fleeing, `< 0.0` when charging head-on |
 | **20** | `Local Herd Density` | `[0.0, 1.0]` | Proximity density of allies within 60px (`0.0` isolated prey, `1.0` densely protected herd) |
 | **21** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
 | **22** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
+| **23** | `Nearest Shouting Agent Distance` | `[0.0, 1.0]` | Normalized distance to the nearest agent currently emitting a shout (`0.0` if quiet) |
+| **24 – 25** | `Nearest Shout Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward the shouting agent (`0.0, 0.0` if quiet) |
 
-### Action Outputs (2 Neurons with `tanh` activation):
+### Action Outputs (3 Neurons with `tanh` activation):
 - **Output 1 (`Ax`):** Horizontal acceleration force `[-1.0, 1.0]`
 - **Output 2 (`Ay`):** Vertical acceleration force `[-1.0, 1.0]`
+- **Output 3 (`Shout`):** Communication trigger `[-1.0, 1.0]`. Emits an acoustic call when `> 0.0`.
 
 ---
 
-## ⚡ Energy, Fitness, Herd Defense & Predation Dynamics
+## ⚡ Energy, Fitness, Communication & Ecosystem Dynamics
 
-- **Balanced Sprint Metabolism:** Base loss ($0.05$) + quadratic movement cost $(\text{speed}/\text{max})^2 \times 0.08$. Agents start with **150.0 max energy**, allowing chaotic early networks to explore and learn.
-- **Foraging (+15.0 Fitness, +65 Energy):** Consuming a food entity restores a high amount of vital energy, sustaining herds through long journeys.
+- **Acoustic Communication (Shout):** Agents with `Output 3 > 0.0` broadcast their position with an expanding turquoise acoustic wave.
+- **Strict Hunger Metabolism:** Base loss ($0.20$) + movement cost $(\text{speed}/\text{max})^2 \times 0.08$. Agents must feed to survive.
+- **Toxic Edge Zones (50px Margin):** Entering the 50px boundary zone incurs continuous penalties ($-0.5$ energy, $-0.1$ fitness/frame).
+- **Foraging (+15.0 Fitness, +65 Energy):** Consuming a food entity restores vital energy.
 - **Poison Obstacle (-10.0 Fitness, -35 Energy):** Contact with purple square toxins deals severe damage.
 - **Mobile Hazards (-5.0 Fitness, -20 Energy):** Wandering red hazards penalize fitness and health.
 - **Flocking / Herd Defense (-20.0 Predator Penalty, +15.0 Herd Reward, -15 Energy):**
-  - Attacking a target that has $\ge 1$ ally nearby triggers a collective counter-attack, inflicting flat 15 damage and a -20.0 fitness penalty on the predator while keeping the predator alive to hunt again.
+  - Attacking a target that has $\ge 1$ ally nearby triggers a collective counter-attack.
 - **Selective Predation (+25.0 Fitness, +25 Energy):**
-  - Stalking and striking **isolated, solitary prey** (0 allies nearby) from behind steals 25 energy and grants +25.0 fitness (+15.0 on kill).
+  - Stalking and striking **isolated prey** (0 allies nearby) from behind steals 25 energy.
 - **Frontal Defense & Parrying (+10.0 Fitness):**
-  - Head-on collisions (`v_self · v_other <= -0.2`) deflect incoming attacks and award **+10.0 fitness** to the defender with higher vitality.
+  - Head-on collisions (`v_self · v_other <= -0.2`) deflect incoming attacks.
 - **Altruism & Cooperation (+50.0 Fitness):**
   - High-energy agents (`> 50%`) transfer 20 energy to save critically starving peers (`< 20%`).
-- **Reward Shaping (Distance Closing Gradient):** In each frame, closing distance toward food provides a direct gradient reward `(prev_dist - new_dist) * 0.08`.
-- **Wall Collision Penalty (-0.05 Fitness):** Discourages pinning against boundaries.
-- **Death:** When energy hits `0.0`, the agent perishes and ceases activity for the remainder of the generation.
 
 ---
 
 ## 🕹️ Controls & Features
 
-- **🎮 Real-Time Visual HUD:** Displays Generation, Alive/Total agents, Current Frame, Peak Fitness, and live FPS.
-- **⚡ Turbo Mode (`[SPACE]`):** Instantly toggles between 60 FPS capped rendering and uncapped simulation speed for rapid multi-generation training.
+- **📊 Neural Visualizer & Telemetry Sidebar:** Real-time visualization of Top 4 NEAT networks (nodes, synapses, positive/negative weights) and ecological counters.
+- **⚡ Turbo Mode (`[SPACE]`):** Instantly toggles between 60 FPS capped rendering and uncapped simulation speed.
 - **🛑 Graceful Exit (`[ESC]` or window close):** Closes the window and prints an executive summary report to the terminal.
 
 ---

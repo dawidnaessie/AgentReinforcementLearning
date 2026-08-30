@@ -16,6 +16,7 @@ class EvolutionTracker:
         self.total_attacks_made = 0
         self.total_defenses_made = 0
         self.total_herd_defenses = 0
+        self.total_shouts_made = 0
 
     def record_generation(
         self,
@@ -30,7 +31,8 @@ class EvolutionTracker:
         allies_saved: int = 0,
         attacks_made: int = 0,
         defenses_made: int = 0,
-        herd_defenses: int = 0
+        herd_defenses: int = 0,
+        shouts_made: int = 0
     ):
         """Zapisuje dane pojedynczej generacji."""
         if best_fitness > self.peak_fitness:
@@ -43,6 +45,7 @@ class EvolutionTracker:
         self.total_attacks_made += attacks_made
         self.total_defenses_made += defenses_made
         self.total_herd_defenses += herd_defenses
+        self.total_shouts_made += shouts_made
 
         self.generations_data.append({
             "generation": generation,
@@ -56,7 +59,8 @@ class EvolutionTracker:
             "allies_saved": allies_saved,
             "attacks_made": attacks_made,
             "defenses_made": defenses_made,
-            "herd_defenses": herd_defenses
+            "herd_defenses": herd_defenses,
+            "shouts_made": shouts_made
         })
 
     def print_summary(self):
@@ -92,13 +96,14 @@ class EvolutionTracker:
         print(f" * Wzrost sredniej sprawnosci:         {avg_growth:+6.1f}%")
         print(f" * Rekordowy wynik (Gen {self.peak_generation}):             {self.peak_fitness:6.2f} pkt")
         print(sub_border)
-        print(" PODSUMOWANIE ZACHOWAN SPOLECZNYCH, EKOLOGICZNYCH I OBRONY STADNEJ:")
+        print(" PODSUMOWANIE ZACHOWAN SPOLECZNYCH, EKOLOGICZNYCH I KOMUNIKACJI:")
         print(f" * Lacznie zebrane jablka:             {self.total_foods_collected} szt.")
         print(f" * Lacznie zjedzone trucizny:          {self.total_poisons_hit} szt.")
         print(f" * Lacznie uratowani sojusznicy (altruizm): {self.total_allies_saved} aktow pomocy")
         print(f" * Lacznie udane ataki (drapieznictwo):     {self.total_attacks_made} atakow na samotne ofiary")
         print(f" * Lacznie obrony czolowe:             {self.total_defenses_made} starc")
         print(f" * Lacznie odparte ataki (obrona stadna):   {self.total_herd_defenses} obron grupy")
+        print(f" * Lacznie wyemitowane krzyki (komunikacja):{self.total_shouts_made} sygnalow")
         print(sub_border)
         print(" HISTORIA OSTATNICH GENERACJI:")
         print(f" {'Gen':<5} | {'Max Fit':<9} | {'Sr Fit':<9} | {'Jablka':<7} | {'Trucizny':<8} | {'Uratowani':<9} | {'Ataki':<6} | {'Obrony':<6} | {'Stado':<6} | {'Czas':<6}")

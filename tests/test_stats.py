@@ -34,7 +34,8 @@ class TestStats(unittest.TestCase):
             allies_saved=4,
             attacks_made=5,
             defenses_made=2,
-            herd_defenses=3
+            herd_defenses=3,
+            shouts_made=10
         )
         tracker.record_generation(
             generation=2,
@@ -48,7 +49,8 @@ class TestStats(unittest.TestCase):
             allies_saved=7,
             attacks_made=8,
             defenses_made=3,
-            herd_defenses=6
+            herd_defenses=6,
+            shouts_made=15
         )
 
         self.assertEqual(len(tracker.generations_data), 2)
@@ -60,6 +62,7 @@ class TestStats(unittest.TestCase):
         self.assertEqual(tracker.total_attacks_made, 13)
         self.assertEqual(tracker.total_defenses_made, 5)
         self.assertEqual(tracker.total_herd_defenses, 9)
+        self.assertEqual(tracker.total_shouts_made, 25)
 
         captured_output = io.StringIO()
         sys.stdout = captured_output
@@ -76,6 +79,7 @@ class TestStats(unittest.TestCase):
         self.assertIn("Lacznie udane ataki (drapieznictwo):     13 atakow", output)
         self.assertIn("Lacznie obrony czolowe:             5 starc", output)
         self.assertIn("Lacznie odparte ataki (obrona stadna):   9 obron", output)
+        self.assertIn("Lacznie wyemitowane krzyki (komunikacja):25 sygnalow", output)
         self.assertIn("Rekordowy wynik (Gen 2):             250.00 pkt", output)
         self.assertIn("Wzrost sredniej sprawnosci:         +140.0%", output)
 

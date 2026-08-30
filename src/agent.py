@@ -36,6 +36,7 @@ class Agent:
         self.energy = 150.0
         self.is_alive = True
         self.frames_alive = 0
+        self.is_shouting = False
 
         # Liczniki zachowań i specjalizacji ekologicznych
         self.foods_eaten = 0
@@ -44,6 +45,7 @@ class Agent:
         self.attacks_made = 0
         self.defenses_made = 0
         self.herd_defenses = 0
+        self.shouts_made = 0
 
         # Inicjalizacja fitnessu genomu
         self.genome.fitness = 0.0
@@ -171,6 +173,26 @@ class Agent:
         # 22. Poziom energii własnej [0.0, 1.0]
         norm_energy = max(0.0, min(self.energy / self.max_energy, 1.0))
 
+        # 23 - 25. Krzyk i Słuch: Zmysł akustyczny wykrywający najbliższego krzyczącego agenta
+        closest_shouter = None
+        min_shout_dist = float('inf')
+        for other in all_agents:
+            if other is not self and other.is_alive and other.is_shouting:
+                d = (self.pos - other.pos).length()
+                if d < min_shout_dist:
+                    min_shout_dist = d
+                    closest_shouter = other
+
+        if closest_shouter is not None and min_shout_dist > 0.0001:
+            norm_shout_dist = min(min_shout_dist / max_dist, 1.0)
+            shout_dir = (closest_shouter.pos - self.pos).normalize()
+            norm_shout_dx = shout_dir.x
+            norm_shout_dy = shout_dir.y
+        else:
+            norm_shout_dist = 0.0
+            norm_shout_dx = 0.0
+            norm_shout_dy = 0.0
+
         return (
             norm_vx, norm_vy,
             norm_food1_dist, norm_food1_dx, norm_food1_dy,
@@ -182,7 +204,10 @@ class Agent:
             norm_agent_rel_heading,
             norm_herd_density,
             norm_wall_dist,
-            norm_energy
+            norm_energy,
+            norm_shout_dist,
+            norm_shout_dx,
+            norm_shout_dy
         )
 
     def think_and_act(
@@ -207,10 +232,18 @@ class Agent:
             if d < prev_min_food_dist:
                 prev_min_food_dist = d
 
-        # 1. Zmysły i aktywacja sieci
+        # 1. Zmysły i aktywacja sieci (Faza 5: 25 wejść, 3 wyjścia)
         inputs = self._get_sensory_inputs(foods, poisons, hazards, all_agents, width, height)
         outputs = self.net.activate(inputs)
         accel = pygame.math.Vector2(outputs[0], outputs[1])
+
+        # Wyjście #3: Aktywacja sygnału krzyku (komunikacja)
+        if len(outputs) > 2:
+            self.is_shouting = (outputs[2] > 0.0)
+            if self.is_shouting:
+                self.shouts_made += 1
+        else:
+            self.is_shouting = False
 
         # 2. Aktualizacja prędkości i pozycji
         self.vel += accel * 0.8
@@ -393,6 +426,10 @@ class Agent:
         elif self.attacks_made > 0:
             # Karmazynowa obwódka dla drapieżników z udanymi atakami
             pygame.draw.circle(screen, (231, 76, 60), center, int(self.radius + 2), 1)
+
+        # Komunikacja (Faza 5): Fala dźwiękowa / krzyk (jaskrawy turkus)
+        if self.is_shouting:
+            pygame.draw.circle(screen, (0, 245, 212), center, int(self.radius + 6), 1)
 
         # Rysowanie wskaźnika kierunku prędkości
         if self.vel.length_squared() > 0.01:

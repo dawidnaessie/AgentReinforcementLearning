@@ -11,17 +11,18 @@ class DummyGenome:
 
 
 class DummyNetwork:
-    """Prosta atrapa sieci neuronowej zwracająca stałe wyjścia (ruch dx, dy)."""
-    def __init__(self, output_x=1.0, output_y=0.0):
+    """Prosta atrapa sieci neuronowej zwracająca 3 wyjścia (ruch dx, dy oraz krzyk shout)."""
+    def __init__(self, output_x=1.0, output_y=0.0, output_shout=0.0):
         self.output_x = output_x
         self.output_y = output_y
+        self.output_shout = output_shout
 
     def activate(self, inputs):
-        return (self.output_x, self.output_y)
+        return (self.output_x, self.output_y, self.output_shout)
 
 
 class TestAgent(unittest.TestCase):
-    """Testy jednostkowe klasy Agent (Grace Period, arena 1280x720, metabolizm, walka)."""
+    """Testy jednostkowe klasy Agent (Faza 5: Komunikacja, krzyk, słuch, 25 wejść, 3 wyjścia)."""
 
     def setUp(self):
         self.net = DummyNetwork()
@@ -33,6 +34,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.agent.energy, 150.0)
         self.assertEqual(self.agent.max_energy, 150.0)
         self.assertEqual(self.agent.frames_alive, 0)
+        self.assertFalse(self.agent.is_shouting)
         self.assertEqual(self.agent.genome.fitness, 0.0)
         self.assertEqual(self.agent.foods_eaten, 0)
         self.assertEqual(self.agent.poisons_hit, 0)
@@ -40,6 +42,39 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.agent.attacks_made, 0)
         self.assertEqual(self.agent.defenses_made, 0)
         self.assertEqual(self.agent.herd_defenses, 0)
+
+    def test_shout_activation_and_deactivation(self):
+        # Sieć z sygnałem krzyku > 0.0
+        shouting_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=0.8)
+        shouter = Agent(shouting_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
+        shouter.think_and_act([], [], [], [shouter], 1280, 720)
+        self.assertTrue(shouter.is_shouting)
+
+        # Sieć z sygnałem krzyku <= 0.0
+        silent_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=-0.5)
+        silent_agent = Agent(silent_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
+        silent_agent.is_shouting = True
+        silent_agent.think_and_act([], [], [], [silent_agent], 1280, 720)
+        self.assertFalse(silent_agent.is_shouting)
+
+    def test_hearing_sensors(self):
+        # 1. Przypadek, gdy w pobliżu nikt nie krzyczy
+        silent_peer = Agent(DummyNetwork(output_shout=-1.0), DummyGenome(), width=1280, height=720, start_pos=(500, 300))
+        silent_peer.is_shouting = False
+        inputs_quiet = self.agent._get_sensory_inputs([], [], [], [self.agent, silent_peer], 1280, 720)
+        # Sensory #23, #24, #25 powinny mieć 0.0
+        self.assertEqual(inputs_quiet[22], 0.0)
+        self.assertEqual(inputs_quiet[23], 0.0)
+        self.assertEqual(inputs_quiet[24], 0.0)
+
+        # 2. Przypadek, gdy inny agent krzyczy w odległości 100px na prawo
+        shouting_peer = Agent(DummyNetwork(output_shout=1.0), DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 100, self.agent.pos.y))
+        shouting_peer.is_shouting = True
+        inputs_heard = self.agent._get_sensory_inputs([], [], [], [self.agent, shouting_peer], 1280, 720)
+        # Dystans znormalizowany > 0.0 oraz kierunek dx bliski 1.0, dy bliski 0.0
+        self.assertGreater(inputs_heard[22], 0.0)
+        self.assertAlmostEqual(inputs_heard[23], 1.0, places=1)
+        self.assertAlmostEqual(inputs_heard[24], 0.0, places=1)
 
     def test_grace_period_no_combat_or_edge_penalty(self):
         # 1. Brak kary krawędziowej w czasie Grace Period (< 60 klatek / 1 sekunda)
@@ -67,14 +102,13 @@ class TestAgent(unittest.TestCase):
 
         predator.think_and_act([], [], [], [predator, prey], 1280, 720)
 
-        # W trybie ducha agenci przenikają przez siebie bez kradzieży energii
         self.assertEqual(predator.attacks_made, 0)
         self.assertEqual(prey.energy, initial_prey_energy)
 
     def test_strict_hunger_metabolism(self):
         still_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         still_agent.vel = pygame.math.Vector2(0.0, 0.0)
-        still_agent.frames_alive = 200  # Poza grace period
+        still_agent.frames_alive = 100  # Poza grace period
         initial_energy = still_agent.energy
 
         still_agent.think_and_act([], [], [], [still_agent], 1280, 720)
@@ -85,22 +119,20 @@ class TestAgent(unittest.TestCase):
     def test_toxic_edge_penalty_after_grace_period(self):
         edge_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(40, 300))
         edge_agent.vel = pygame.math.Vector2(0.0, 0.0)
-        edge_agent.frames_alive = 200  # Poza grace period
+        edge_agent.frames_alive = 100  # Poza grace period
         initial_energy = edge_agent.energy
         initial_fitness = edge_agent.genome.fitness
 
         edge_agent.think_and_act([], [], [], [edge_agent], 1280, 720)
 
-        # Traci bazowy metabolizm (0.20) + karę strefy (0.50) = 0.70
         energy_loss = initial_energy - edge_agent.energy
         self.assertAlmostEqual(energy_loss, 0.70, places=2)
-        # Spadek fitness o 0.07 (0.03 - 0.10)
         self.assertAlmostEqual(edge_agent.genome.fitness - initial_fitness, -0.07, places=2)
 
     def test_safe_zone_no_edge_penalty(self):
         safe_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         safe_agent.vel = pygame.math.Vector2(0.0, 0.0)
-        safe_agent.frames_alive = 200
+        safe_agent.frames_alive = 100
         initial_fitness = safe_agent.genome.fitness
 
         safe_agent.think_and_act([], [], [], [safe_agent], 1280, 720)
@@ -117,7 +149,8 @@ class TestAgent(unittest.TestCase):
 
         inputs = self.agent._get_sensory_inputs(foods, poisons, hazards, agents, 1280, 720)
 
-        self.assertEqual(len(inputs), 22)
+        # Faza 5: dokładnie 25 wejść sensorycznych
+        self.assertEqual(len(inputs), 25)
         for idx, val in enumerate(inputs):
             self.assertGreaterEqual(val, -1.01, f"Input {idx} value {val} is below -1.0")
             self.assertLessEqual(val, 1.01, f"Input {idx} value {val} is above 1.0")
@@ -152,17 +185,17 @@ class TestAgent(unittest.TestCase):
         predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200))
         predator.vel = pygame.math.Vector2(3.0, 0.0)
         predator.energy = 80.0
-        predator.frames_alive = 200
+        predator.frames_alive = 100
 
         prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
         prey.vel = pygame.math.Vector2(1.0, 0.0)
         prey.energy = 60.0
-        prey.frames_alive = 200
+        prey.frames_alive = 100
 
         ally = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(215, 200))
         ally.vel = pygame.math.Vector2(1.0, 0.0)
         ally.energy = 60.0
-        ally.frames_alive = 200
+        ally.frames_alive = 100
 
         initial_pred_fit = predator.genome.fitness
         initial_prey_fit = prey.genome.fitness
@@ -180,12 +213,12 @@ class TestAgent(unittest.TestCase):
         predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200))
         predator.vel = pygame.math.Vector2(3.0, 0.0)
         predator.energy = 50.0
-        predator.frames_alive = 200
+        predator.frames_alive = 100
 
         prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
         prey.vel = pygame.math.Vector2(1.0, 0.0)
         prey.energy = 50.0
-        prey.frames_alive = 200
+        prey.frames_alive = 100
 
         initial_pred_fit = predator.genome.fitness
         initial_prey_fit = prey.genome.fitness
@@ -202,12 +235,12 @@ class TestAgent(unittest.TestCase):
         agent_a = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(196, 200))
         agent_a.vel = pygame.math.Vector2(2.0, 0.0)
         agent_a.energy = 80.0
-        agent_a.frames_alive = 200
+        agent_a.frames_alive = 100
 
         agent_b = Agent(DummyNetwork(output_x=-1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
         agent_b.vel = pygame.math.Vector2(-2.0, 0.0)
         agent_b.energy = 40.0
-        agent_b.frames_alive = 200
+        agent_b.frames_alive = 100
 
         initial_fit_a = agent_a.genome.fitness
 
@@ -219,11 +252,11 @@ class TestAgent(unittest.TestCase):
     def test_altruism_energy_transfer_and_reward(self):
         agent_a = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
         agent_a.energy = 100.0
-        agent_a.frames_alive = 200
+        agent_a.frames_alive = 100
 
         agent_b = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
         agent_b.energy = 10.0
-        agent_b.frames_alive = 200
+        agent_b.frames_alive = 100
 
         initial_fitness_a = agent_a.genome.fitness
 

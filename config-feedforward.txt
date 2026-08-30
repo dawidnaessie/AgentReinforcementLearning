@@ -56,8 +56,8 @@ enabled_rate_to_false_add = 0.0
 compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient   = 0.5
 
-# Architektura sieci (Faza 3: Drapieżnictwo, Walka i Podział na Role)
-# 21 znormalizowanych wejść percepcyjnych:
+# Architektura sieci (Faza 4: Obrona Stadna i Równowaga Ekosystemu)
+# 22 znormalizowane wejścia percepcyjne:
 # 1. Prędkość VX (-1..1)
 # 2. Prędkość VY (-1..1)
 # 3. Dystans do najbliższego pożywienia #1 (0..1)
@@ -77,10 +77,11 @@ compatibility_weight_coefficient   = 0.5
 # 17. Wektor kierunku do innego agenta Y (-1..1)
 # 18. Stan krytyczny sojusznika (1.0 jeśli energia najbliższego < 20%, 0.0 wpp)
 # 19. Relatywny zwrot prędkości rywala (-1..1, >0 gdy ucieka tyłem, <0 gdy szarżuje)
-# 20. Dystans do najbliższej ściany/krawędzi (0..1)
-# 21. Poziom energii własnej agenta (0..1)
+# 20. Gęstość stada wokół agenta (0..1, bezpieczeństwo w grupie)
+# 21. Dystans do najbliższej ściany/krawędzi (0..1)
+# 22. Poziom energii własnej agenta (0..1)
 # 2 wyjścia sieci: siła przyspieszenia X (-1..1), siła przyspieszenia Y (-1..1)
-num_inputs              = 21
+num_inputs              = 22
 num_outputs             = 2
 num_hidden              = 0
 feed_forward            = True

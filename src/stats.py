@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 
 
 class EvolutionTracker:
-    """Zbiera statystyki przebiegu ewolucji i generuje eleganckie podsumowanie końcowe (Faza 3)."""
+    """Zbiera statystyki przebiegu ewolucji i generuje eleganckie podsumowanie końcowe (Faza 4: Obrona Stadna)."""
 
     def __init__(self):
         self.start_time = time.time()
@@ -15,6 +15,7 @@ class EvolutionTracker:
         self.total_allies_saved = 0
         self.total_attacks_made = 0
         self.total_defenses_made = 0
+        self.total_herd_defenses = 0
 
     def record_generation(
         self,
@@ -28,7 +29,8 @@ class EvolutionTracker:
         poisons_hit: int = 0,
         allies_saved: int = 0,
         attacks_made: int = 0,
-        defenses_made: int = 0
+        defenses_made: int = 0,
+        herd_defenses: int = 0
     ):
         """Zapisuje dane pojedynczej generacji."""
         if best_fitness > self.peak_fitness:
@@ -40,6 +42,7 @@ class EvolutionTracker:
         self.total_allies_saved += allies_saved
         self.total_attacks_made += attacks_made
         self.total_defenses_made += defenses_made
+        self.total_herd_defenses += herd_defenses
 
         self.generations_data.append({
             "generation": generation,
@@ -52,7 +55,8 @@ class EvolutionTracker:
             "poisons_hit": poisons_hit,
             "allies_saved": allies_saved,
             "attacks_made": attacks_made,
-            "defenses_made": defenses_made
+            "defenses_made": defenses_made,
+            "herd_defenses": herd_defenses
         })
 
     def print_summary(self):
@@ -60,11 +64,11 @@ class EvolutionTracker:
         total_time = time.time() - self.start_time
         total_gens = len(self.generations_data)
 
-        border = "=" * 90
-        sub_border = "-" * 90
+        border = "=" * 98
+        sub_border = "-" * 98
 
         print("\n" + border)
-        print("          RAPORT PODSUMOWUJACY EWOLUCJE POPULACJI (ALife - Faza 3: Walka i Role)")
+        print("          RAPORT PODSUMOWUJACY EWOLUCJE POPULACJI (ALife - Faza 4: Obrona Stadna)")
         print(border)
 
         if total_gens == 0:
@@ -88,16 +92,17 @@ class EvolutionTracker:
         print(f" * Wzrost sredniej sprawnosci:         {avg_growth:+6.1f}%")
         print(f" * Rekordowy wynik (Gen {self.peak_generation}):             {self.peak_fitness:6.2f} pkt")
         print(sub_border)
-        print(" PODSUMOWANIE ZACHOWAN SPOLECZNYCH, EKOLOGICZNYCH I DRAPIEZNICTWA:")
+        print(" PODSUMOWANIE ZACHOWAN SPOLECZNYCH, EKOLOGICZNYCH I OBRONY STADNEJ:")
         print(f" * Lacznie zebrane jablka:             {self.total_foods_collected} szt.")
         print(f" * Lacznie zjedzone trucizny:          {self.total_poisons_hit} szt.")
         print(f" * Lacznie uratowani sojusznicy (altruizm): {self.total_allies_saved} aktow pomocy")
-        print(f" * Lacznie udane ataki (drapieznictwo):     {self.total_attacks_made} atakow z flanki/tylu")
+        print(f" * Lacznie udane ataki (drapieznictwo):     {self.total_attacks_made} atakow na samotne ofiary")
         print(f" * Lacznie obrony czolowe:             {self.total_defenses_made} starc")
+        print(f" * Lacznie odparte ataki (obrona stadna):   {self.total_herd_defenses} obron grupy")
         print(sub_border)
         print(" HISTORIA OSTATNICH GENERACJI:")
-        print(f" {'Gen':<5} | {'Max Fit':<9} | {'Sr Fit':<9} | {'Jablka':<7} | {'Trucizny':<8} | {'Uratowani':<9} | {'Ataki':<7} | {'Obrony':<7} | {'Czas':<6}")
-        print(" " + "-" * 88)
+        print(f" {'Gen':<5} | {'Max Fit':<9} | {'Sr Fit':<9} | {'Jablka':<7} | {'Trucizny':<8} | {'Uratowani':<9} | {'Ataki':<6} | {'Obrony':<6} | {'Stado':<6} | {'Czas':<6}")
+        print(" " + "-" * 96)
 
         recent = self.generations_data[-10:] if total_gens > 10 else self.generations_data
         for g in recent:
@@ -108,8 +113,9 @@ class EvolutionTracker:
                 f"{g['foods_eaten']:<7} | "
                 f"{g['poisons_hit']:<8} | "
                 f"{g['allies_saved']:<9} | "
-                f"{g['attacks_made']:<7} | "
-                f"{g['defenses_made']:<7} | "
+                f"{g['attacks_made']:<6} | "
+                f"{g['defenses_made']:<6} | "
+                f"{g['herd_defenses']:<6} | "
                 f"{g['duration']:<6.2f}s"
             )
 

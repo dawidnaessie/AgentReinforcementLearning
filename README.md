@@ -13,19 +13,19 @@
 
 **AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a shared 2D continuous environment.
 
-In **Phase 3 (Predation, Combat and Civilization Roles)**, the simulation introduces:
-- **Metabolic Constraints:** Continuous energy loss requiring regular nourishment.
-- **Environmental Toxins (`Poison`):** Purple hazard zones penalizing health and fitness.
+In **Phase 4 (Flocking Defense & Ecosystem Balance)**, the simulation balances predation dynamics by introducing:
+- **Flocking / Herd Defense (+15.0 Fitness for Group):** Attacking a peer that is within a cluster of allies triggers collective herd defense, heavily damaging and penalizing the predator.
+- **Sprint Fatigue Metabolism:** Energy expenditure scales non-linearly with speed squared, penalizing reckless blind charging.
+- **Herd Density Awareness:** Agents sense the local density of their herd to seek protection in numbers.
 - **Altruistic Cooperation (+50.0 Fitness):** High-energy agents transferring vitality to critically starving peers.
-- **Predation & Energy Theft (+25.0 Fitness):** Pursuing and flanking fleeing peers from behind to steal 25 energy.
+- **Selective Predation (+25.0 Fitness):** Predators must actively hunt isolated, stray prey separated from the safety of the herd.
 - **Frontal Defense (+10.0 Fitness):** Head-on clashes deflecting predatory attacks and rewarding strong defenders.
-- **Emergent Social Roles:** Autonomous division into Foragers, Predators, and Defenders.
 
 ---
 
 ## 👁️ Agent Sensory & Action Space
 
-Each agent perceives its surroundings through **21 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
+Each agent perceives its surroundings through **22 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
 
 | Input Index | Sensory Signal | Range | Description |
 | :---: | :--- | :---: | :--- |
@@ -42,8 +42,9 @@ Each agent perceives its surroundings through **21 normalized sensory inputs** (
 | **16 – 17** | `Nearest Agent Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest agent |
 | **18** | `Nearest Ally Critical State` | `{0.0, 1.0}` | Binary flag: `1.0` if closest ally has energy `< 20%` (starving), else `0.0` |
 | **19** | `Nearest Peer Relative Heading` | `[-1.0, 1.0]` | Relative velocity heading dot product: `> 0.0` when peer is fleeing (flank target), `< 0.0` when charging head-on |
-| **20** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
-| **21** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
+| **20** | `Local Herd Density` | `[0.0, 1.0]` | Proximity density of allies within 60px (`0.0` isolated prey, `1.0` densely protected herd) |
+| **21** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
+| **22** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
 
 ### Action Outputs (2 Neurons with `tanh` activation):
 - **Output 1 (`Ax`):** Horizontal acceleration force `[-1.0, 1.0]`
@@ -51,20 +52,20 @@ Each agent perceives its surroundings through **21 normalized sensory inputs** (
 
 ---
 
-## ⚡ Energy, Fitness, Combat & Altruism Dynamics
+## ⚡ Energy, Fitness, Herd Defense & Predation Dynamics
 
-- **Metabolic Cost:** Every frame consumes a baseline energy amount plus movement cost proportional to speed.
-- **Foraging (+15.0 Fitness, +45 Energy):** Consuming a food entity restores vital energy and grants a fitness bonus.
+- **Balanced Sprint Metabolism:** Base loss ($0.05$) + quadratic movement cost $(\text{speed}/\text{max})^2 \times 0.08$. Agents start with **150.0 max energy**, allowing chaotic early networks to explore and learn.
+- **Foraging (+15.0 Fitness, +65 Energy):** Consuming a food entity restores a high amount of vital energy, sustaining herds through long journeys.
 - **Poison Obstacle (-10.0 Fitness, -35 Energy):** Contact with purple square toxins deals severe damage.
 - **Mobile Hazards (-5.0 Fitness, -20 Energy):** Wandering red hazards penalize fitness and health.
-- **Altruism & Cooperation (+50.0 Fitness):**
-  - When an agent with high energy (`> 50%`) touches an ally in a critical state (`< 20%`), it transfers **20 energy** to the starving peer.
-  - The donor receives a massive **+50.0 fitness bonus**, driving the genetic algorithm to favor networks capable of social cooperation.
-- **Predation & Energy Stealing (+25.0 Fitness, +25 Energy):**
-  - Approaching and colliding with an agent from behind/flank (`v_self · v_other > 0`) steals 25 units of energy from the victim.
-  - Grants a **+25.0 fitness reward** to the predator (plus **+15.0 bonus** if the attack eliminates the prey).
+- **Flocking / Herd Defense (-20.0 Predator Penalty, +15.0 Herd Reward, -15 Energy):**
+  - Attacking a target that has $\ge 1$ ally nearby triggers a collective counter-attack, inflicting flat 15 damage and a -20.0 fitness penalty on the predator while keeping the predator alive to hunt again.
+- **Selective Predation (+25.0 Fitness, +25 Energy):**
+  - Stalking and striking **isolated, solitary prey** (0 allies nearby) from behind steals 25 energy and grants +25.0 fitness (+15.0 on kill).
 - **Frontal Defense & Parrying (+10.0 Fitness):**
   - Head-on collisions (`v_self · v_other <= -0.2`) deflect incoming attacks and award **+10.0 fitness** to the defender with higher vitality.
+- **Altruism & Cooperation (+50.0 Fitness):**
+  - High-energy agents (`> 50%`) transfer 20 energy to save critically starving peers (`< 20%`).
 - **Reward Shaping (Distance Closing Gradient):** In each frame, closing distance toward food provides a direct gradient reward `(prev_dist - new_dist) * 0.08`.
 - **Wall Collision Penalty (-0.05 Fitness):** Discourages pinning against boundaries.
 - **Death:** When energy hits `0.0`, the agent perishes and ceases activity for the remainder of the generation.

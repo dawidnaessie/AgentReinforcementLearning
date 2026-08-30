@@ -5,7 +5,7 @@ from src.stats import EvolutionTracker
 
 
 class TestStats(unittest.TestCase):
-    """Testy jednostkowe modułu zbierania statystyk i generowania podsumowania ewolucji (Faza 3)."""
+    """Testy jednostkowe modułu zbierania statystyk i generowania podsumowania ewolucji (Faza 4)."""
 
     def test_tracker_empty_summary(self):
         tracker = EvolutionTracker()
@@ -33,7 +33,8 @@ class TestStats(unittest.TestCase):
             poisons_hit=2,
             allies_saved=4,
             attacks_made=5,
-            defenses_made=2
+            defenses_made=2,
+            herd_defenses=3
         )
         tracker.record_generation(
             generation=2,
@@ -46,7 +47,8 @@ class TestStats(unittest.TestCase):
             poisons_hit=1,
             allies_saved=7,
             attacks_made=8,
-            defenses_made=3
+            defenses_made=3,
+            herd_defenses=6
         )
 
         self.assertEqual(len(tracker.generations_data), 2)
@@ -57,6 +59,7 @@ class TestStats(unittest.TestCase):
         self.assertEqual(tracker.total_allies_saved, 11)
         self.assertEqual(tracker.total_attacks_made, 13)
         self.assertEqual(tracker.total_defenses_made, 5)
+        self.assertEqual(tracker.total_herd_defenses, 9)
 
         captured_output = io.StringIO()
         sys.stdout = captured_output
@@ -72,6 +75,7 @@ class TestStats(unittest.TestCase):
         self.assertIn("Lacznie uratowani sojusznicy (altruizm): 11 aktow", output)
         self.assertIn("Lacznie udane ataki (drapieznictwo):     13 atakow", output)
         self.assertIn("Lacznie obrony czolowe:             5 starc", output)
+        self.assertIn("Lacznie odparte ataki (obrona stadna):   9 obron", output)
         self.assertIn("Rekordowy wynik (Gen 2):             250.00 pkt", output)
         self.assertIn("Wzrost sredniej sprawnosci:         +140.0%", output)
 

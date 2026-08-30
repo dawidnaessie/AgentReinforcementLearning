@@ -6,7 +6,7 @@ from src.entities import Food, Hazard, Poison
 
 
 class Agent:
-    """Klasa reprezentująca agenta sterowanego przez sieć neuronową NEAT (Faza 3: Drapieżnictwo i Role)."""
+    """Klasa reprezentująca agenta sterowanego przez sieć neuronową NEAT (Faza 4: Obrona Stadna i Sprint)."""
 
     def __init__(
         self,
@@ -32,16 +32,17 @@ class Agent:
         self.radius = 6.0
 
         # Witalność i metabolizm agenta (System Energii)
-        self.max_energy = 100.0
-        self.energy = 100.0
+        self.max_energy = 150.0
+        self.energy = 150.0
         self.is_alive = True
 
-        # Liczniki zachowań i specjalizacji
+        # Liczniki zachowań i specjalizacji ekologicznych
         self.foods_eaten = 0
         self.poisons_hit = 0
         self.allies_saved = 0
         self.attacks_made = 0
         self.defenses_made = 0
+        self.herd_defenses = 0
 
         # Inicjalizacja fitnessu genomu
         self.genome.fitness = 0.0
@@ -56,7 +57,7 @@ class Agent:
         height: int
     ) -> Tuple[float, ...]:
         """
-        Oblicza 21 znormalizowanych wejść sensorycznych dla Fazy 3:
+        Oblicza 22 znormalizowane wejścia sensoryczne dla Fazy 4:
         Wszystkie wejścia są skalowane do przedziałów [0.0, 1.0] lub [-1.0, 1.0].
         """
         max_dist = math.hypot(width, height)
@@ -126,15 +127,22 @@ class Agent:
         # 15-17. Najbliższy inny żywy agent (dystans [0..1] oraz kierunek dx, dy [-1..1])
         # 18. Stan krytyczny najbliższego sojusznika (1.0 jeśli ma < 20% energii, 0.0 wpp)
         # 19. Relatywny zwrot prędkości rywala [-1..1]
+        # 20. Gęstość stada wokół agenta [0..1]
         nearest_agent_dist = max_dist
         agent_dir = pygame.math.Vector2(0, 0)
         nearest_ally_critical = 0.0
         nearest_agent_heading = 0.0
+        allies_in_herd = 0
 
         for other in all_agents:
             if other is not self and other.is_alive:
                 to_other = other.pos - self.pos
                 dist = to_other.length()
+
+                # Zliczanie gęstości stada w promieniu 60px
+                if dist <= 60.0:
+                    allies_in_herd += 1
+
                 if dist < nearest_agent_dist:
                     nearest_agent_dist = dist
                     if dist > 0:
@@ -152,13 +160,14 @@ class Agent:
         norm_agent_dy = agent_dir.y
         norm_agent_critical = nearest_ally_critical
         norm_agent_rel_heading = nearest_agent_heading
+        norm_herd_density = min(1.0, allies_in_herd / 4.0)
 
-        # 20. Dystans do najbliższej ściany (0.0 przy samej ścianie, 1.0 w centrum)
+        # 21. Dystans do najbliższej ściany (0.0 przy samej ścianie, 1.0 w centrum)
         dist_to_wall = min(self.pos.x, width - self.pos.x, self.pos.y, height - self.pos.y)
         max_possible_wall_dist = min(width, height) / 2.0
         norm_wall_dist = max(0.0, min(dist_to_wall / max_possible_wall_dist, 1.0))
 
-        # 21. Poziom energii własnej [0.0, 1.0]
+        # 22. Poziom energii własnej [0.0, 1.0]
         norm_energy = max(0.0, min(self.energy / self.max_energy, 1.0))
 
         return (
@@ -170,6 +179,7 @@ class Agent:
             norm_agent_dist, norm_agent_dx, norm_agent_dy,
             norm_agent_critical,
             norm_agent_rel_heading,
+            norm_herd_density,
             norm_wall_dist,
             norm_energy
         )
@@ -232,8 +242,9 @@ class Agent:
         if hit_wall:
             self.genome.fitness -= 0.05
 
-        # 3. Metabolizm: stały koszt życia + koszt ruchu
-        energy_cost = 0.10 + (speed / self.max_speed) * 0.06
+        # 3. Zbalansowany Nieliniowy Metabolizm: stały koszt życia + łagodny koszt sprintu
+        speed_ratio = speed / self.max_speed if self.max_speed > 0 else 0.0
+        energy_cost = 0.05 + (speed_ratio ** 2) * 0.08
         self.energy -= energy_cost
 
         # Premia za przetrwanie kroku
@@ -258,7 +269,7 @@ class Agent:
         for food in foods:
             if (self.pos - food.pos).length_squared() <= (self.radius + food.radius) ** 2:
                 food.respawn(width, height)
-                self.energy = min(self.max_energy, self.energy + 45.0)
+                self.energy = min(self.max_energy, self.energy + 65.0)
                 self.genome.fitness += 15.0
                 self.foods_eaten += 1
 
@@ -282,7 +293,7 @@ class Agent:
                     self.is_alive = False
                     return
 
-        # 8. Interakcje Między Agentami: Altruizm, Drapieżnictwo (Atak od tyłu) i Obrona Czołowa
+        # 8. Interakcje Między Agentami: Altruizm, Obrona Stadna, Drapieżnictwo i Zderzenia Czołowe
         for other in all_agents:
             if other is not self and other.is_alive:
                 dist_sq = (self.pos - other.pos).length_squared()
@@ -316,20 +327,45 @@ class Agent:
                             self.is_alive = False
                             return
                     elif dot_prod > 0.0 and v_self_len >= 0.5:
-                        # Atak od tyłu / flanki (Drapieżnictwo)
-                        stolen_energy = min(25.0, other.energy)
-                        self.energy = min(self.max_energy, self.energy + stolen_energy)
-                        other.energy = max(0.0, other.energy - 25.0)
-                        self.genome.fitness += 25.0
-                        other.genome.fitness -= 10.0
-                        self.attacks_made += 1
-                        if other.energy <= 0.0:
-                            other.is_alive = False
-                            self.genome.fitness += 15.0  # Dodatkowy bonus za eliminację ofiary
-                        break
+                        # Próba ataku od tyłu / flanki
+                        # Sprawdzamy, czy ofiara ma w pobliżu (w promieniu 45px) sojuszników (Obrona Stadna)
+                        herd_radius_sq = 45.0 ** 2
+                        allies_in_herd = [
+                            a for a in all_agents
+                            if a is not self and a is not other and a.is_alive and
+                            (a.pos - other.pos).length_squared() <= herd_radius_sq
+                        ]
+
+                        if len(allies_in_herd) >= 1:
+                            # OBRONA STADNA AKTYWOWANA!
+                            # Stado odpiera atak: stała, zbalansowana utrata energii napastnika (-15.0)
+                            predator_damage = 15.0
+                            self.energy = max(0.0, self.energy - predator_damage)
+                            self.genome.fitness -= 20.0
+                            other.genome.fitness += 15.0
+                            other.herd_defenses += 1
+                            for ally in allies_in_herd:
+                                ally.genome.fitness += 15.0
+
+                            if self.energy <= 0.0:
+                                self.is_alive = False
+                                return
+                            break
+                        else:
+                            # SAMOTNA OFIARA: Udany atak drapieżnika
+                            stolen_energy = min(25.0, other.energy)
+                            self.energy = min(self.max_energy, self.energy + stolen_energy)
+                            other.energy = max(0.0, other.energy - 25.0)
+                            self.genome.fitness += 25.0
+                            other.genome.fitness -= 10.0
+                            self.attacks_made += 1
+                            if other.energy <= 0.0:
+                                other.is_alive = False
+                                self.genome.fitness += 15.0  # Bonus za eliminację ofiary
+                            break
 
     def draw(self, screen: pygame.Surface):
-        """Rysuje agenta z kolorem i obwódką zależną od witalności i roli (drapieżnik/zbieracz)."""
+        """Rysuje agenta z kolorem i obwódką zależną od witalności i roli."""
         if not self.is_alive:
             return
 

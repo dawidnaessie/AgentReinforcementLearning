@@ -21,7 +21,7 @@ class DummyNetwork:
 
 
 class TestAgent(unittest.TestCase):
-    """Testy jednostkowe klasy Agent (Faza 2: fizyka, zmysły 20D, trucizna, altruizm)."""
+    """Testy jednostkowe klasy Agent (Faza 3: fizyka, 21 wejść, metabolizm, drapieżnictwo, obrona, altruizm)."""
 
     def setUp(self):
         self.net = DummyNetwork()
@@ -33,6 +33,10 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.agent.energy, 100.0)
         self.assertEqual(self.agent.genome.fitness, 0.0)
         self.assertEqual(self.agent.foods_eaten, 0)
+        self.assertEqual(self.agent.poisons_hit, 0)
+        self.assertEqual(self.agent.allies_saved, 0)
+        self.assertEqual(self.agent.attacks_made, 0)
+        self.assertEqual(self.agent.defenses_made, 0)
         self.assertGreaterEqual(self.agent.pos.x, 50)
         self.assertLessEqual(self.agent.pos.x, 750)
 
@@ -41,12 +45,13 @@ class TestAgent(unittest.TestCase):
         poisons = [Poison(150, 150)]
         hazards = [Hazard(200, 200)]
         other_agent = Agent(self.net, DummyGenome(), width=800, height=600)
+        other_agent.vel = pygame.math.Vector2(2.0, 0.0)
         agents = [self.agent, other_agent]
 
         inputs = self.agent._get_sensory_inputs(foods, poisons, hazards, agents, 800, 600)
 
-        # Weryfikacja dokładnej liczby 20 wejść
-        self.assertEqual(len(inputs), 20)
+        # Weryfikacja dokładnej liczby 21 wejść w Fazie 3
+        self.assertEqual(len(inputs), 21)
 
         # Weryfikacja zakresów wartości
         for idx, val in enumerate(inputs):
@@ -58,15 +63,15 @@ class TestAgent(unittest.TestCase):
         poisons = []
         hazards = []
 
-        # Tworzymy sojusznika w stanie krytycznym (energia < 20%)
+        # Sojusznik w stanie krytycznym (energia < 20%)
         ally_critical = Agent(self.net, DummyGenome(), width=800, height=600, start_pos=(self.agent.pos.x + 20, self.agent.pos.y))
         ally_critical.energy = 15.0  # < 20.0
 
         inputs_crit = self.agent._get_sensory_inputs(foods, poisons, hazards, [self.agent, ally_critical], 800, 600)
-        # Indeks 17 to norm_agent_critical (18. wejście)
+        # Indeks 17 to norm_agent_critical
         self.assertEqual(inputs_crit[17], 1.0)
 
-        # Sojusznik w stanie zdrowym (energia >= 20%)
+        # Sojusznik w stanie zdrowym
         ally_healthy = Agent(self.net, DummyGenome(), width=800, height=600, start_pos=(self.agent.pos.x + 20, self.agent.pos.y))
         ally_healthy.energy = 60.0
         inputs_healthy = self.agent._get_sensory_inputs(foods, poisons, hazards, [self.agent, ally_healthy], 800, 600)
@@ -76,7 +81,7 @@ class TestAgent(unittest.TestCase):
         initial_pos_x = self.agent.pos.x
         initial_energy = self.agent.energy
 
-        foods = [Food(0, 0)]  # Daleko od agenta
+        foods = [Food(0, 0)]
         poisons = []
         hazards = []
         agents = [self.agent]
@@ -95,7 +100,6 @@ class TestAgent(unittest.TestCase):
         initial_fitness = self.agent.genome.fitness
         self.agent.think_and_act(foods, [], [], [self.agent], 800, 600)
 
-        # Zbliżanie się do jedzenia powinno nagrodzić fitness (reward shaping > 0)
         self.assertGreater(self.agent.genome.fitness, initial_fitness)
 
     def test_food_consumption_reward(self):
@@ -110,7 +114,6 @@ class TestAgent(unittest.TestCase):
 
         self.agent.think_and_act(foods, poisons, hazards, agents, 800, 600)
 
-        # Agent powinien zjeść jedzenie, zwiększyć energię i otrzymać punkty fitness
         self.assertEqual(self.agent.foods_eaten, 1)
         self.assertGreater(self.agent.energy, 50.0)
         self.assertGreaterEqual(self.agent.genome.fitness, initial_fitness + 14.0)
@@ -127,7 +130,6 @@ class TestAgent(unittest.TestCase):
 
         self.agent.think_and_act(foods, poisons, hazards, agents, 800, 600)
 
-        # Agent powinien stracić energię (np. -35) oraz otrzymać karę fitness (-10)
         self.assertLessEqual(self.agent.energy, initial_energy - 30.0)
         self.assertLessEqual(self.agent.genome.fitness, initial_fitness - 8.0)
         self.assertEqual(self.agent.poisons_hit, 1)
@@ -144,7 +146,6 @@ class TestAgent(unittest.TestCase):
 
         self.agent.think_and_act(foods, poisons, hazards, agents, 800, 600)
 
-        # Agent powinien stracić punkty fitness i energię
         self.assertLess(self.agent.energy, initial_energy - 15.0)
         self.assertLess(self.agent.genome.fitness, initial_fitness)
 
@@ -153,21 +154,58 @@ class TestAgent(unittest.TestCase):
         agent_a = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=800, height=600, start_pos=(200, 200))
         agent_a.energy = 80.0
 
-        # Biorca B w stanie krytycznym (< 20%) w tej samej lokalizacji
+        # Biorca B w stanie krytycznym (< 20%)
         agent_b = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=800, height=600, start_pos=(200, 200))
         agent_b.energy = 10.0
 
         initial_fitness_a = agent_a.genome.fitness
 
-        # Wykonanie akcji przez dawcę A
         agent_a.think_and_act([], [], [], [agent_a, agent_b], 800, 600)
 
-        # Sprawdzenie transferu energii (A traci 20, B zyskuje 20)
         self.assertAlmostEqual(agent_a.energy, 59.9, places=2)
         self.assertAlmostEqual(agent_b.energy, 30.0, places=2)
-        # Dawca A otrzymuje potężną nagrodę altruizmu +50.0 i inkrementuje licznik uratowanych
         self.assertGreaterEqual(agent_a.genome.fitness, initial_fitness_a + 49.0)
         self.assertEqual(agent_a.allies_saved, 1)
+
+    def test_predation_attack_from_behind(self):
+        # Drapieżnik A dogania ofiarę B od tyłu (oba poruszają się w prawo)
+        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=800, height=600, start_pos=(195, 200))
+        predator.vel = pygame.math.Vector2(3.0, 0.0)
+        predator.energy = 50.0
+
+        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=800, height=600, start_pos=(200, 200))
+        prey.vel = pygame.math.Vector2(1.0, 0.0)
+        prey.energy = 50.0
+
+        initial_pred_fit = predator.genome.fitness
+        initial_prey_fit = prey.genome.fitness
+
+        predator.think_and_act([], [], [], [predator, prey], 800, 600)
+
+        # Drapieżnik kradnie energię (+25) i dostaje bonus fitness (+25), ofiara traci energię i fitness
+        self.assertGreaterEqual(predator.energy, 70.0)
+        self.assertLessEqual(prey.energy, 26.0)
+        self.assertGreaterEqual(predator.genome.fitness, initial_pred_fit + 24.0)
+        self.assertLess(prey.genome.fitness, initial_prey_fit)
+        self.assertEqual(predator.attacks_made, 1)
+
+    def test_frontal_defense_clash(self):
+        # Dwa agenci zderzają się czołowo (prędkości w przeciwnych kierunkach)
+        agent_a = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=800, height=600, start_pos=(196, 200))
+        agent_a.vel = pygame.math.Vector2(2.0, 0.0)
+        agent_a.energy = 80.0
+
+        agent_b = Agent(DummyNetwork(output_x=-1.0, output_y=0.0), DummyGenome(), width=800, height=600, start_pos=(200, 200))
+        agent_b.vel = pygame.math.Vector2(-2.0, 0.0)
+        agent_b.energy = 40.0
+
+        initial_fit_a = agent_a.genome.fitness
+
+        agent_a.think_and_act([], [], [], [agent_a, agent_b], 800, 600)
+
+        # Agent A (silniejszy obrońca) otrzymuje nagrodę za obronę czołową (+10 pkt)
+        self.assertGreaterEqual(agent_a.genome.fitness, initial_fit_a + 9.0)
+        self.assertEqual(agent_a.defenses_made, 1)
 
     def test_agent_death_on_zero_energy(self):
         self.agent.energy = 0.05

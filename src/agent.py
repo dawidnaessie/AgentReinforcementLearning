@@ -6,7 +6,7 @@ from src.entities import Food, Hazard, Poison
 
 
 class Agent:
-    """Klasa reprezentująca agenta sterowanego przez sieć neuronową NEAT (Faza 2)."""
+    """Klasa reprezentująca agenta sterowanego przez sieć neuronową NEAT (Faza 3: Drapieżnictwo i Role)."""
 
     def __init__(
         self,
@@ -35,9 +35,13 @@ class Agent:
         self.max_energy = 100.0
         self.energy = 100.0
         self.is_alive = True
+
+        # Liczniki zachowań i specjalizacji
         self.foods_eaten = 0
         self.poisons_hit = 0
         self.allies_saved = 0
+        self.attacks_made = 0
+        self.defenses_made = 0
 
         # Inicjalizacja fitnessu genomu
         self.genome.fitness = 0.0
@@ -52,7 +56,7 @@ class Agent:
         height: int
     ) -> Tuple[float, ...]:
         """
-        Oblicza 20 znormalizowanych wejść sensorycznych dla Fazy 2:
+        Oblicza 21 znormalizowanych wejść sensorycznych dla Fazy 3:
         Wszystkie wejścia są skalowane do przedziałów [0.0, 1.0] lub [-1.0, 1.0].
         """
         max_dist = math.hypot(width, height)
@@ -121,9 +125,11 @@ class Agent:
 
         # 15-17. Najbliższy inny żywy agent (dystans [0..1] oraz kierunek dx, dy [-1..1])
         # 18. Stan krytyczny najbliższego sojusznika (1.0 jeśli ma < 20% energii, 0.0 wpp)
+        # 19. Relatywny zwrot prędkości rywala [-1..1]
         nearest_agent_dist = max_dist
         agent_dir = pygame.math.Vector2(0, 0)
         nearest_ally_critical = 0.0
+        nearest_agent_heading = 0.0
 
         for other in all_agents:
             if other is not self and other.is_alive:
@@ -135,17 +141,24 @@ class Agent:
                         agent_dir = to_other / dist
                     nearest_ally_critical = 1.0 if other.energy < 20.0 else 0.0
 
+                    if self.vel.length_squared() > 0.01 and other.vel.length_squared() > 0.01:
+                        heading_dot = self.vel.normalize().dot(other.vel.normalize())
+                        nearest_agent_heading = max(-1.0, min(1.0, heading_dot))
+                    else:
+                        nearest_agent_heading = 0.0
+
         norm_agent_dist = min(nearest_agent_dist / max_dist, 1.0)
         norm_agent_dx = agent_dir.x
         norm_agent_dy = agent_dir.y
         norm_agent_critical = nearest_ally_critical
+        norm_agent_rel_heading = nearest_agent_heading
 
-        # 19. Dystans do najbliższej ściany (0.0 przy samej ścianie, 1.0 w centrum)
+        # 20. Dystans do najbliższej ściany (0.0 przy samej ścianie, 1.0 w centrum)
         dist_to_wall = min(self.pos.x, width - self.pos.x, self.pos.y, height - self.pos.y)
         max_possible_wall_dist = min(width, height) / 2.0
         norm_wall_dist = max(0.0, min(dist_to_wall / max_possible_wall_dist, 1.0))
 
-        # 20. Poziom energii własnej [0.0, 1.0]
+        # 21. Poziom energii własnej [0.0, 1.0]
         norm_energy = max(0.0, min(self.energy / self.max_energy, 1.0))
 
         return (
@@ -156,6 +169,7 @@ class Agent:
             norm_hazard_dist, norm_hazard_dx, norm_hazard_dy,
             norm_agent_dist, norm_agent_dx, norm_agent_dy,
             norm_agent_critical,
+            norm_agent_rel_heading,
             norm_wall_dist,
             norm_energy
         )
@@ -169,7 +183,7 @@ class Agent:
         width: int,
         height: int
     ):
-        """Pobiera wejścia, aktywuje sieć neuronową, obsługuje metabolizm, kolizje i altruizm."""
+        """Pobiera wejścia, aktywuje sieć neuronową, obsługuje metabolizm, kolizje, walkę i altruizm."""
         if not self.is_alive:
             return
 
@@ -268,33 +282,70 @@ class Agent:
                     self.is_alive = False
                     return
 
-        # 8. Mechanika Altruizmu: transfer energii od agenta silnego (>50%) do agenta w stanie krytycznym (<20%)
-        if self.energy > 50.0:
-            for other in all_agents:
-                if other is not self and other.is_alive and other.energy < 20.0:
-                    if (self.pos - other.pos).length_squared() <= (self.radius + other.radius) ** 2:
+        # 8. Interakcje Między Agentami: Altruizm, Drapieżnictwo (Atak od tyłu) i Obrona Czołowa
+        for other in all_agents:
+            if other is not self and other.is_alive:
+                dist_sq = (self.pos - other.pos).length_squared()
+                if dist_sq <= (self.radius + other.radius) ** 2:
+                    # A. Altruizm: Jeśli dawca ma > 50% energii, a biorca < 20%
+                    if self.energy > 50.0 and other.energy < 20.0:
                         transfer_amount = 20.0
                         self.energy -= transfer_amount
                         other.energy = min(other.max_energy, other.energy + transfer_amount)
-                        # Potężna premia za altruizm i pomoc sojusznikowi
                         self.genome.fitness += 50.0
                         self.allies_saved += 1
                         break
 
+                    # B. Walka i Drapieżnictwo
+                    v_self_len = self.vel.length()
+                    v_other_len = other.vel.length()
+                    if v_self_len > 0.1 and v_other_len > 0.1:
+                        dot_prod = (self.vel / v_self_len).dot(other.vel / v_other_len)
+                    else:
+                        dot_prod = 0.0
+
+                    if dot_prod <= -0.2:
+                        # Zderzenie Czołowe (Obrona)
+                        self.vel = -self.vel * 0.5
+                        other.vel = -other.vel * 0.5
+                        if self.energy >= other.energy:
+                            self.genome.fitness += 10.0
+                            self.defenses_made += 1
+                        self.energy = max(0.0, self.energy - 3.0)
+                        if self.energy <= 0.0:
+                            self.is_alive = False
+                            return
+                    elif dot_prod > 0.0 and v_self_len >= 0.5:
+                        # Atak od tyłu / flanki (Drapieżnictwo)
+                        stolen_energy = min(25.0, other.energy)
+                        self.energy = min(self.max_energy, self.energy + stolen_energy)
+                        other.energy = max(0.0, other.energy - 25.0)
+                        self.genome.fitness += 25.0
+                        other.genome.fitness -= 10.0
+                        self.attacks_made += 1
+                        if other.energy <= 0.0:
+                            other.is_alive = False
+                            self.genome.fitness += 15.0  # Dodatkowy bonus za eliminację ofiary
+                        break
+
     def draw(self, screen: pygame.Surface):
-        """Rysuje agenta z kolorem uzależnionym od poziomu energii (wizualizacja stanu witalnego)."""
+        """Rysuje agenta z kolorem i obwódką zależną od witalności i roli (drapieżnik/zbieracz)."""
         if not self.is_alive:
             return
 
         center = (int(self.pos.x), int(self.pos.y))
 
-        # Kolorystyka: niebieski przy pełnym zdrowiu, pomarańczowo-czerwony przy skrajnym wyczerpaniu
+        # Kolorystyka: niebieski przy pełnym zdrowiu, pomarańczowy przy skrajnym wyczerpaniu
         if self.energy < 20.0:
             agent_color = (230, 126, 34)  # Stan krytyczny - pomarańcz
         else:
             agent_color = (52, 152, 219)  # Zdrowy - niebieski
 
         pygame.draw.circle(screen, agent_color, center, int(self.radius))
+
+        # Karmazynowa obwódka dla drapieżników z udanymi atakami
+        if self.attacks_made > 0:
+            pygame.draw.circle(screen, (231, 76, 60), center, int(self.radius + 2), 1)
 
         # Rysowanie wskaźnika kierunku prędkości
         if self.vel.length_squared() > 0.01:

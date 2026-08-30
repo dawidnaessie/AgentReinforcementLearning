@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-2.0.0-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-21%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-23%20passed-brightgreen.svg)
 
 ---
 
@@ -13,13 +13,19 @@
 
 **AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a shared 2D continuous environment.
 
-In **Phase 2 (Survival and Cooperation)**, the simulation introduces metabolic energy constraints, environmental toxins (`Poison`), and civilizational altruism mechanics (inter-agent energy sharing to save starving peers).
+In **Phase 3 (Predation, Combat and Civilization Roles)**, the simulation introduces:
+- **Metabolic Constraints:** Continuous energy loss requiring regular nourishment.
+- **Environmental Toxins (`Poison`):** Purple hazard zones penalizing health and fitness.
+- **Altruistic Cooperation (+50.0 Fitness):** High-energy agents transferring vitality to critically starving peers.
+- **Predation & Energy Theft (+25.0 Fitness):** Pursuing and flanking fleeing peers from behind to steal 25 energy.
+- **Frontal Defense (+10.0 Fitness):** Head-on clashes deflecting predatory attacks and rewarding strong defenders.
+- **Emergent Social Roles:** Autonomous division into Foragers, Predators, and Defenders.
 
 ---
 
 ## 👁️ Agent Sensory & Action Space
 
-Each agent perceives its surroundings through **20 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
+Each agent perceives its surroundings through **21 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
 
 | Input Index | Sensory Signal | Range | Description |
 | :---: | :--- | :---: | :--- |
@@ -35,8 +41,9 @@ Each agent perceives its surroundings through **20 normalized sensory inputs** (
 | **15** | `Nearest Agent Distance` | `[0.0, 1.0]` | Normalized distance to the closest alive competitor/peer |
 | **16 – 17** | `Nearest Agent Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest agent |
 | **18** | `Nearest Ally Critical State` | `{0.0, 1.0}` | Binary flag: `1.0` if closest ally has energy `< 20%` (starving), else `0.0` |
-| **19** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
-| **20** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
+| **19** | `Nearest Peer Relative Heading` | `[-1.0, 1.0]` | Relative velocity heading dot product: `> 0.0` when peer is fleeing (flank target), `< 0.0` when charging head-on |
+| **20** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
+| **21** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
 
 ### Action Outputs (2 Neurons with `tanh` activation):
 - **Output 1 (`Ax`):** Horizontal acceleration force `[-1.0, 1.0]`
@@ -44,7 +51,7 @@ Each agent perceives its surroundings through **20 normalized sensory inputs** (
 
 ---
 
-## ⚡ Energy, Fitness, Poison & Altruism Dynamics
+## ⚡ Energy, Fitness, Combat & Altruism Dynamics
 
 - **Metabolic Cost:** Every frame consumes a baseline energy amount plus movement cost proportional to speed.
 - **Foraging (+15.0 Fitness, +45 Energy):** Consuming a food entity restores vital energy and grants a fitness bonus.
@@ -53,6 +60,11 @@ Each agent perceives its surroundings through **20 normalized sensory inputs** (
 - **Altruism & Cooperation (+50.0 Fitness):**
   - When an agent with high energy (`> 50%`) touches an ally in a critical state (`< 20%`), it transfers **20 energy** to the starving peer.
   - The donor receives a massive **+50.0 fitness bonus**, driving the genetic algorithm to favor networks capable of social cooperation.
+- **Predation & Energy Stealing (+25.0 Fitness, +25 Energy):**
+  - Approaching and colliding with an agent from behind/flank (`v_self · v_other > 0`) steals 25 units of energy from the victim.
+  - Grants a **+25.0 fitness reward** to the predator (plus **+15.0 bonus** if the attack eliminates the prey).
+- **Frontal Defense & Parrying (+10.0 Fitness):**
+  - Head-on collisions (`v_self · v_other <= -0.2`) deflect incoming attacks and award **+10.0 fitness** to the defender with higher vitality.
 - **Reward Shaping (Distance Closing Gradient):** In each frame, closing distance toward food provides a direct gradient reward `(prev_dist - new_dist) * 0.08`.
 - **Wall Collision Penalty (-0.05 Fitness):** Discourages pinning against boundaries.
 - **Death:** When energy hits `0.0`, the agent perishes and ceases activity for the remainder of the generation.

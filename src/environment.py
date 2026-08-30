@@ -143,10 +143,12 @@ class Environment:
             total_foods = sum(a.foods_eaten for a in agents)
             total_poisons = sum(a.poisons_hit for a in agents)
             total_saved = sum(a.allies_saved for a in agents)
+            total_attacks = sum(a.attacks_made for a in agents)
+            total_defenses = sum(a.defenses_made for a in agents)
 
             hud_text_1 = f"Gen: {self.generation} | Zywi: {alive_count}/{len(agents)} | Klatka: {frames_lived}/{max_frames}"
             hud_text_2 = f"Max Fitness: {best_current_fitness:.1f} | FPS: {fps_val} | [SPACJA]: {'TURBO' if self.fast_mode else 'NORMAL'}"
-            hud_text_3 = f"Jablka: {total_foods} | Trucizny: {total_poisons} | Uratowani: {total_saved}"
+            hud_text_3 = f"Jablka: {total_foods} | Trucizny: {total_poisons} | Uratowani: {total_saved} | Ataki: {total_attacks} | Obrony: {total_defenses}"
 
             surface_1 = self.font.render(hud_text_1, True, (240, 240, 240))
             surface_2 = self.font.render(hud_text_2, True, (180, 200, 220))
@@ -168,5 +170,7 @@ class Environment:
         return {
             "foods_eaten": sum(a.foods_eaten for a in agents),
             "poisons_hit": sum(a.poisons_hit for a in agents),
-            "allies_saved": sum(a.allies_saved for a in agents)
+            "allies_saved": sum(a.allies_saved for a in agents),
+            "attacks_made": sum(a.attacks_made for a in agents),
+            "defenses_made": sum(a.defenses_made for a in agents)
         }

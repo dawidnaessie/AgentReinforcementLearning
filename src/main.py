@@ -53,6 +53,8 @@ class SimulationRunner:
         foods_eaten = metrics.get('foods_eaten', 0)
         poisons_hit = metrics.get('poisons_hit', 0)
         allies_saved = metrics.get('allies_saved', 0)
+        attacks_made = metrics.get('attacks_made', 0)
+        defenses_made = metrics.get('defenses_made', 0)
 
         self.tracker.record_generation(
             generation=self.env.generation,
@@ -63,11 +65,13 @@ class SimulationRunner:
             duration_sec=duration,
             foods_eaten=foods_eaten,
             poisons_hit=poisons_hit,
-            allies_saved=allies_saved
+            allies_saved=allies_saved,
+            attacks_made=attacks_made,
+            defenses_made=defenses_made
         )
 
-        # Czytelny, zwięzły log jednolinijkowy w terminalu z metrykami behawioralnymi
-        print(f" -> [Generacja {self.env.generation:3d}] Max: {best_fit:6.1f} | Sr: {avg_fit:6.1f} (±{stdev:4.1f}) | Jablka: {foods_eaten:3d} | Trucizny: {poisons_hit:2d} | Uratowani: {allies_saved:2d} | Czas: {duration:4.2f}s")
+        # Czytelny, zwięzły log jednolinijkowy w terminalu z metrykami behawioralnymi i drapieżnictwem
+        print(f" -> [Generacja {self.env.generation:3d}] Max: {best_fit:6.1f} | Sr: {avg_fit:6.1f} | Jablka: {foods_eaten:3d} | Trucizny: {poisons_hit:2d} | Uratowani: {allies_saved:2d} | Ataki: {attacks_made:2d} | Obrony: {defenses_made:2d} | Czas: {duration:4.2f}s")
 
 
 def run(config_path: str):

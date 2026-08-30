@@ -24,8 +24,8 @@ class TestNeatConfig(unittest.TestCase):
             self.config_path
         )
 
-        # Weryfikacja kluczowych założeń projektowych (Faza 2: 20 wejść sensorycznych)
-        self.assertEqual(config.genome_config.num_inputs, 20, "Liczba wejść musi wynosić 20.")
+        # Weryfikacja kluczowych założeń projektowych (Faza 3: 21 wejść sensorycznych)
+        self.assertEqual(config.genome_config.num_inputs, 21, "Liczba wejść musi wynosić 21.")
         self.assertEqual(config.genome_config.num_outputs, 2, "Liczba wyjść musi wynosić 2.")
         self.assertEqual(config.pop_size, 50, "Wielkość populacji musi wynosić 50.")
         self.assertEqual(config.reproduction_config.elitism, 4, "Elitaryzm musi wynosić 4 (Top 4 bez zmian).")

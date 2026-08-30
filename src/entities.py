@@ -3,7 +3,7 @@ import pygame
 
 
 class Food:
-    """Reprezentuje zasób (pożywienie) w świecie symulacji."""
+    """Reprezentuje zasób (pożywienie / jabłko) w świecie symulacji."""
 
     def __init__(self, x: float, y: float, radius: float = 4.0):
         self.pos = pygame.math.Vector2(x, y)
@@ -20,8 +20,29 @@ class Food:
         pygame.draw.circle(screen, self.color, (int(self.pos.x), int(self.pos.y)), int(self.radius))
 
 
+class Poison:
+    """Reprezentuje truciznę (przeszkodę środowiskową) odbierającą energię."""
+
+    def __init__(self, x: float, y: float, size: float = 8.0):
+        self.pos = pygame.math.Vector2(x, y)
+        self.size = size
+        self.radius = size / 2.0  # promień efektywny do obliczeń kolizji
+        self.color = (155, 89, 182)  # Fioletowy kolor
+
+    def respawn(self, width: int, height: int, margin: int = 30):
+        """Przemieszcza truciznę w nowe losowe miejsce."""
+        self.pos.x = random.randint(margin, width - margin)
+        self.pos.y = random.randint(margin, height - margin)
+
+    def draw(self, screen: pygame.Surface):
+        """Rysuje truciznę jako fioletowy kwadrat."""
+        top_left_x = int(self.pos.x - self.radius)
+        top_left_y = int(self.pos.y - self.radius)
+        pygame.draw.rect(screen, self.color, (top_left_x, top_left_y, int(self.size), int(self.size)))
+
+
 class Hazard:
-    """Reprezentuje zagrożenie / strefę niebezpieczną w świecie symulacji."""
+    """Reprezentuje dynamiczne zagrożenie / drapieżnika w świecie symulacji."""
 
     def __init__(self, x: float, y: float, radius: float = 12.0):
         self.pos = pygame.math.Vector2(x, y)

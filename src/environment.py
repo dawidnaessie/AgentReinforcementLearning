@@ -3,7 +3,7 @@ import random
 import pygame
 from typing import List
 from src.agent import Agent
-from src.entities import Food, Hazard
+from src.entities import Food, Hazard, Poison
 
 
 class SimulationExit(Exception):
@@ -19,6 +19,7 @@ class Environment:
         width: int = 800,
         height: int = 600,
         food_count: int = 40,
+        poison_count: int = 15,
         hazard_count: int = 5
     ):
         pygame.init()
@@ -38,10 +39,16 @@ class Environment:
 
         # Stała pula encji w świecie (brak alokacji pamięci w każdej klatce)
         self.food_count = food_count
+        self.poison_count = poison_count
         self.hazard_count = hazard_count
+
         self.foods: List[Food] = [
             Food(random.randint(30, self.width - 30), random.randint(30, self.height - 30))
             for _ in range(self.food_count)
+        ]
+        self.poisons: List[Poison] = [
+            Poison(random.randint(30, self.width - 30), random.randint(30, self.height - 30))
+            for _ in range(self.poison_count)
         ]
         self.hazards: List[Hazard] = [
             Hazard(random.randint(40, self.width - 40), random.randint(40, self.height - 40))
@@ -49,9 +56,11 @@ class Environment:
         ]
 
     def _reset_world_entities(self):
-        """Resetuje pozycje pożywienia i zagrożeń na start nowej generacji."""
+        """Resetuje pozycje pożywienia, trucizn i zagrożeń na start nowej generacji."""
         for food in self.foods:
             food.respawn(self.width, self.height)
+        for poison in self.poisons:
+            poison.respawn(self.width, self.height)
         for hazard in self.hazards:
             hazard.pos = pygame.math.Vector2(
                 random.randint(40, self.width - 40),
@@ -100,7 +109,7 @@ class Environment:
 
             for agent in agents:
                 if agent.is_alive:
-                    agent.think_and_act(self.foods, self.hazards, agents, self.width, self.height)
+                    agent.think_and_act(self.foods, self.poisons, self.hazards, agents, self.width, self.height)
                     if agent.is_alive:
                         alive_count += 1
                 if agent.genome.fitness > best_current_fitness:
@@ -113,11 +122,15 @@ class Environment:
             # 4. Renderowanie świata
             self.screen.fill((25, 28, 36))  # Ciemne, estetyczne tło
 
-            # Rysowanie pożywienia
+            # Rysowanie pożywienia (zielone okręgi)
             for food in self.foods:
                 food.draw(self.screen)
 
-            # Rysowanie zagrożeń
+            # Rysowanie trucizny (fioletowe kwadraty)
+            for poison in self.poisons:
+                poison.draw(self.screen)
+
+            # Rysowanie zagrożeń ruchomych (czerwone okręgi)
             for hazard in self.hazards:
                 hazard.draw(self.screen)
 
@@ -127,13 +140,20 @@ class Environment:
 
             # 5. Renderowanie HUD (informacje o generacji, populacji i wydajności)
             fps_val = int(self.clock.get_fps())
-            hud_text_1 = f"Gen: {self.generation} | Żywi: {alive_count}/{len(agents)} | Klatka: {frames_lived}/{max_frames}"
+            total_foods = sum(a.foods_eaten for a in agents)
+            total_poisons = sum(a.poisons_hit for a in agents)
+            total_saved = sum(a.allies_saved for a in agents)
+
+            hud_text_1 = f"Gen: {self.generation} | Zywi: {alive_count}/{len(agents)} | Klatka: {frames_lived}/{max_frames}"
             hud_text_2 = f"Max Fitness: {best_current_fitness:.1f} | FPS: {fps_val} | [SPACJA]: {'TURBO' if self.fast_mode else 'NORMAL'}"
+            hud_text_3 = f"Jablka: {total_foods} | Trucizny: {total_poisons} | Uratowani: {total_saved}"
 
             surface_1 = self.font.render(hud_text_1, True, (240, 240, 240))
             surface_2 = self.font.render(hud_text_2, True, (180, 200, 220))
+            surface_3 = self.font.render(hud_text_3, True, (160, 230, 160))
             self.screen.blit(surface_1, (10, 10))
             self.screen.blit(surface_2, (10, 30))
+            self.screen.blit(surface_3, (10, 50))
 
             pygame.display.flip()
 
@@ -144,3 +164,9 @@ class Environment:
                 self.clock.tick(60)
 
             frames_lived += 1
+
+        return {
+            "foods_eaten": sum(a.foods_eaten for a in agents),
+            "poisons_hit": sum(a.poisons_hit for a in agents),
+            "allies_saved": sum(a.allies_saved for a in agents)
+        }

@@ -37,7 +37,9 @@ class SimulationRunner:
         start_t = time.time()
 
         # Uruchomienie generacji w trwałym środowisku
-        self.env.eval_generation(nets, valid_genomes)
+        metrics = self.env.eval_generation(nets, valid_genomes)
+        if not isinstance(metrics, dict):
+            metrics = {}
 
         duration = time.time() - start_t
 
@@ -48,17 +50,24 @@ class SimulationRunner:
         variance = sum((f - avg_fit) ** 2 for f in fitnesses) / len(fitnesses) if fitnesses else 0.0
         stdev = math.sqrt(variance)
 
+        foods_eaten = metrics.get('foods_eaten', 0)
+        poisons_hit = metrics.get('poisons_hit', 0)
+        allies_saved = metrics.get('allies_saved', 0)
+
         self.tracker.record_generation(
             generation=self.env.generation,
             best_fitness=best_fit,
             avg_fitness=avg_fit,
             stdev=stdev,
             species_count=1,
-            duration_sec=duration
+            duration_sec=duration,
+            foods_eaten=foods_eaten,
+            poisons_hit=poisons_hit,
+            allies_saved=allies_saved
         )
 
-        # Czytelny, zwięzły log jednolinijkowy w terminalu
-        print(f" -> [Generacja {self.env.generation:3d}] Max Fitness: {best_fit:6.1f} | Średni: {avg_fit:6.1f} (±{stdev:4.1f}) | Czas: {duration:4.2f}s")
+        # Czytelny, zwięzły log jednolinijkowy w terminalu z metrykami behawioralnymi
+        print(f" -> [Generacja {self.env.generation:3d}] Max: {best_fit:6.1f} | Sr: {avg_fit:6.1f} (±{stdev:4.1f}) | Jablka: {foods_eaten:3d} | Trucizny: {poisons_hit:2d} | Uratowani: {allies_saved:2d} | Czas: {duration:4.2f}s")
 
 
 def run(config_path: str):

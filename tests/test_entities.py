@@ -1,10 +1,10 @@
 import unittest
 import pygame
-from src.entities import Food, Hazard
+from src.entities import Food, Hazard, Poison
 
 
 class TestEntities(unittest.TestCase):
-    """Testy jednostkowe encji środowiska (Food, Hazard) bez wymogu renderowania okna."""
+    """Testy jednostkowe encji środowiska (Food, Hazard, Poison) bez wymogu renderowania okna."""
 
     def test_food_initialization(self):
         food = Food(100, 200, radius=4.0)
@@ -22,6 +22,18 @@ class TestEntities(unittest.TestCase):
             self.assertLessEqual(food.pos.x, width - margin)
             self.assertGreaterEqual(food.pos.y, margin)
             self.assertLessEqual(food.pos.y, height - margin)
+
+    def test_poison_initialization_and_respawn(self):
+        poison = Poison(150, 250, size=8.0)
+        self.assertEqual(poison.pos.x, 150)
+        self.assertEqual(poison.pos.y, 250)
+        self.assertEqual(poison.size, 8.0)
+        self.assertEqual(poison.radius, 4.0)  # promień kolizji = size / 2
+        self.assertEqual(poison.color, (155, 89, 182))  # fioletowy kolor
+
+        poison.respawn(800, 600, margin=30)
+        self.assertGreaterEqual(poison.pos.x, 30)
+        self.assertLessEqual(poison.pos.x, 770)
 
     def test_hazard_initialization_and_velocity(self):
         hazard = Hazard(150, 250, radius=12.0)

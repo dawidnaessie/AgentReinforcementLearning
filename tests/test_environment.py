@@ -18,6 +18,7 @@ class TestEnvironment(unittest.TestCase):
         self.assertEqual(self.env.width, 800)
         self.assertEqual(self.env.height, 600)
         self.assertEqual(len(self.env.foods), 20)
+        self.assertEqual(len(self.env.poisons), 15)
         self.assertEqual(len(self.env.hazards), 3)
         self.assertEqual(self.env.generation, 0)
 

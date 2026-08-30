@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-2.0.0-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-16%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-21%20passed-brightgreen.svg)
 
 ---
 
@@ -13,24 +13,13 @@
 
 **AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a shared 2D continuous environment.
 
-The primary objective of the project is to observe the autonomous emergence of complex survival strategies, resource competition, hazard avoidance, and social behaviors driven purely by evolutionary pressures and a carefully designed **fitness function**.
-
----
-
-## 🧠 Evolutionary Mechanics (NEAT)
-
-The simulation uses the **NEAT (NeuroEvolution of Augmenting Topologies)** algorithm to evolve both network weights and network topologies over successive generations:
-
-- **Minimal Initial Complexity:** Networks start with **0 hidden layers** (direct input-to-output connections) and autonomously evolve new hidden nodes and synaptic pathways as mutation adds complexity.
-- **Top 4 Elitism:** The 4 best-performing genomes in each generation are preserved verbatim into the next generation without mutation.
-- **Species Clustering & Speciation:** Genomes are partitioned into species based on topological compatibility to protect innovative structural mutations from premature extinction.
-- **Infinite Self-Sustaining Loop:** The evolutionary loop runs indefinitely, automatically advancing generations upon timer expiration or early population extinction.
+In **Phase 2 (Survival and Cooperation)**, the simulation introduces metabolic energy constraints, environmental toxins (`Poison`), and civilizational altruism mechanics (inter-agent energy sharing to save starving peers).
 
 ---
 
 ## 👁️ Agent Sensory & Action Space
 
-Each agent perceives its surroundings through **16 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
+Each agent perceives its surroundings through **20 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]` to prevent neural saturation):
 
 | Input Index | Sensory Signal | Range | Description |
 | :---: | :--- | :---: | :--- |
@@ -39,12 +28,15 @@ Each agent perceives its surroundings through **16 normalized sensory inputs** (
 | **4 – 5** | `Nearest Food #1 Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest food |
 | **6** | `Secondary Food #2 Distance` | `[0.0, 1.0]` | Normalized distance to 2nd closest food (smoother multi-target route planning) |
 | **7 – 8** | `Secondary Food #2 Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward 2nd closest food |
-| **9** | `Nearest Hazard Distance` | `[0.0, 1.0]` | Normalized distance to the closest mobile hazard |
-| **10 – 11** | `Nearest Hazard Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward hazard |
-| **12** | `Nearest Agent Distance` | `[0.0, 1.0]` | Normalized distance to the closest alive competitor/peer |
-| **13 – 14** | `Nearest Agent Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest agent |
-| **15** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
-| **16** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
+| **9** | `Nearest Poison Distance` | `[0.0, 1.0]` | Normalized distance to the closest environmental toxin (`Poison`) |
+| **10 – 11** | `Nearest Poison Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest poison |
+| **12** | `Nearest Hazard Distance` | `[0.0, 1.0]` | Normalized distance to the closest mobile hazard |
+| **13 – 14** | `Nearest Hazard Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward hazard |
+| **15** | `Nearest Agent Distance` | `[0.0, 1.0]` | Normalized distance to the closest alive competitor/peer |
+| **16 – 17** | `Nearest Agent Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest agent |
+| **18** | `Nearest Ally Critical State` | `{0.0, 1.0}` | Binary flag: `1.0` if closest ally has energy `< 20%` (starving), else `0.0` |
+| **19** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
+| **20** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
 
 ### Action Outputs (2 Neurons with `tanh` activation):
 - **Output 1 (`Ax`):** Horizontal acceleration force `[-1.0, 1.0]`
@@ -52,14 +44,17 @@ Each agent perceives its surroundings through **16 normalized sensory inputs** (
 
 ---
 
-## ⚡ Energy, Fitness & Reward Shaping Dynamics
+## ⚡ Energy, Fitness, Poison & Altruism Dynamics
 
 - **Metabolic Cost:** Every frame consumes a baseline energy amount plus movement cost proportional to speed.
-- **Reward Shaping (Distance Closing Gradient):** In each frame, closing distance toward food provides a direct gradient reward `(prev_dist - new_dist) * 0.08`, guiding agents toward food even before direct contact.
-- **Foraging (+15.0 Fitness, +45 Energy):** Consuming a food entity restores vital energy and grants a large fitness bonus.
-- **Hazards (-5.0 Fitness, -20 Energy):** Contact with wandering red hazards causes damage and fitness penalties.
+- **Foraging (+15.0 Fitness, +45 Energy):** Consuming a food entity restores vital energy and grants a fitness bonus.
+- **Poison Obstacle (-10.0 Fitness, -35 Energy):** Contact with purple square toxins deals severe damage.
+- **Mobile Hazards (-5.0 Fitness, -20 Energy):** Wandering red hazards penalize fitness and health.
+- **Altruism & Cooperation (+50.0 Fitness):**
+  - When an agent with high energy (`> 50%`) touches an ally in a critical state (`< 20%`), it transfers **20 energy** to the starving peer.
+  - The donor receives a massive **+50.0 fitness bonus**, driving the genetic algorithm to favor networks capable of social cooperation.
+- **Reward Shaping (Distance Closing Gradient):** In each frame, closing distance toward food provides a direct gradient reward `(prev_dist - new_dist) * 0.08`.
 - **Wall Collision Penalty (-0.05 Fitness):** Discourages pinning against boundaries.
-- **Lifespan Reward (+0.03 Fitness/step):** Living longer yields incremental rewards, encouraging agents to maintain energy balance.
 - **Death:** When energy hits `0.0`, the agent perishes and ceases activity for the remainder of the generation.
 
 ---

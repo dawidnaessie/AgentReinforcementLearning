@@ -16,11 +16,11 @@ class Environment:
 
     def __init__(
         self,
-        width: int = 800,
-        height: int = 600,
-        food_count: int = 40,
-        poison_count: int = 15,
-        hazard_count: int = 5
+        width: int = 1280,
+        height: int = 720,
+        food_count: int = 50,
+        poison_count: int = 20,
+        hazard_count: int = 6
     ):
         pygame.init()
         pygame.font.init()
@@ -43,28 +43,28 @@ class Environment:
         self.hazard_count = hazard_count
 
         self.foods: List[Food] = [
-            Food(random.randint(30, self.width - 30), random.randint(30, self.height - 30))
+            Food(random.randint(60, self.width - 60), random.randint(60, self.height - 60))
             for _ in range(self.food_count)
         ]
         self.poisons: List[Poison] = [
-            Poison(random.randint(30, self.width - 30), random.randint(30, self.height - 30))
+            Poison(random.randint(60, self.width - 60), random.randint(60, self.height - 60))
             for _ in range(self.poison_count)
         ]
         self.hazards: List[Hazard] = [
-            Hazard(random.randint(40, self.width - 40), random.randint(40, self.height - 40))
+            Hazard(random.randint(60, self.width - 60), random.randint(60, self.height - 60))
             for _ in range(self.hazard_count)
         ]
 
     def _reset_world_entities(self):
-        """Resetuje pozycje pożywienia, trucizn i zagrożeń na start nowej generacji."""
+        """Resetuje pozycje pożywienia, trucizn i zagrożeń na start nowej generacji w bezpiecznych granicach."""
         for food in self.foods:
             food.respawn(self.width, self.height)
         for poison in self.poisons:
             poison.respawn(self.width, self.height)
         for hazard in self.hazards:
             hazard.pos = pygame.math.Vector2(
-                random.randint(40, self.width - 40),
-                random.randint(40, self.height - 40)
+                random.randint(60, self.width - 60),
+                random.randint(60, self.height - 60)
             )
 
     def eval_generation(self, nets, genomes, max_frames: int = 900):
@@ -72,10 +72,10 @@ class Environment:
         self.generation += 1
         self._reset_world_entities()
 
-        # Równomierny rozkład startowy agentów wokół centrum planszy (zapobiega losowemu faworyzowaniu)
+        # Równomierny rozkład startowy agentów wokół centrum powiększonej areny 1280x720
         num_agents = len(genomes)
         center_x, center_y = self.width / 2, self.height / 2
-        spawn_radius = 180.0
+        spawn_radius = 240.0
 
         agents: List[Agent] = []
         for i, (net, genome) in enumerate(zip(nets, genomes)):
@@ -121,6 +121,9 @@ class Environment:
 
             # 4. Renderowanie świata
             self.screen.fill((25, 28, 36))  # Ciemne, estetyczne tło
+
+            # Subtelny obrys bezpiecznej strefy (50px od krawędzi)
+            pygame.draw.rect(self.screen, (40, 44, 55), (50, 50, self.width - 100, self.height - 100), 1)
 
             # Rysowanie pożywienia (zielone okręgi)
             for food in self.foods:

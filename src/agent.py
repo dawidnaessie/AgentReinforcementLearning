@@ -12,8 +12,8 @@ class Agent:
         self,
         net,
         genome,
-        width: int = 800,
-        height: int = 600,
+        width: int = 1280,
+        height: int = 720,
         start_pos: Optional[Tuple[float, float]] = None
     ):
         self.net = net          # Sieć neuronowa z NEAT
@@ -24,8 +24,8 @@ class Agent:
             self.pos = pygame.math.Vector2(start_pos[0], start_pos[1])
         else:
             self.pos = pygame.math.Vector2(
-                random.uniform(50, width - 50),
-                random.uniform(50, height - 50)
+                random.uniform(80, width - 80),
+                random.uniform(80, height - 80)
             )
         self.vel = pygame.math.Vector2(0.0, 0.0)
         self.max_speed = 4.0
@@ -35,6 +35,7 @@ class Agent:
         self.max_energy = 150.0
         self.energy = 150.0
         self.is_alive = True
+        self.frames_alive = 0
 
         # Liczniki zachowań i specjalizacji ekologicznych
         self.foods_eaten = 0
@@ -197,6 +198,8 @@ class Agent:
         if not self.is_alive:
             return
 
+        self.frames_alive += 1
+
         # Obliczenie odległości do najbliższego pożywienia przed ruchem (reward shaping)
         prev_min_food_dist = float('inf')
         for food in foods:
@@ -242,10 +245,18 @@ class Agent:
         if hit_wall:
             self.genome.fitness -= 0.05
 
-        # 3. Zbalansowany Nieliniowy Metabolizm: stały koszt życia + łagodny koszt sprintu
+        # 3. Bezwzględny Metabolizm Głodu (0.20 bazowo + sprint)
         speed_ratio = speed / self.max_speed if self.max_speed > 0 else 0.0
-        energy_cost = 0.05 + (speed_ratio ** 2) * 0.08
+        energy_cost = 0.20 + (speed_ratio ** 2) * 0.08
         self.energy -= energy_cost
+
+        # Kara za przebywanie w toksycznej strefie krawędziowej (margines 50px od ścian, tylko po Grace Period >= 60 klatek / 1.0s)
+        if self.frames_alive >= 60:
+            edge_margin = 50
+            if (self.pos.x < edge_margin or self.pos.x > width - edge_margin or
+                self.pos.y < edge_margin or self.pos.y > height - edge_margin):
+                self.energy -= 0.5
+                self.genome.fitness -= 0.1
 
         # Premia za przetrwanie kroku
         self.genome.fitness += 0.03
@@ -294,78 +305,75 @@ class Agent:
                     return
 
         # 8. Interakcje Między Agentami: Altruizm, Obrona Stadna, Drapieżnictwo i Zderzenia Czołowe
-        for other in all_agents:
-            if other is not self and other.is_alive:
-                dist_sq = (self.pos - other.pos).length_squared()
-                if dist_sq <= (self.radius + other.radius) ** 2:
-                    # A. Altruizm: Jeśli dawca ma > 50% energii, a biorca < 20%
-                    if self.energy > 50.0 and other.energy < 20.0:
-                        transfer_amount = 20.0
-                        self.energy -= transfer_amount
-                        other.energy = min(other.max_energy, other.energy + transfer_amount)
-                        self.genome.fitness += 50.0
-                        self.allies_saved += 1
-                        break
+        # Dostępne wyłącznie po zakończeniu Grace Period (>= 60 klatek / 1.0s) dla obu agentów
+        if self.frames_alive >= 60:
+            for other in all_agents:
+                if other is not self and other.is_alive and other.frames_alive >= 60:
+                    dist_sq = (self.pos - other.pos).length_squared()
+                    if dist_sq <= (self.radius + other.radius) ** 2:
+                        # A. Altruizm: Jeśli dawca ma > 50% energii, a biorca < 20%
+                        if self.energy > 50.0 and other.energy < 20.0:
+                            transfer_amount = 20.0
+                            self.energy -= transfer_amount
+                            other.energy = min(other.max_energy, other.energy + transfer_amount)
+                            self.genome.fitness += 50.0
+                            self.allies_saved += 1
+                            break
 
-                    # B. Walka i Drapieżnictwo
-                    v_self_len = self.vel.length()
-                    v_other_len = other.vel.length()
-                    if v_self_len > 0.1 and v_other_len > 0.1:
-                        dot_prod = (self.vel / v_self_len).dot(other.vel / v_other_len)
-                    else:
-                        dot_prod = 0.0
+                        # B. Walka i Drapieżnictwo
+                        v_self_len = self.vel.length()
+                        v_other_len = other.vel.length()
+                        if v_self_len > 0.1 and v_other_len > 0.1:
+                            dot_prod = (self.vel / v_self_len).dot(other.vel / v_other_len)
+                        else:
+                            dot_prod = 0.0
 
-                    if dot_prod <= -0.2:
-                        # Zderzenie Czołowe (Obrona)
-                        self.vel = -self.vel * 0.5
-                        other.vel = -other.vel * 0.5
-                        if self.energy >= other.energy:
-                            self.genome.fitness += 10.0
-                            self.defenses_made += 1
-                        self.energy = max(0.0, self.energy - 3.0)
-                        if self.energy <= 0.0:
-                            self.is_alive = False
-                            return
-                    elif dot_prod > 0.0 and v_self_len >= 0.5:
-                        # Próba ataku od tyłu / flanki
-                        # Sprawdzamy, czy ofiara ma w pobliżu (w promieniu 45px) sojuszników (Obrona Stadna)
-                        herd_radius_sq = 45.0 ** 2
-                        allies_in_herd = [
-                            a for a in all_agents
-                            if a is not self and a is not other and a.is_alive and
-                            (a.pos - other.pos).length_squared() <= herd_radius_sq
-                        ]
-
-                        if len(allies_in_herd) >= 1:
-                            # OBRONA STADNA AKTYWOWANA!
-                            # Stado odpiera atak: stała, zbalansowana utrata energii napastnika (-15.0)
-                            predator_damage = 15.0
-                            self.energy = max(0.0, self.energy - predator_damage)
-                            self.genome.fitness -= 20.0
-                            other.genome.fitness += 15.0
-                            other.herd_defenses += 1
-                            for ally in allies_in_herd:
-                                ally.genome.fitness += 15.0
-
+                        if dot_prod <= -0.2:
+                            # Zderzenie Czołowe (Obrona)
+                            self.vel = -self.vel * 0.5
+                            other.vel = -other.vel * 0.5
+                            if self.energy >= other.energy:
+                                self.genome.fitness += 10.0
+                                self.defenses_made += 1
+                            self.energy = max(0.0, self.energy - 3.0)
                             if self.energy <= 0.0:
                                 self.is_alive = False
                                 return
-                            break
-                        else:
-                            # SAMOTNA OFIARA: Udany atak drapieżnika
-                            stolen_energy = min(25.0, other.energy)
-                            self.energy = min(self.max_energy, self.energy + stolen_energy)
-                            other.energy = max(0.0, other.energy - 25.0)
-                            self.genome.fitness += 25.0
-                            other.genome.fitness -= 10.0
-                            self.attacks_made += 1
-                            if other.energy <= 0.0:
-                                other.is_alive = False
-                                self.genome.fitness += 15.0  # Bonus za eliminację ofiary
-                            break
+                        elif dot_prod > 0.0 and v_self_len >= 0.5:
+                            # Próba ataku od tyłu / flanki
+                            # Sprawdzamy, czy ofiara ma w pobliżu (w promieniu 45px) sojuszników (Obrona Stadna)
+                            herd_radius_sq = 45.0 ** 2
+                            allies_in_herd = [
+                                a for a in all_agents
+                                if a is not self and a is not other and a.is_alive and a.frames_alive >= 60 and
+                                (a.pos - other.pos).length_squared() <= herd_radius_sq
+                            ]
+
+                            if len(allies_in_herd) >= 1:
+                                # OBRONA STADNA AKTYWOWANA!
+                                predator_damage = 15.0
+                                self.energy = max(0.0, self.energy - predator_damage)
+                                self.genome.fitness -= 20.0
+                                other.genome.fitness += 15.0
+                                other.herd_defenses += 1
+                                for ally in allies_in_herd:
+                                    ally.genome.fitness += 15.0
+                                break
+                            else:
+                                # SAMOTNA OFIARA: Udany atak drapieżnika
+                                stolen_energy = min(25.0, other.energy)
+                                self.energy = min(self.max_energy, self.energy + stolen_energy)
+                                other.energy = max(0.0, other.energy - 25.0)
+                                self.genome.fitness += 25.0
+                                other.genome.fitness -= 10.0
+                                self.attacks_made += 1
+                                if other.energy <= 0.0:
+                                    other.is_alive = False
+                                    self.genome.fitness += 15.0  # Bonus za eliminację ofiary
+                                break
 
     def draw(self, screen: pygame.Surface):
-        """Rysuje agenta z kolorem i obwódką zależną od witalności i roli."""
+        """Rysuje agenta z kolorem i obwódką zależną od witalności, roli i stanu Grace Period."""
         if not self.is_alive:
             return
 
@@ -379,8 +387,11 @@ class Agent:
 
         pygame.draw.circle(screen, agent_color, center, int(self.radius))
 
-        # Karmazynowa obwódka dla drapieżników z udanymi atakami
-        if self.attacks_made > 0:
+        # W trybie Grace Period (< 60 klatek / 1s) rysujemy błękitno-białą poświatę nietykalności
+        if self.frames_alive < 60:
+            pygame.draw.circle(screen, (220, 240, 255), center, int(self.radius + 3), 1)
+        elif self.attacks_made > 0:
+            # Karmazynowa obwódka dla drapieżników z udanymi atakami
             pygame.draw.circle(screen, (231, 76, 60), center, int(self.radius + 2), 1)
 
         # Rysowanie wskaźnika kierunku prędkości

@@ -5,17 +5,20 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-2.0.0-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-23%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-27%20passed-brightgreen.svg)
 
 ---
 
 ## 📖 Overview & Core Ideas
 
-**AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a shared 2D continuous environment.
+**AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a shared 2D continuous environment (**1280 x 720**).
 
-In **Phase 4 (Flocking Defense & Ecosystem Balance)**, the simulation balances predation dynamics by introducing:
-- **Flocking / Herd Defense (+15.0 Fitness for Group):** Attacking a peer that is within a cluster of allies triggers collective herd defense, heavily damaging and penalizing the predator.
-- **Sprint Fatigue Metabolism:** Energy expenditure scales non-linearly with speed squared, penalizing reckless blind charging.
+In **Phase 4 (Flocking Defense, Grace Period & Anti-Exploit Balancing)**, the simulation ensures fair, robust evolution by introducing:
+- **Powiększona Arena (1280 x 720):** Przestronny świat zapobiegający stłoczeniu 50 agentów i umożliwiający dynamiczne manewrowanie.
+- **Klatki Nieśmiertelności / Tryb Ducha (Grace Period - 60 klatek / 1.0s):** Przez pierwszą sekundę po spawnie agenci są nietykalni (brak walki, kradzieży energii i kar krawędziowych), co pozwala na bezpieczne rozproszenie z pozycji startowych.
+- **Strict Hunger Metabolism:** Base drain of $0.20$ energy/frame, preventing passive idling from surviving a 900-frame generation.
+- **Toxic Edge Zones (50px Margin):** Entering the 50px boundary zone incurs continuous penalties ($-0.5$ energy, $-0.1$ fitness/frame), eliminating corner camping.
+- **Flocking / Herd Defense (+15.0 Fitness for Group):** Attacking a peer that is within a cluster of allies triggers collective herd defense, penalizing the predator.
 - **Herd Density Awareness:** Agents sense the local density of their herd to seek protection in numbers.
 - **Altruistic Cooperation (+50.0 Fitness):** High-energy agents transferring vitality to critically starving peers.
 - **Selective Predation (+25.0 Fitness):** Predators must actively hunt isolated, stray prey separated from the safety of the herd.

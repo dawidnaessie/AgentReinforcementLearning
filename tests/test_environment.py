@@ -12,14 +12,14 @@ class TestEnvironment(unittest.TestCase):
     """Testy jednostkowe środowiska i pętli symulacji w trybie headless."""
 
     def setUp(self):
-        self.env = Environment(width=800, height=600, food_count=20, hazard_count=3)
+        self.env = Environment()
 
     def test_environment_initialization(self):
-        self.assertEqual(self.env.width, 800)
-        self.assertEqual(self.env.height, 600)
-        self.assertEqual(len(self.env.foods), 20)
-        self.assertEqual(len(self.env.poisons), 15)
-        self.assertEqual(len(self.env.hazards), 3)
+        self.assertEqual(self.env.width, 1280)
+        self.assertEqual(self.env.height, 720)
+        self.assertEqual(len(self.env.foods), 50)
+        self.assertEqual(len(self.env.poisons), 20)
+        self.assertEqual(len(self.env.hazards), 6)
         self.assertEqual(self.env.generation, 0)
 
     def test_eval_generation_cycle(self):

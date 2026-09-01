@@ -5,8 +5,16 @@ from typing import List, Tuple, Optional
 from src.entities import Food, Hazard, Poison
 
 
+TRIBE_COLORS = {
+    1: (0, 245, 212),    # Plemię 1: Jaskrawy Cyjan (Neon Cyan)
+    2: (255, 0, 128),    # Plemię 2: Jaskrawa Magenta (Neon Magenta)
+    3: (255, 230, 0),    # Plemię 3: Jaskrawy Żółty (Electric Yellow)
+    4: (240, 246, 255),  # Plemię 4: Czysty Biały (Pure White)
+}
+
+
 class Agent:
-    """Klasa reprezentująca agenta sterowanego przez sieć neuronową NEAT (Faza 4: Obrona Stadna i Sprint)."""
+    """Klasa reprezentująca agenta sterowanego przez sieć neuronową NEAT (Faza 7: Selekcja Krewniacza - Wojny Plemion)."""
 
     def __init__(
         self,
@@ -14,10 +22,17 @@ class Agent:
         genome,
         width: int = 1280,
         height: int = 720,
-        start_pos: Optional[Tuple[float, float]] = None
+        start_pos: Optional[Tuple[float, float]] = None,
+        tribe_id: Optional[int] = None
     ):
         self.net = net          # Sieć neuronowa z NEAT
         self.genome = genome    # Referencja do genomu (bezpośrednie przypisywanie punktów fitness)
+
+        # Faza 7: Przynależność plemienna (Tribe ID od 1 do 4)
+        if tribe_id is not None:
+            self.tribe_id = tribe_id
+        else:
+            self.tribe_id = random.randint(1, 4)
 
         # Fizyka i położenie oparte na wektorach 2D
         if start_pos is not None:
@@ -169,42 +184,51 @@ class Agent:
         norm_hazard_dx = hazard_dir.x
         norm_hazard_dy = hazard_dir.y
 
-        # 15-17. Najbliższy inny żywy agent (dystans [0..1] oraz kierunek dx, dy [-1..1])
-        # 18. Stan krytyczny najbliższego sojusznika (1.0 jeśli ma < 20% energii, 0.0 wpp)
-        # 19. Relatywny zwrot prędkości rywala [-1..1]
-        # 20. Gęstość stada wokół agenta [0..1]
-        nearest_agent_dist = max_dist
-        agent_dir = pygame.math.Vector2(0, 0)
+        # 15-17. Najbliższy wrogi agent (z INNEGO plemienia) (dystans [0..1] oraz kierunek dx, dy [-1..1])
+        # 18. Stan krytyczny najbliższego sojusznika (z TEGO SAMEGO plemienia) (1.0 jeśli ma < 20% energii, 0.0 wpp)
+        # 19. Relatywny zwrot prędkości wroga [-1..1]
+        # 20. Gęstość stada SWOJEGO plemienia wokół agenta [0..1]
+        nearest_enemy_dist = max_dist
+        enemy_dir = pygame.math.Vector2(0, 0)
+        nearest_enemy_heading = 0.0
+
+        nearest_ally_dist = max_dist
         nearest_ally_critical = 0.0
-        nearest_agent_heading = 0.0
         allies_in_herd = 0
 
         for other in all_agents:
             if other is not self and other.is_alive:
                 to_other = other.pos - self.pos
                 dist = to_other.length()
+                other_tribe = getattr(other, 'tribe_id', None)
 
-                # Zliczanie gęstości stada w promieniu 60px
-                if dist <= 60.0:
-                    allies_in_herd += 1
+                if other_tribe == self.tribe_id:
+                    # Sojusznik z własnego plemienia:
+                    # Zliczanie gęstości stada własnego plemienia w promieniu 60px
+                    if dist <= 60.0:
+                        allies_in_herd += 1
+                    # Stan krytyczny najbliższego sojusznika
+                    if dist < nearest_ally_dist:
+                        nearest_ally_dist = dist
+                        nearest_ally_critical = 1.0 if other.energy < 20.0 else 0.0
+                else:
+                    # Wróg z innego plemienia:
+                    if dist < nearest_enemy_dist:
+                        nearest_enemy_dist = dist
+                        if dist > 0:
+                            enemy_dir = to_other / dist
 
-                if dist < nearest_agent_dist:
-                    nearest_agent_dist = dist
-                    if dist > 0:
-                        agent_dir = to_other / dist
-                    nearest_ally_critical = 1.0 if other.energy < 20.0 else 0.0
+                        if self.vel.length_squared() > 0.01 and other.vel.length_squared() > 0.01:
+                            heading_dot = self.vel.normalize().dot(other.vel.normalize())
+                            nearest_enemy_heading = max(-1.0, min(1.0, heading_dot))
+                        else:
+                            nearest_enemy_heading = 0.0
 
-                    if self.vel.length_squared() > 0.01 and other.vel.length_squared() > 0.01:
-                        heading_dot = self.vel.normalize().dot(other.vel.normalize())
-                        nearest_agent_heading = max(-1.0, min(1.0, heading_dot))
-                    else:
-                        nearest_agent_heading = 0.0
-
-        norm_agent_dist = min(nearest_agent_dist / max_dist, 1.0)
-        norm_agent_dx = agent_dir.x
-        norm_agent_dy = agent_dir.y
+        norm_agent_dist = min(nearest_enemy_dist / max_dist, 1.0)
+        norm_agent_dx = enemy_dir.x
+        norm_agent_dy = enemy_dir.y
         norm_agent_critical = nearest_ally_critical
-        norm_agent_rel_heading = nearest_agent_heading
+        norm_agent_rel_heading = nearest_enemy_heading
         norm_herd_density = min(1.0, allies_in_herd / 4.0)
 
         # 21. Dystans do najbliższej ściany (0.0 przy samej ścianie, 1.0 w centrum)
@@ -366,68 +390,74 @@ class Agent:
                 if other is not self and other.is_alive and other.frames_alive >= 60:
                     dist_sq = (self.pos - other.pos).length_squared()
                     if dist_sq <= (self.radius + other.radius) ** 2:
-                        # A. Altruizm: Jeśli dawca ma > 50% energii, a biorca < 20%
-                        if self.energy > 50.0 and other.energy < 20.0:
-                            transfer_amount = 20.0
-                            self.energy -= transfer_amount
-                            other.energy = min(other.max_energy, other.energy + transfer_amount)
-                            self.allies_saved += 1
-                            break
+                        other_tribe = getattr(other, 'tribe_id', None)
+                        is_same_tribe = (other_tribe == self.tribe_id)
 
-                        # B. Walka i Drapieżnictwo
-                        v_self_len = self.vel.length()
-                        v_other_len = other.vel.length()
-                        if v_self_len > 0.1 and v_other_len > 0.1:
-                            dot_prod = (self.vel / v_self_len).dot(other.vel / v_other_len)
+                        if is_same_tribe:
+                            # A. ALTRUIZM: Przekazywanie energii głodującemu sojusznikowi TYLKO z tego samego plemienia
+                            if self.energy > 50.0 and other.energy < 20.0:
+                                transfer_amount = 20.0
+                                self.energy -= transfer_amount
+                                other.energy = min(other.max_energy, other.energy + transfer_amount)
+                                self.allies_saved += 1
+                                break
+                            # Kanibalizm i ataki wewnątrz tego samego plemienia są zablokowane
                         else:
-                            dot_prod = 0.0
+                            # B. WALKA I DRAPIEŻNICTWO: Dozwolone TYLKO przeciwko agentom z INNEGO plemienia
+                            v_self_len = self.vel.length()
+                            v_other_len = other.vel.length()
+                            if v_self_len > 0.1 and v_other_len > 0.1:
+                                dot_prod = (self.vel / v_self_len).dot(other.vel / v_other_len)
+                            else:
+                                dot_prod = 0.0
 
-                        if dot_prod <= -0.2:
-                            # Zderzenie Czołowe (Obrona)
-                            self.vel = -self.vel * 0.5
-                            other.vel = -other.vel * 0.5
-                            if self.energy >= other.energy:
-                                self.defenses_made += 1
-                            self.energy = max(0.0, self.energy - 3.0)
-                            if self.energy <= 0.0:
-                                self.is_alive = False
-                                self.death_cause = "combat"
-                                self.finalize_fitness()
-                                return
-                        elif dot_prod > 0.0 and v_self_len >= 0.5:
-                            # Próba ataku od tyłu / flanki
-                            # Sprawdzamy, czy ofiara ma w pobliżu (w promieniu 45px) sojuszników (Obrona Stadna)
-                            herd_radius_sq = 45.0 ** 2
-                            allies_in_herd = [
-                                a for a in all_agents
-                                if a is not self and a is not other and a.is_alive and a.frames_alive >= 60 and
-                                (a.pos - other.pos).length_squared() <= herd_radius_sq
-                            ]
-
-                            if len(allies_in_herd) >= 1:
-                                # OBRONA STADNA AKTYWOWANA!
-                                predator_damage = 15.0
-                                self.energy = max(0.0, self.energy - predator_damage)
-                                other.herd_defenses += 1
-                                for ally in allies_in_herd:
-                                    ally.herd_defenses += 1
+                            if dot_prod <= -0.2:
+                                # Zderzenie Czołowe z wrogiem (Obrona)
+                                self.vel = -self.vel * 0.5
+                                other.vel = -other.vel * 0.5
+                                if self.energy >= other.energy:
+                                    self.defenses_made += 1
+                                self.energy = max(0.0, self.energy - 3.0)
                                 if self.energy <= 0.0:
                                     self.is_alive = False
                                     self.death_cause = "combat"
                                     self.finalize_fitness()
                                     return
-                                break
-                            else:
-                                # SAMOTNA OFIARA: Udany atak drapieżnika
-                                stolen_energy = min(25.0, other.energy)
-                                self.energy = min(self.max_energy, self.energy + stolen_energy)
-                                other.energy = max(0.0, other.energy - 25.0)
-                                self.attacks_made += 1
-                                if other.energy <= 0.0:
-                                    other.is_alive = False
-                                    other.death_cause = "combat"
-                                    other.finalize_fitness()
-                                break
+                            elif dot_prod > 0.0 and v_self_len >= 0.5:
+                                # Próba ataku od tyłu / flanki na wroga
+                                # Obrona Stadna: Sojusznicy ofiary z TEGO SAMEGO plemienia co ofiara (w promieniu 45px)
+                                herd_radius_sq = 45.0 ** 2
+                                allies_in_herd = [
+                                    a for a in all_agents
+                                    if a is not self and a is not other and a.is_alive and a.frames_alive >= 60 and
+                                    getattr(a, 'tribe_id', None) == other_tribe and
+                                    (a.pos - other.pos).length_squared() <= herd_radius_sq
+                                ]
+
+                                if len(allies_in_herd) >= 1:
+                                    # OBRONA STADNA WROGA AKTYWOWANA!
+                                    predator_damage = 15.0
+                                    self.energy = max(0.0, self.energy - predator_damage)
+                                    other.herd_defenses += 1
+                                    for ally in allies_in_herd:
+                                        ally.herd_defenses += 1
+                                    if self.energy <= 0.0:
+                                        self.is_alive = False
+                                        self.death_cause = "combat"
+                                        self.finalize_fitness()
+                                        return
+                                    break
+                                else:
+                                    # SAMOTNY WRÓG: Udany atak drapieżnika
+                                    stolen_energy = min(25.0, other.energy)
+                                    self.energy = min(self.max_energy, self.energy + stolen_energy)
+                                    other.energy = max(0.0, other.energy - 25.0)
+                                    self.attacks_made += 1
+                                    if other.energy <= 0.0:
+                                        other.is_alive = False
+                                        other.death_cause = "combat"
+                                        other.finalize_fitness()
+                                    break
 
         # 9. Aktualizacja bieżącego fitnessu dla telemetrii UI (podczas trwania życia)
         f_actions = self.get_action_fitness()
@@ -437,19 +467,19 @@ class Agent:
             self.genome.fitness = 0.0
 
     def draw(self, screen: pygame.Surface):
-        """Rysuje agenta z kolorem i obwódką zależną od witalności, roli i stanu Grace Period."""
+        """Rysuje agenta w barwach plemiennych z obwódką zależną od witalności, roli i stanu Grace Period."""
         if not self.is_alive:
             return
 
         center = (int(self.pos.x), int(self.pos.y))
 
-        # Kolorystyka: niebieski przy pełnym zdrowiu, pomarańczowy przy skrajnym wyczerpaniu
-        if self.energy < 20.0:
-            agent_color = (230, 126, 34)  # Stan krytyczny - pomarańcz
-        else:
-            agent_color = (52, 152, 219)  # Zdrowy - niebieski
-
+        # Faza 7: Unikalna kolorystyka dla każdego plemienia (1: Cyjan, 2: Magenta, 3: Żółty, 4: Biały)
+        agent_color = TRIBE_COLORS.get(self.tribe_id, (52, 152, 219))
         pygame.draw.circle(screen, agent_color, center, int(self.radius))
+
+        # Wskaźnik stanu krytycznego (głód < 20.0) - pomarańczowy pierścień ostrzegawczy
+        if self.energy < 20.0:
+            pygame.draw.circle(screen, (230, 126, 34), center, int(self.radius + 1), 1)
 
         # W trybie Grace Period (< 60 klatek / 1s) rysujemy błękitno-białą poświatę nietykalności
         if self.frames_alive < 60:

@@ -1,3 +1,4 @@
+import math
 import unittest
 from typing import Any, Dict, Optional
 import pygame
@@ -44,7 +45,7 @@ class TestAgent(unittest.TestCase):
     def setUp(self):
         self.net = DummyNetwork()
         self.genome = DummyGenome()
-        self.agent = Agent(self.net, self.genome, width=1280, height=720)
+        self.agent = Agent(self.net, self.genome, width=1280, height=720, tribe_id=1)
 
     def test_agent_initialization(self):
         self.assertTrue(self.agent.is_alive)
@@ -59,6 +60,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.agent.attacks_made, 0)
         self.assertEqual(self.agent.defenses_made, 0)
         self.assertEqual(self.agent.herd_defenses, 0)
+        self.assertIn(self.agent.tribe_id, [1, 2, 3, 4])
 
     def test_shout_activation_and_deactivation(self):
         # Sieć z sygnałem krzyku > 0.0
@@ -123,11 +125,11 @@ class TestAgent(unittest.TestCase):
         self.assertAlmostEqual(initial_energy - ghost_agent.energy, 0.20, places=2)
 
         # 2. Brak możliwości ataku i kradzieży energii w czasie Grace Period
-        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200))
+        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
         predator.vel = pygame.math.Vector2(3.0, 0.0)
         predator.frames_alive = 20
 
-        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
+        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=2)
         prey.vel = pygame.math.Vector2(1.0, 0.0)
         prey.frames_alive = 20
         initial_prey_energy = prey.energy
@@ -188,9 +190,9 @@ class TestAgent(unittest.TestCase):
             self.assertLessEqual(val, 1.01, f"Input {idx} value {val} is above 1.0")
 
     def test_herd_density_sensing(self):
-        ally1 = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 10, self.agent.pos.y))
-        ally2 = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 20, self.agent.pos.y))
-        ally3 = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 30, self.agent.pos.y))
+        ally1 = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 10, self.agent.pos.y), tribe_id=self.agent.tribe_id)
+        ally2 = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 20, self.agent.pos.y), tribe_id=self.agent.tribe_id)
+        ally3 = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 30, self.agent.pos.y), tribe_id=self.agent.tribe_id)
 
         inputs_dense = self.agent._get_sensory_inputs([], [], [], [self.agent, ally1, ally2, ally3], 1280, 720)
         self.assertGreater(inputs_dense[19], 0.4)
@@ -214,17 +216,17 @@ class TestAgent(unittest.TestCase):
         self.assertGreater(sprint_loss, slow_loss)
 
     def test_herd_defense_repels_predator(self):
-        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200))
+        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
         predator.vel = pygame.math.Vector2(3.0, 0.0)
         predator.energy = 80.0
         predator.frames_alive = 100
 
-        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
+        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=2)
         prey.vel = pygame.math.Vector2(1.0, 0.0)
         prey.energy = 60.0
         prey.frames_alive = 100
 
-        ally = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(215, 200))
+        ally = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(215, 200), tribe_id=2)
         ally.vel = pygame.math.Vector2(1.0, 0.0)
         ally.energy = 60.0
         ally.frames_alive = 100
@@ -238,12 +240,12 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(ally.herd_defenses, 1)
 
     def test_predation_on_isolated_prey(self):
-        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200))
+        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
         predator.vel = pygame.math.Vector2(3.0, 0.0)
         predator.energy = 50.0
         predator.frames_alive = 100
 
-        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
+        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=2)
         prey.vel = pygame.math.Vector2(1.0, 0.0)
         prey.energy = 50.0
         prey.frames_alive = 100
@@ -255,12 +257,12 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(predator.attacks_made, 1)
 
     def test_frontal_defense_clash(self):
-        agent_a = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(196, 200))
+        agent_a = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(196, 200), tribe_id=1)
         agent_a.vel = pygame.math.Vector2(2.0, 0.0)
         agent_a.energy = 80.0
         agent_a.frames_alive = 100
 
-        agent_b = Agent(DummyNetwork(output_x=-1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
+        agent_b = Agent(DummyNetwork(output_x=-1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=2)
         agent_b.vel = pygame.math.Vector2(-2.0, 0.0)
         agent_b.energy = 40.0
         agent_b.frames_alive = 100
@@ -270,11 +272,11 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(agent_a.defenses_made, 1)
 
     def test_altruism_energy_transfer_and_reward(self):
-        agent_a = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
+        agent_a = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=1)
         agent_a.energy = 100.0
         agent_a.frames_alive = 100
 
-        agent_b = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
+        agent_b = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=1)
         agent_b.energy = 10.0
         agent_b.frames_alive = 100
 
@@ -419,12 +421,12 @@ class TestAgent(unittest.TestCase):
 
     def test_altruism_strict_energy_conservation_and_conditions(self):
         """Weryfikacja ścisłego bilansu energii altruizmu: dawca traci 20, biorca zyskuje 20, warunki progowe."""
-        # 1. Warunek spełniony: Dawca > 50, Biorca < 20
-        donor = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300))
+        # 1. Warunek spełniony: Dawca > 50, Biorca < 20 (w tym samym plemieniu)
+        donor = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         donor.energy = 80.0
         donor.frames_alive = 100
 
-        recipient = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300))
+        recipient = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         recipient.energy = 15.0
         recipient.frames_alive = 100
 
@@ -436,10 +438,10 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(donor.allies_saved, 1)
 
         # 2. Dawca ma <= 50 energii -> brak transferu
-        donor2 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300))
+        donor2 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         donor2.energy = 45.0
         donor2.frames_alive = 100
-        recipient2 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300))
+        recipient2 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         recipient2.energy = 15.0
         recipient2.frames_alive = 100
 
@@ -449,10 +451,10 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(donor2.allies_saved, 0)
 
         # 3. Biorca ma >= 20 energii -> brak transferu
-        donor3 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300))
+        donor3 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         donor3.energy = 90.0
         donor3.frames_alive = 100
-        recipient3 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300))
+        recipient3 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         recipient3.energy = 25.0
         recipient3.frames_alive = 100
 
@@ -474,6 +476,125 @@ class TestAgent(unittest.TestCase):
         energy_before_60 = edge_agent.energy
         edge_agent.think_and_act([], [], [], [edge_agent], 1280, 720)
         self.assertAlmostEqual(energy_before_60 - edge_agent.energy, 0.70, places=2)
+
+    def test_tribe_initialization_and_colors(self):
+        """Weryfikuje losowe przypisanie tribe_id (1-4), przypisanie jawne oraz paletę TRIBE_COLORS."""
+        from src.agent import TRIBE_COLORS
+        self.assertEqual(len(TRIBE_COLORS), 4)
+        for tid in (1, 2, 3, 4):
+            self.assertIn(tid, TRIBE_COLORS)
+            self.assertEqual(len(TRIBE_COLORS[tid]), 3)
+
+        # Losowe generowanie plemion
+        tribes_observed = {Agent(DummyNetwork(), DummyGenome(), 1280, 720).tribe_id for _ in range(50)}
+        for tid in tribes_observed:
+            self.assertIn(tid, (1, 2, 3, 4))
+        # Przy 50 agentach powinniśmy zaobserwować co najmniej 3 z 4 plemion
+        self.assertGreaterEqual(len(tribes_observed), 3)
+
+        # Jawne przypisanie
+        custom_agent = Agent(DummyNetwork(), DummyGenome(), 1280, 720, tribe_id=3)
+        self.assertEqual(custom_agent.tribe_id, 3)
+
+    def test_altruism_blocked_between_different_tribes(self):
+        """Altruizm (transfer energii) NIE działa pomiędzy agentami z różnych plemion."""
+        donor = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
+        donor.energy = 80.0
+        donor.frames_alive = 100
+
+        recipient = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=2)
+        recipient.energy = 10.0
+        recipient.frames_alive = 100
+
+        donor.think_and_act([], [], [], [donor, recipient], 1280, 720)
+
+        # Dawca traci tylko metabolizm bazowy (brak transferu do innego plemienia)
+        self.assertAlmostEqual(donor.energy, 79.8, places=2)
+        self.assertEqual(recipient.energy, 10.0)
+        self.assertEqual(donor.allies_saved, 0)
+
+    def test_cannibalism_blocked_within_same_tribe(self):
+        """Drapieżnik NIE może zaatakować ani zabić członka własnego plemienia (kanibalizm zablokowany)."""
+        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
+        predator.vel = pygame.math.Vector2(3.0, 0.0)
+        predator.energy = 50.0
+        predator.frames_alive = 100
+
+        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=1)
+        prey.vel = pygame.math.Vector2(1.0, 0.0)
+        prey.energy = 50.0
+        prey.frames_alive = 100
+
+        predator.think_and_act([], [], [], [predator, prey], 1280, 720)
+
+        # Brak udanego ataku, brak kradzieży energii
+        self.assertEqual(predator.attacks_made, 0)
+        self.assertEqual(prey.energy, 50.0)
+
+    def test_herd_defense_only_protects_same_tribe(self):
+        """Obrona stadna aktywuje się TYLKO gdy w pobliżu ofiary znajdują się sojusznicy z JEJ plemienia."""
+        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
+        predator.vel = pygame.math.Vector2(3.0, 0.0)
+        predator.energy = 80.0
+        predator.frames_alive = 100
+
+        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=2)
+        prey.vel = pygame.math.Vector2(1.0, 0.0)
+        prey.energy = 60.0
+        prey.frames_alive = 100
+
+        # Obcy agent z plemienia 3 w pobliżu ofiary (nie należy do plemienia 2 ofiary)
+        stranger = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(215, 200), tribe_id=3)
+        stranger.frames_alive = 100
+
+        predator.think_and_act([], [], [], [predator, prey, stranger], 1280, 720)
+
+        # Obcy agent nie broni ofiary -> atak drapieżnika dochodzi do skutku
+        self.assertEqual(predator.attacks_made, 1)
+        self.assertEqual(prey.herd_defenses, 0)
+        self.assertEqual(stranger.herd_defenses, 0)
+
+    def test_nearest_enemy_sensors(self):
+        """Sensory [14, 15, 16] namierzają najbliższego WROGA z innego plemienia, ignorując bliższego sojusznika."""
+        # Główny agent (Plemię 1) na pozycji (200, 200)
+        main_agent = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=1)
+
+        # Bliski sojusznik (Plemię 1) na pozycji (250, 200) - dystans 50px
+        close_ally = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(250, 200), tribe_id=1)
+        close_ally.energy = 15.0  # W stanie krytycznym
+
+        # Dalszy wróg (Plemię 2) na pozycji (350, 200) - dystans 150px
+        far_enemy = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(350, 200), tribe_id=2)
+        far_enemy.vel = pygame.math.Vector2(1.0, 0.0)
+
+        agents = [main_agent, close_ally, far_enemy]
+        inputs = main_agent._get_sensory_inputs([], [], [], agents, 1280, 720)
+
+        # Sensor 14: Dystans do wroga (150px / max_dist), a NIE do sojusznika (50px / max_dist)
+        max_dist = math.hypot(1280, 720)
+        expected_enemy_norm_dist = 150.0 / max_dist
+        self.assertAlmostEqual(inputs[14], expected_enemy_norm_dist, places=2)
+
+        # Sensor 15, 16: Kierunek do wroga X bliski 1.0 (na prawo), Y bliski 0.0
+        self.assertAlmostEqual(inputs[15], 1.0, places=1)
+        self.assertAlmostEqual(inputs[16], 0.0, places=1)
+
+        # Sensor 17: Stan krytyczny sojusznika = 1.0 (close_ally ma 15 energii)
+        self.assertEqual(inputs[17], 1.0)
+
+        # Sensor 19: Gęstość stada własnego plemienia (close_ally w zasięgu 60px) > 0
+        self.assertGreater(inputs[19], 0.0)
+
+    def test_draw_all_tribes_headless(self):
+        """Weryfikuje poprawne wywołanie metody draw() dla każdego z 4 plemion na dummy Surface."""
+        surface = pygame.Surface((1280, 720))
+        for tid in (1, 2, 3, 4):
+            a = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(100 * tid, 100), tribe_id=tid)
+            # Powinno wyrysować się bez wyjątku
+            a.draw(surface)
+            # Rysowanie w stanie głodu
+            a.energy = 10.0
+            a.draw(surface)
 
 
 if __name__ == '__main__':

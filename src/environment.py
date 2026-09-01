@@ -108,46 +108,46 @@ SENSORY_DETAILS: Dict[int, Dict[str, str]] = {
         "role": "Unik pionowy przed ruchomym zagrozeniem"
     },
     14: {
-        "name": "Nearest Agent Dist",
-        "short": "Agent Dist",
-        "desc": "Dystans do najblizszego zywego innego agenta [0..1]",
+        "name": "Nearest Enemy Dist",
+        "short": "Enemy Dist",
+        "desc": "Dystans do najblizszego wroga z innego plemienia [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Percepcja spoleczna: polowanie, obrona lub stado"
+        "role": "Percepcja miedzyplemienna: namierzanie wrogow i ofiar"
     },
     15: {
-        "name": "Nearest Agent Dir X",
-        "short": "Agent Dir X",
-        "desc": "Wektor kierunku X do najblizszego agenta [-1..1]",
+        "name": "Nearest Enemy Dir X",
+        "short": "Enemy Dir X",
+        "desc": "Wektor kierunku X do najblizszego wroga [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Kierunek poziomy wzgledem rywala lub sojusznika"
+        "role": "Kierunek poziomy w strone wrogiego plemienia"
     },
     16: {
-        "name": "Nearest Agent Dir Y",
-        "short": "Agent Dir Y",
-        "desc": "Wektor kierunku Y do najblizszego agenta [-1..1]",
+        "name": "Nearest Enemy Dir Y",
+        "short": "Enemy Dir Y",
+        "desc": "Wektor kierunku Y do najblizszego wroga [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Kierunek pionowy wzgledem rywala lub sojusznika"
+        "role": "Kierunek pionowy w strone wrogiego plemienia"
     },
     17: {
         "name": "Nearest Ally Critical State",
         "short": "Ally Critical",
-        "desc": "1.0 jesli najblizszy ma <20% energii (glod), wpp 0.0",
+        "desc": "1.0 jesli sojusznik z plemienia ma <20% energii, wpp 0.0",
         "range": "{0.0, 1.0}",
-        "role": "Wyzwalacz altruizmu (+50 fit za uratowanie sojusznika)"
+        "role": "Wyzwalacz altruizmu plemiennego (+50 fit za pomoc swojemu)"
     },
     18: {
-        "name": "Nearest Peer Rel Heading",
-        "short": "Peer Heading",
-        "desc": "Zwrot predkosci: >0 ucieka tylem, <0 szarzuje czolowo",
+        "name": "Nearest Enemy Rel Heading",
+        "short": "Enemy Heading",
+        "desc": "Zwrot predkosci wroga: >0 ucieka tylem, <0 szarzuje czolowo",
         "range": "[-1.0, 1.0]",
-        "role": "Taktyka walki: atak od tylu (+25 fit) vs parowanie czolowe"
+        "role": "Taktyka walki: atak na wroga od tylu (+25 fit) vs parowanie"
     },
     19: {
-        "name": "Local Herd Density",
-        "short": "Herd Density",
-        "desc": "Gestosc sojusznikow w promieniu 60px [0..1]",
+        "name": "Local Tribe Herd Density",
+        "short": "Tribe Density",
+        "desc": "Gestosc sojusznikow z wlasnego plemienia w 60px [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Obrona stadna (+15 nagrody za wspolna obrone grupy)"
+        "role": "Obrona stadna plemienia (+15 nagrody za wspolna obrone)"
     },
     20: {
         "name": "Proximity to Nearest Wall",

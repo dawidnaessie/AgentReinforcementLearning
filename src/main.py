@@ -29,8 +29,8 @@ class SimulationRunner:
         valid_genomes = []
 
         for genome_id, genome in genomes:
-            # Tworzenie sieci neuronowej typu FeedForward na podstawie genomu i konfiguracji
-            net = neat.nn.FeedForwardNetwork.create(genome, config)
+            # Tworzenie sieci neuronowej typu Recurrent (RNN) na podstawie genomu i konfiguracji
+            net = neat.nn.RecurrentNetwork.create(genome, config)
             nets.append(net)
             valid_genomes.append(genome)
 

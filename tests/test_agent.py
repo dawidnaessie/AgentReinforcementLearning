@@ -1,13 +1,27 @@
 import unittest
+from typing import Any, Dict, Optional
 import pygame
+
 from src.agent import Agent
 from src.entities import Food, Hazard, Poison
 
 
 class DummyGenome:
     """Prosty obiekt atrapa genomu do testów jednostkowych bez zależności od NEAT."""
-    def __init__(self):
-        self.fitness = 0.0
+    fitness: float
+    key: int
+    connections: Dict[Any, Any]
+    custom_marker: Any
+    tag: int
+
+    def __init__(self, fitness: float = 0.0, **kwargs: Any):
+        self.fitness = fitness
+        self.key = 0
+        self.connections = {}
+        self.custom_marker = None
+        self.tag = 0
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 class DummyNetwork:
@@ -19,6 +33,9 @@ class DummyNetwork:
 
     def activate(self, inputs):
         return (self.output_x, self.output_y, self.output_shout)
+
+    def reset(self):
+        pass
 
 
 class TestAgent(unittest.TestCase):

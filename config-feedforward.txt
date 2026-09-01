@@ -83,17 +83,18 @@ compatibility_weight_coefficient   = 0.5
 # 23. Dystans do najbliższego krzyczącego agenta (0..1)
 # 24. Wektor kierunku do krzyczącego agenta X (-1..1)
 # 25. Wektor kierunku do krzyczącego agenta Y (-1..1)
-# 3 wyjścia sieci: siła przyspieszenia X (-1..1), siła przyspieszenia Y (-1..1), sygnał krzyku Shout (-1..1)
+# Architektura sieci (Faza 6: Pamięć Krótkotrwała - Sieci Rekurencyjne RNN)
+# 25 wejść sensorycznych, 3 wyjścia akcji
 num_inputs              = 25
 num_outputs             = 3
 num_hidden              = 0
-feed_forward            = True
+feed_forward            = False
 initial_connection      = full_direct
 
-# Mutacje topologii (wyższa szansa dodawania zapobiega degeneracji sieci)
+# Mutacje topologii (wyższa szansa dodawania zapobiega degeneracji sieci i wspiera tworzenie pętli RNN)
 conn_add_prob           = 0.50
 conn_delete_prob        = 0.20
-node_add_prob           = 0.02
+node_add_prob           = 0.05
 node_delete_prob        = 0.02
 
 [DefaultSpeciesSet]

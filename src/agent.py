@@ -37,6 +37,7 @@ class Agent:
         self.is_alive = True
         self.frames_alive = 0
         self.is_shouting = False
+        self.death_cause: Optional[str] = None  # Faza 6: "combat", "poison", "toxic_edge", "starvation", "survived"
 
         # Liczniki zachowań i specjalizacji ekologicznych
         self.foods_eaten = 0
@@ -47,8 +48,49 @@ class Agent:
         self.herd_defenses = 0
         self.shouts_made = 0
 
-        # Inicjalizacja fitnessu genomu
+        # Inicjalizacja fitnessu genomu (holistyczny system Faza 6)
         self.genome.fitness = 0.0
+
+    def get_action_fitness(self) -> float:
+        """
+        Oblicza F_akcje: sumę ważoną pożytecznych akcji podjętych za życia:
+        - Zjedzenie Jabłka (+1)
+        - Odparcie Ataku / Obrona Stadna (+1)
+        - Udane Polowanie (+2)
+        - Akt Altruizmu (+3)
+        """
+        return (
+            1.0 * self.foods_eaten +
+            1.0 * (self.defenses_made + self.herd_defenses) +
+            2.0 * self.attacks_made +
+            3.0 * self.allies_saved
+        )
+
+    def finalize_fitness(self) -> float:
+        """
+        Oblicza i przypisuje ostateczny holistyczny fitness:
+        F_total = ((frames_alive * F_akcje) / 25.0) * M_death
+        Jeśli F_akcje wynosi 0, F_total wynosi 0.0.
+        """
+        f_actions = self.get_action_fitness()
+        if f_actions <= 0.0:
+            self.genome.fitness = 0.0
+            return 0.0
+
+        if self.death_cause == "survived":
+            m_death = 1.2
+        elif self.death_cause == "combat":
+            m_death = 1.0
+        elif self.death_cause == "starvation":
+            m_death = 0.7
+        elif self.death_cause in ("toxic_edge", "poison"):
+            m_death = 0.3
+        else:
+            m_death = 1.0 if not self.is_alive else 1.2
+
+        f_total = ((self.frames_alive * f_actions) / 25.0) * m_death
+        self.genome.fitness = f_total
+        return f_total
 
     def _get_sensory_inputs(
         self,
@@ -225,13 +267,6 @@ class Agent:
 
         self.frames_alive += 1
 
-        # Obliczenie odległości do najbliższego pożywienia przed ruchem (reward shaping)
-        prev_min_food_dist = float('inf')
-        for food in foods:
-            d = (self.pos - food.pos).length()
-            if d < prev_min_food_dist:
-                prev_min_food_dist = d
-
         # 1. Zmysły i aktywacja sieci (Faza 5: 25 wejść, 3 wyjścia)
         inputs = self._get_sensory_inputs(foods, poisons, hazards, all_agents, width, height)
         outputs = self.net.activate(inputs)
@@ -256,27 +291,19 @@ class Agent:
 
         # Ograniczenie pozycji do granic ekranu
         margin = int(self.radius)
-        hit_wall = False
         if self.pos.x < margin:
             self.pos.x = margin
             self.vel.x = 0
-            hit_wall = True
         elif self.pos.x > width - margin:
             self.pos.x = width - margin
             self.vel.x = 0
-            hit_wall = True
 
         if self.pos.y < margin:
             self.pos.y = margin
             self.vel.y = 0
-            hit_wall = True
         elif self.pos.y > height - margin:
             self.pos.y = height - margin
             self.vel.y = 0
-            hit_wall = True
-
-        if hit_wall:
-            self.genome.fitness -= 0.05
 
         # 3. Bezwzględny Metabolizm Głodu (0.20 bazowo + sprint + krzyk)
         speed_ratio = speed / self.max_speed if self.max_speed > 0 else 0.0
@@ -285,58 +312,51 @@ class Agent:
             energy_cost += 0.20
         self.energy -= energy_cost
 
-        # Kara za przebywanie w toksycznej strefie krawędziowej (margines 50px od ścian, tylko po Grace Period >= 60 klatek / 1.0s)
-        if self.frames_alive >= 60:
-            edge_margin = 50
-            if (self.pos.x < edge_margin or self.pos.x > width - edge_margin or
-                self.pos.y < edge_margin or self.pos.y > height - edge_margin):
-                self.energy -= 0.5
-                self.genome.fitness -= 0.1
+        # Sprawdzenie obecności w strefie toksycznej (margines 50px od ścian dla obu osi X i Y)
+        edge_margin = 50
+        in_toxic_zone = (
+            self.pos.x < edge_margin or self.pos.x > width - edge_margin or
+            self.pos.y < edge_margin or self.pos.y > height - edge_margin
+        )
 
-        # Premia za przetrwanie kroku
-        self.genome.fitness += 0.03
-
-        # 4. Reward Shaping za zbliżanie się do jedzenia
-        if foods and prev_min_food_dist != float('inf'):
-            new_min_food_dist = float('inf')
-            for food in foods:
-                d = (self.pos - food.pos).length()
-                if d < new_min_food_dist:
-                    new_min_food_dist = d
-            dist_delta = prev_min_food_dist - new_min_food_dist
-            self.genome.fitness += dist_delta * 0.08
+        # Kara za przebywanie w toksycznej strefie krawędziowej (tylko po Grace Period >= 60 klatek / 1.0s)
+        if self.frames_alive >= 60 and in_toxic_zone:
+            self.energy -= 0.5
 
         # Sprawdzenie śmierci z głodu / braku energii
         if self.energy <= 0.0:
             self.is_alive = False
+            self.death_cause = "toxic_edge" if in_toxic_zone else "starvation"
+            self.finalize_fitness()
             return
 
-        # 5. Kolizje z pożywieniem (odnowienie energii + nagroda fitness)
+        # 5. Kolizje z pożywieniem (odnowienie energii + licznik jabłek)
         for food in foods:
             if (self.pos - food.pos).length_squared() <= (self.radius + food.radius) ** 2:
                 food.respawn(width, height)
                 self.energy = min(self.max_energy, self.energy + 65.0)
-                self.genome.fitness += 15.0
                 self.foods_eaten += 1
 
-        # 6. Kolizje z trucizną (utrata dużej części energii + kara fitness)
+        # 6. Kolizje z trucizną (utrata dużej części energii)
         for poison in poisons:
             if (self.pos - poison.pos).length_squared() <= (self.radius + poison.radius) ** 2:
                 poison.respawn(width, height)
                 self.energy = max(0.0, self.energy - 35.0)
-                self.genome.fitness -= 10.0
                 self.poisons_hit += 1
                 if self.energy <= 0.0:
                     self.is_alive = False
+                    self.death_cause = "poison"
+                    self.finalize_fitness()
                     return
 
         # 7. Kolizje z ruchomymi zagrożeniami
         for hazard in hazards:
             if (self.pos - hazard.pos).length_squared() <= (self.radius + hazard.radius) ** 2:
                 self.energy -= 20.0
-                self.genome.fitness -= 5.0
                 if self.energy <= 0.0:
                     self.is_alive = False
+                    self.death_cause = "toxic_edge" if in_toxic_zone else "poison"
+                    self.finalize_fitness()
                     return
 
         # 8. Interakcje Między Agentami: Altruizm, Obrona Stadna, Drapieżnictwo i Zderzenia Czołowe
@@ -351,7 +371,6 @@ class Agent:
                             transfer_amount = 20.0
                             self.energy -= transfer_amount
                             other.energy = min(other.max_energy, other.energy + transfer_amount)
-                            self.genome.fitness += 50.0
                             self.allies_saved += 1
                             break
 
@@ -368,11 +387,12 @@ class Agent:
                             self.vel = -self.vel * 0.5
                             other.vel = -other.vel * 0.5
                             if self.energy >= other.energy:
-                                self.genome.fitness += 10.0
                                 self.defenses_made += 1
                             self.energy = max(0.0, self.energy - 3.0)
                             if self.energy <= 0.0:
                                 self.is_alive = False
+                                self.death_cause = "combat"
+                                self.finalize_fitness()
                                 return
                         elif dot_prod > 0.0 and v_self_len >= 0.5:
                             # Próba ataku od tyłu / flanki
@@ -388,24 +408,33 @@ class Agent:
                                 # OBRONA STADNA AKTYWOWANA!
                                 predator_damage = 15.0
                                 self.energy = max(0.0, self.energy - predator_damage)
-                                self.genome.fitness -= 20.0
-                                other.genome.fitness += 15.0
                                 other.herd_defenses += 1
                                 for ally in allies_in_herd:
-                                    ally.genome.fitness += 15.0
+                                    ally.herd_defenses += 1
+                                if self.energy <= 0.0:
+                                    self.is_alive = False
+                                    self.death_cause = "combat"
+                                    self.finalize_fitness()
+                                    return
                                 break
                             else:
                                 # SAMOTNA OFIARA: Udany atak drapieżnika
                                 stolen_energy = min(25.0, other.energy)
                                 self.energy = min(self.max_energy, self.energy + stolen_energy)
                                 other.energy = max(0.0, other.energy - 25.0)
-                                self.genome.fitness += 25.0
-                                other.genome.fitness -= 10.0
                                 self.attacks_made += 1
                                 if other.energy <= 0.0:
                                     other.is_alive = False
-                                    self.genome.fitness += 15.0  # Bonus za eliminację ofiary
+                                    other.death_cause = "combat"
+                                    other.finalize_fitness()
                                 break
+
+        # 9. Aktualizacja bieżącego fitnessu dla telemetrii UI (podczas trwania życia)
+        f_actions = self.get_action_fitness()
+        if f_actions > 0.0:
+            self.genome.fitness = (self.frames_alive * f_actions) / 25.0
+        else:
+            self.genome.fitness = 0.0
 
     def draw(self, screen: pygame.Surface):
         """Rysuje agenta z kolorem i obwódką zależną od witalności, roli i stanu Grace Period."""

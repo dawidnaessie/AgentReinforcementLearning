@@ -27,9 +27,14 @@ class TestNeatConfig(unittest.TestCase):
         # Weryfikacja kluczowych założeń projektowych (Faza 5: 25 wejść sensorycznych, 3 wyjścia akcji)
         self.assertEqual(config.genome_config.num_inputs, 25, "Liczba wejść musi wynosić 25.")
         self.assertEqual(config.genome_config.num_outputs, 3, "Liczba wyjść musi wynosić 3.")
-        self.assertEqual(config.pop_size, 50, "Wielkość populacji musi wynosić 50.")
+        self.assertEqual(getattr(config, 'pop_size'), 50, "Wielkość populacji musi wynosić 50.")
         self.assertEqual(config.reproduction_config.elitism, 4, "Elitaryzm musi wynosić 4 (Top 4 bez zmian).")
-        self.assertFalse(config.reset_on_extinction)
+        self.assertFalse(getattr(config, 'reset_on_extinction'))
+
+        # Faza 6: Ochrona przed degeneracją sieci (conn_add_prob wyraźnie wyższe niż conn_delete_prob)
+        self.assertAlmostEqual(config.genome_config.conn_add_prob, 0.50, places=2)
+        self.assertAlmostEqual(config.genome_config.conn_delete_prob, 0.20, places=2)
+        self.assertGreater(config.genome_config.conn_add_prob, config.genome_config.conn_delete_prob)
 
 
 if __name__ == '__main__':

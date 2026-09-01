@@ -90,9 +90,9 @@ num_hidden              = 0
 feed_forward            = True
 initial_connection      = full_direct
 
-# Mutacje topologii (stabilny i powolny rozrost)
-conn_add_prob           = 0.10
-conn_delete_prob        = 0.03
+# Mutacje topologii (wyższa szansa dodawania zapobiega degeneracji sieci)
+conn_add_prob           = 0.50
+conn_delete_prob        = 0.20
 node_add_prob           = 0.02
 node_delete_prob        = 0.02
 

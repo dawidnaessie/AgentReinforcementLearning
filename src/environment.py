@@ -332,6 +332,12 @@ class Environment:
 
             frames_lived += 1
 
+        # Finalizacja holistycznego fitnessu dla agentów, którzy przetrwali całą epokę (M_death = 1.2)
+        for agent in agents:
+            if agent.is_alive:
+                agent.death_cause = "survived"
+                agent.finalize_fitness()
+
         # Zapisanie 4 najlepszych genomów na koniec generacji dla wizualizatora
         self.top_genomes = sorted(
             genomes,

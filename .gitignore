@@ -58,3 +58,6 @@ desktop.ini
 # Agent / AI local workspace artifacts
 .agents/
 .gemini/
+
+#my logs
+logs.txt

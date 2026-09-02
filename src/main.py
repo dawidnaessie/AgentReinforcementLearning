@@ -43,12 +43,18 @@ class SimulationRunner:
 
         duration = time.time() - start_t
 
-        # Obliczenie statystyk generacji
+        # Obliczenie statystyk generacji i znalezienie najlepszego osobnika
+        best_genome = max(valid_genomes, key=lambda g: getattr(g, 'fitness', -999999.0)) if valid_genomes else None
         fitnesses = [g.fitness for g in valid_genomes]
-        best_fit = max(fitnesses) if fitnesses else 0.0
+        best_fit = best_genome.fitness if best_genome else 0.0
         avg_fit = (sum(fitnesses) / len(fitnesses)) if fitnesses else 0.0
         variance = sum((f - avg_fit) ** 2 for f in fitnesses) / len(fitnesses) if fitnesses else 0.0
         stdev = math.sqrt(variance)
+
+        # Liczba aktywnych synaps (połączeń) w najlepszym genomie generacji
+        best_synapses = 0
+        if best_genome and hasattr(best_genome, 'connections') and best_genome.connections:
+            best_synapses = sum(1 for c in best_genome.connections.values() if getattr(c, 'enabled', True))
 
         foods_eaten = metrics.get('foods_eaten', 0)
         poisons_hit = metrics.get('poisons_hit', 0)
@@ -71,7 +77,8 @@ class SimulationRunner:
             attacks_made=attacks_made,
             defenses_made=defenses_made,
             herd_defenses=herd_defenses,
-            shouts_made=shouts_made
+            shouts_made=shouts_made,
+            best_synapses=best_synapses
         )
 
         # Czytelny, zwięzły log jednolinijkowy w terminalu z metrykami Fazy 5 (komunikacja i ekosystem)
@@ -109,9 +116,12 @@ def run(config_path: str):
     except (KeyboardInterrupt, SimulationExit) as e:
         print(f"\n[INFO] Zatrzymano symulację ({e})")
     finally:
-        # Czyste zamknięcie okna Pygame i wyświetlenie estetycznego podsumowania
+        # Czyste zamknięcie okna Pygame, wyświetlenie podsumowania i zrzut do logs.txt
         pygame.quit()
         runner.tracker.print_summary()
+        log_path = os.path.join(project_root, 'logs.txt')
+        runner.tracker.dump_to_file(log_path)
+        print(f"[INFO] Raport z symulacji zostal dopisany do pliku: {log_path}\n")
 
 
 if __name__ == '__main__':

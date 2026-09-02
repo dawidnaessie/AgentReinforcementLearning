@@ -244,6 +244,9 @@ class TestEnvironment(unittest.TestCase):
         self.assertEqual(len(captured_nets), 3)
         for net in captured_nets:
             self.assertIsInstance(net, neat.nn.RecurrentNetwork, "Sieć utworzona przez SimulationRunner musi być RecurrentNetwork.")
+        self.assertEqual(len(runner.tracker.generations_data), 1)
+        self.assertGreaterEqual(runner.tracker.generations_data[0]["best_synapses"], 0)
+        self.assertEqual(runner.tracker.peak_synapses, runner.tracker.generations_data[0]["best_synapses"])
 
 
 if __name__ == '__main__':

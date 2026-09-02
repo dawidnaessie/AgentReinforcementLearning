@@ -1,116 +1,149 @@
 # 🧬 AgentReinforcementLearning
 
-> **Artificial Life (ALife) & Neuroevolution Simulation in 2D** powered by **NEAT-Python** and **Pygame**.
+> **Artificial Life (ALife) & Neuroevolution Simulation in 2D** powered by **NEAT-Python (RNN)** and **Pygame**.
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-![NEAT](https://img.shields.io/badge/NEAT--Python-2.0.0-green.svg)
+![NEAT](https://img.shields.io/badge/NEAT--Python-RNN-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-30%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-58%20passed-brightgreen.svg)
+![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
 ---
 
-## 📖 Overview & Core Ideas
+## 📖 Overview & Core Concepts
 
-**AgentReinforcementLearning** is an Artificial Life (ALife) simulation where a population of **50 autonomous neural agents** coexists and evolves within a continuous environment featuring a **1600 x 720 Research Dashboard** (1280px arena + 320px telemetry & visualizer sidebar).
+**AgentReinforcementLearning** is a rich Artificial Life (ALife) sandbox and evolutionary benchmark where a population of **50 autonomous neural agents** evolves across generations in a dynamic 2D ecosystem.
 
-In **Phase 5 (Communication, UI/UX Modernization & Top 4 Network Visualizer)**, the simulation introduces:
-- **Intra-Species Communication (Shout & Hearing):** Agents can emit acoustic alarm/rally calls (costing -0.2 energy/frame), and perceive the direction/distance to the nearest shouting peer.
-- **Top 4 NEAT Brains Visualizer:** Real-time rendering of neural topologies, synaptic weights, and active pathways for the 4 elite genomes.
-- **Research Dashboard UI/UX:** Dark `#0b0c10` simulation arena with subtle grid lines, paired with a `#161b22` sidebar telemetry panel.
-- **Expanded Arena (1280 x 720):** Spacious world preventing overcrowding among the 50 agents and enabling fluid tactical maneuvering.
-- **Grace Period / Ghost Mode (60 frames / 1.0s):** Safe spawn dispersion at the start of each generation without combat, collisions, or toxic edge penalties.
-- **Strict Hunger Metabolism & Toxic Edges:** Eliminates passive camping and compels active foraging and exploration.
-- **Flocking / Herd Defense (+15.0 Fitness for Group):** Collective herd defense punishing isolated predators attacking defended groups.
-- **Altruistic Cooperation (+50.0 Fitness):** High-energy agents share energy reserves to rescue critically starving allies.
+Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px telemetry & visualizer sidebar), the simulation models complex ecological, tribal, and neurological phenomena without relying on heavyweight scientific dependencies—powered purely by clean standard Python, NEAT, and Pygame.
+
+### 🌟 Key Evolutionary Milestones:
+
+- **Recurrent Neural Networks (RNN) with Short-Term Memory:**
+  Agents are governed by recurrent neural topologies (`feed_forward = False`). By forming recurrent cycles and self-feedback loops, agents preserve internal states across frames—enabling temporal awareness (e.g., remembering a predator or prey even when it momentarily disappears from immediate sensory sight).
+- **Kin Selection & Tribal Warfare (4 Tribes):**
+  The population is segmented into **4 distinct factions (Tribes 1–4)**, each rendered in vivid signature colors:
+  - **Tribe 1:** Neon Cyan `(0, 245, 212)`
+  - **Tribe 2:** Vibrant Magenta `(255, 0, 128)`
+  - **Tribe 3:** Electric Yellow `(255, 230, 0)`
+  - **Tribe 4:** Pure White `(240, 246, 255)`
+  Tribal membership enforces strict social boundaries: **intra-tribe altruism**, **prohibition of cannibalism / friendly fire**, **inter-tribe predation**, and **tribal herd defense**.
+- **Acoustic Communication (Shout & Hearing):**
+  Agents possess an active shouting output neuron to broadcast acoustic distress or rallying calls (costing energy per frame), alongside dedicated auditory sensory inputs that pinpoint the direction and distance to shouting peers.
+- **Top 4 NEAT Brains Visualizer & Fullscreen Neural Inspector:**
+  Real-time rendering of the 4 elite neural networks in the sidebar. Clicking on any elite slot pauses the simulation and opens an interactive, fullscreen **Neural Inspector** showcasing node activations, layer layouts, and synaptic weights.
+- **Automated Experiment Logging (`logs.txt`):**
+  Closing the simulation automatically appends an executive summary to `logs.txt`, logging the date/time of the run, overall peak fitness, the number of active synapses in the peak genome, and a per-generation progression table.
+- **Safe Spawn Grace Period (60 frames / 1.0s):**
+  Agents spawn with a protective invulnerability shield, allowing initial dispersion across the map without unfair spawn camping or edge penalties.
+- **Strict Energy & Metabolic Pressure:**
+  Base metabolic burn, sprint fatigue costs, communication energy drain, and toxic arena borders prevent passive camping and drive continuous evolution.
 
 ---
 
 ## 👁️ Agent Sensory & Action Space
 
-Each agent perceives its surroundings through **25 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]`):
+Each agent evaluates its surroundings through **25 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]`):
 
-| Input Index | Sensory Signal | Range | Description |
+| Input Index | Sensory Signal | Range | Description & Ecological Role |
 | :---: | :--- | :--- | :--- |
-| **1 – 2** | `Velocity (VX, VY)` | `[-1.0, 1.0]` | Current movement speed normalized to maximum velocity |
+| **1 – 2** | `Velocity (VX, VY)` | `[-1.0, 1.0]` | Current agent velocity vector normalized to max speed |
 | **3** | `Nearest Food #1 Distance` | `[0.0, 1.0]` | Normalized Euclidean distance to the closest food item |
-| **4 – 5** | `Nearest Food #1 Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest food |
-| **6** | `Secondary Food #2 Distance` | `[0.0, 1.0]` | Normalized distance to 2nd closest food (smoother multi-target route planning) |
-| **7 – 8** | `Secondary Food #2 Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward 2nd closest food |
-| **9** | `Nearest Poison Distance` | `[0.0, 1.0]` | Normalized distance to the closest environmental toxin (`Poison`) |
-| **10 – 11** | `Nearest Poison Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest poison |
-| **12** | `Nearest Hazard Distance` | `[0.0, 1.0]` | Normalized distance to the closest mobile hazard |
-| **13 – 14** | `Nearest Hazard Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward hazard |
-| **15** | `Nearest Agent Distance` | `[0.0, 1.0]` | Normalized distance to the closest alive competitor/peer |
-| **16 – 17** | `Nearest Agent Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward nearest agent |
-| **18** | `Nearest Ally Critical State` | `{0.0, 1.0}` | Binary flag: `1.0` if closest ally has energy `< 20%` (starving), else `0.0` |
-| **19** | `Nearest Peer Relative Heading` | `[-1.0, 1.0]` | Relative velocity heading dot product: `> 0.0` when peer is fleeing, `< 0.0` when charging head-on |
-| **20** | `Local Herd Density` | `[0.0, 1.0]` | Proximity density of allies within 60px (`0.0` isolated prey, `1.0` densely protected herd) |
-| **21** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Distance to nearest arena boundary (`0.0` at edge, `1.0` at center) |
-| **22** | `Current Energy Level` | `[0.0, 1.0]` | Remaining vitality percentage before starvation |
-| **23** | `Nearest Shouting Agent Distance` | `[0.0, 1.0]` | Normalized distance to the nearest agent currently emitting a shout (`0.0` if quiet) |
-| **24 – 25** | `Nearest Shout Direction (DX, DY)` | `[-1.0, 1.0]` | Direction unit vector pointing toward the shouting agent (`0.0, 0.0` if quiet) |
+| **4 – 5** | `Nearest Food #1 Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward nearest food |
+| **6** | `Secondary Food #2 Distance` | `[0.0, 1.0]` | Normalized distance to 2nd closest food (enables trajectory planning) |
+| **7 – 8** | `Secondary Food #2 Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward 2nd closest food |
+| **9** | `Nearest Poison Distance` | `[0.0, 1.0]` | Normalized distance to closest environmental toxin (`Poison`) |
+| **10 – 11** | `Nearest Poison Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward nearest poison |
+| **12** | `Nearest Hazard Distance` | `[0.0, 1.0]` | Normalized distance to closest mobile hazard |
+| **13 – 14** | `Nearest Hazard Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward hazard |
+| **15** | `Nearest Enemy Distance` | `[0.0, 1.0]` | Normalized distance to closest agent from a **foreign tribe** (`other.tribe_id != self.tribe_id`) |
+| **16 – 17** | `Nearest Enemy Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward nearest enemy |
+| **18** | `Nearest Ally Critical State` | `{0.0, 1.0}` | Binary trigger: `1.0` if nearest **own tribe ally** has energy `< 20%` (starving), else `0.0` |
+| **19** | `Nearest Enemy Relative Heading` | `[-1.0, 1.0]` | Heading alignment with enemy: `> 0.0` if enemy is fleeing, `< 0.0` if charging head-on |
+| **20** | `Local Tribe Herd Density` | `[0.0, 1.0]` | Proximity density of **own tribe allies** within 60px (`0.0` isolated, `1.0` densely packed) |
+| **21** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Proximity to arena borders (`0.0` at wall, `1.0` at center) |
+| **22** | `Current Energy Level` | `[0.0, 1.0]` | Current vitality reserve percentage |
+| **23** | `Nearest Shouting Agent Distance` | `[0.0, 1.0]` | Normalized distance to nearest agent currently shouting (`0.0` if none) |
+| **24 – 25** | `Nearest Shout Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward the shouting agent |
 
 ### Action Outputs (3 Neurons with `tanh` activation):
-- **Output 1 (`Ax`):** Horizontal acceleration force `[-1.0, 1.0]`
-- **Output 2 (`Ay`):** Vertical acceleration force `[-1.0, 1.0]`
-- **Output 3 (`Shout`):** Communication trigger `[-1.0, 1.0]`. Emits an acoustic call when `> 0.0` (costs -0.2 energy/frame).
+- **Output 1 (`Ax`):** Horizontal acceleration force in `[-1.0, 1.0]`.
+- **Output 2 (`Ay`):** Vertical acceleration force in `[-1.0, 1.0]`.
+- **Output 3 (`Shout`):** Acoustic call activation in `[-1.0, 1.0]`. Emits an acoustic wave when `> 0.0` (costs `-0.2` energy/frame).
 
 ---
 
-## ⚡ Energy, Fitness, Communication & Ecosystem Dynamics
+## ⚔️ Social Dynamics, Kin Selection & Ecosystem Mechanics
 
-- **Acoustic Communication (Shout):** Agents with `Output 3 > 0.0` broadcast their position with an expanding turquoise acoustic wave at an energetic cost of -0.2 energy per frame.
-- **Strict Hunger Metabolism:** Base loss ($0.20$) + sprint cost $(\text{speed}/\text{max})^2 \times 0.08$ + shout cost ($0.20$ if shouting). Agents must feed to survive.
-- **Toxic Edge Zones (50px Margin):** Entering the 50px boundary zone incurs continuous penalties ($-0.5$ energy, $-0.1$ fitness/frame).
-- **Foraging (+15.0 Fitness, +65 Energy):** Consuming a food entity restores vital energy.
-- **Poison Obstacle (-10.0 Fitness, -35 Energy):** Contact with purple square toxins deals severe damage.
-- **Mobile Hazards (-5.0 Fitness, -20 Energy):** Wandering red hazards penalize fitness and health.
-- **Flocking / Herd Defense (-20.0 Predator Penalty, +15.0 Herd Reward, -15 Energy):**
-  - Attacking a target that has $\ge 1$ ally nearby triggers a collective counter-attack.
-- **Selective Predation (+25.0 Fitness, +25 Energy):**
-  - Stalking and striking **isolated prey** (0 allies nearby) from behind steals 25 energy.
+### 1. Kin Selection & Tribal Rules
+- **Altruism (+50.0 Fitness):**
+  High-energy agents (`> 50` energy) can transfer `20.0` energy to save a starving agent (`< 20` energy). This transfer is **strictly permitted only between members of the same tribe** (`donor.tribe_id == recipient.tribe_id`).
+- **Cannibalism Prohibition:**
+  Agents cannot attack, siphon energy from, or kill members of their own tribe.
+- **Inter-Tribal Predation (+25.0 Fitness, +25.0 Energy):**
+  Predators can stalk and attack isolated enemies from behind (`dot_prod > 0.0`). Attacking an isolated enemy siphons up to 25 energy.
 - **Frontal Defense & Parrying (+10.0 Fitness):**
-  - Head-on collisions (`v_self · v_other <= -0.2`) deflect incoming attacks.
-- **Altruism & Cooperation (+50.0 Fitness):**
-  - High-energy agents (`> 50%`) transfer 20 energy to save critically starving peers (`< 20%`).
+  When two enemies collide head-on (`dot_prod <= -0.2`), the attack is parried with minor kinetic bounce and defensive fitness rewards.
+- **Tribal Herd Defense (+15.0 Fitness for Defenders, -15 Energy for Predator):**
+  If an enemy attempts to attack a victim that has $\ge 1$ ally from **its own tribe** within 45px, the entire herd counter-attacks, dealing damage to the predator and granting herd defense fitness to all participating allies.
+
+### 2. Metabolism & Environmental Pressures
+- **Strict Basal Metabolism:** Baseline burn ($-0.20$ energy/frame) + sprint quadratic cost $(\text{speed}/\text{max})^2 \times 0.08$ + acoustic shout cost ($-0.20$ energy/frame).
+- **Foraging (+15.0 Fitness, +65.0 Energy):** Eating green apples restores energy.
+- **Poison Obstacles (-10.0 Fitness, -35.0 Energy):** Consuming purple square toxins causes severe damage.
+- **Toxic Edge Zones (50px Margin):** Hovering near the perimeter incurs continuous penalties ($-0.5$ energy, $-0.1$ fitness/frame).
+- **Grace Period (60 frames / 1.0s):** Blue protective glow preventing early collisions, edge penalties, or predation right after spawn.
 
 ---
 
-## 🕹️ Controls & Features
+## 🕹️ Controls & Interactive UI
 
-- **📊 Neural Visualizer & Telemetry Sidebar:** Real-time visualization of Top 4 NEAT networks (nodes, synapses, positive/negative weights) and ecological counters.
-- **⚡ Turbo Mode (`[SPACE]`):** Instantly toggles between 60 FPS capped rendering and uncapped simulation speed.
-- **🛑 Graceful Exit (`[ESC]` or window close):** Closes the window and prints an executive summary report to the terminal.
+| Input | Function | Description |
+| :---: | :--- | :--- |
+| **`[SPACE]`** | **Toggle Turbo Mode** | Switches between 60 FPS visual rendering and uncapped simulation speed for rapid evolution. |
+| **`[ESC]` / `[X]`** | **Graceful Exit & Dump** | Safely exits Pygame, prints console summary, and appends the run log to `logs.txt`. |
+| **`Left Mouse Click`** | **Neural Inspector** | Click on any of the **Top 4 elite slots** in the sidebar to open the full-screen Neural Inspector. |
+| **`[ESC]` (in Inspector)** | **Close Inspector** | Closes the Neural Inspector and resumes live simulation. |
 
 ---
 
-## 📊 End-of-Run Summary Report
+## 📝 Automated Experiment Logging (`logs.txt`)
 
-When stopping the simulation, the built-in `EvolutionTracker` outputs a structured overview of the entire evolutionary trajectory:
+Every simulation run automatically appends structured diagnostic records to `logs.txt`. This allows comparing different evolutionary runs, tracking fitness growth over time, and monitoring structural neural complexity (synapses count).
 
+Example log entry appended to `logs.txt`:
 ```text
-=================================================================
-          POPULATION EVOLUTION SUMMARY REPORT (ALife)
-=================================================================
- * Completed generations:             16
- * Total simulation runtime:          38.45 s (2.40 s / generation)
------------------------------------------------------------------
- * Initial mean fitness (Gen 1):      29.68 pts
- * Final mean fitness (Gen 16):       194.45 pts
- * Mean fitness growth:               +555.2%
- * Peak individual fitness (Gen 10):  570.00 pts
------------------------------------------------------------------
- RECENT GENERATION HISTORY:
- Gen    | Max Fitness    | Mean Fitness   | Time (s)  
- -------------------------------------------------------
- 9      | 359.55         | 110.68         | 2.23      
- 10     | 570.00         | 164.00         | 2.29      
- 11     | 555.00         | 142.53         | 2.25      
- 12     | 405.00         | 138.99         | 2.17      
- ...
-=================================================================
- Status: Evolution complete. All metrics aggregated.
-=================================================================
+==================================================================================================
+SIMULATION RUN LOG - 2026-09-02 01:45:30
+==================================================================================================
+• Data rozpoczecia:    2026-09-02 01:41:15
+• Data zakonczenia:    2026-09-02 01:45:30
+• Czas trwania:        255.40 s (4.26 min)
+• Ukonczone generacje: 12
+
+NAJLEPSZY WYNIK W CALEJ SYMULACJI (PEAK PERFORMANCE):
+• Najwyzszy fitness w ogole: 1420.50 pkt
+• Osiagniety w generacji:    Gen 9
+• Liczba aktywnych synaps:   38 polaczen
+
+PODSUMOWANIE EKOSYSTEMU I ZACHOWAN:
+• Sredni fitness startowy (Gen 1):  14.20 pkt
+• Sredni fitness koncowy (Gen 12):  285.60 pkt
+• Wzrost sredniej sprawnosci:       +1911.3%
+• Zebrane jablka:                   485 szt.
+• Zjedzone trucizny:                72 szt.
+• Akty altruizmu (uratowani):       104
+• Ataki drapieznikow:               135
+• Obrony czolowe:                   62
+• Obrony stadne:                    89
+• Wyemitowane krzyki:               340
+
+SZCZEGOLOWY PRZEBIEG GENERACJA PO GENERACJI (AVG SCORE & PEAK):
+Gen   | Sr Fitness  | Max Fitness | Synapsy  | Jablka  | Trucizny | Altruizm | Ataki  | Obrony | Stado  | Czas   
+--------------------------------------------------------------------------------------------------
+1     | 14.20       | 52.40       | 25       | 18      | 12       | 3        | 2      | 1      | 0      | 18.20s
+2     | 38.60       | 120.10      | 26       | 29      | 8        | 6        | 5      | 2      | 2      | 21.05s
+...
+==================================================================================================
 ```
 
 ---
@@ -119,25 +152,26 @@ When stopping the simulation, the built-in `EvolutionTracker` outputs a structur
 
 ```text
 AgentReinforcementLearning/
-├── config-feedforward.txt   # NEAT hyperparameters and genetic configuration
+├── config-feedforward.txt   # NEAT hyperparameters (RNN enabled, mutation probabilities)
+├── logs.txt                 # Automated run logs and evolutionary telemetry (gitignored)
 ├── README.md                # Project documentation
-├── .gitignore               # Comprehensive ignores (pycache, venv, checkpoints, IDE)
-├── docs/                    # Architectural guidelines and standards
-│   ├── coding_standards.md
-│   ├── project_context.md
-│   └── workflow_and_testing.md
-├── src/                     # Application source code
-│   ├── agent.py             # Agent class (sensors, physics, energy, collision)
-│   ├── entities.py          # Food & Hazard entities (Vector2 math, respawn pool)
-│   ├── environment.py       # Pygame lifecycle, HUD, rendering, generation loop
-│   ├── main.py              # NEAT runner, CLI entrypoint, exit handlers
-│   └── stats.py             # EvolutionTracker statistics aggregator & formatter
-└── tests/                   # 100% headless unit test suite (30 tests)
-    ├── test_agent.py
-    ├── test_config.py
-    ├── test_entities.py
-    ├── test_environment.py
-    └── test_stats.py
+├── .gitignore               # Comprehensive ignores (pycache, venv, checkpoints, logs)
+├── docs/                    # Architecture and developer guidelines
+│   ├── coding_standards.md  # Clean code, KISS, and standard library rules
+│   ├── project_context.md   # Simulation domain context and phase breakdown
+│   └── workflow_and_testing.md # TDD workflow, testing rules, and QA protocols
+├── src/                     # Source code
+│   ├── agent.py             # Agent class (sensors, RNN activation, tribes, physics)
+│   ├── entities.py          # Food, Hazard, Poison entities
+│   ├── environment.py       # Simulation loop, HUD, Neural Inspector, Top 4 slots
+│   ├── main.py              # Runner entry point, eval loop, graceful exit handlers
+│   └── stats.py             # EvolutionTracker statistics, summary printer, dump_to_file
+└── tests/                   # Comprehensive headless unit test suite (58 tests)
+    ├── test_agent.py        # Agent physics, sensors, combat, tribal rules, altruism
+    ├── test_config.py       # NEAT configuration, RNN recurrent validation
+    ├── test_entities.py     # Entity collisions, boundaries, respawning
+    ├── test_environment.py  # Simulation lifecycle, HUD, inspector deepcopy, runner
+    └── test_stats.py        # Statistics tracking, terminal summary, log dumping
 ```
 
 ---
@@ -150,7 +184,7 @@ git clone https://github.com/dawidnaessie/AgentReinforcmentLearning.git
 cd AgentReinforcmentLearning
 ```
 
-### 2. Set up virtual environment
+### 2. Set up a virtual environment
 ```bash
 python -m venv venv
 
@@ -171,21 +205,22 @@ pip install neat-python pygame
 python src/main.py
 ```
 
-### 5. Run unit tests
+### 5. Run the unit test suite
 ```bash
-python -m unittest discover -s tests -p "test_*.py" -v
+python -m unittest discover tests -v
 ```
 
 ---
 
 ## 🧪 Testing & Quality Assurance
 
-The codebase strictly follows **Test-Driven Development (TDD)** and clean separation between domain logic and rendering:
-- Physics, collisions, senses, and genetics are completely testable in **headless mode** without launching a Pygame window.
-- All **30 unit tests** pass in under 2 seconds.
+The codebase strictly adheres to **Test-Driven Development (TDD)** and clean separation of concerns:
+- **Headless Testing:** All agent mechanics, RNN outputs, tribal interactions, and telemetry are 100% executable headlessly without opening display windows.
+- **Deepcopy Isolation:** Neural inspection uses isolated deepcopies to avoid mutation or state corruption during live evolution.
+- **Fast Execution:** All **58 unit tests** execute in under 1.5 seconds.
 
 ---
 
 ## 📜 License
 
-This project is open-source and available under the [MIT License](LICENSE).
+This project is open-source and licensed under the [MIT License](LICENSE).

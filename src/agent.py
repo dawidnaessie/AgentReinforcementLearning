@@ -67,6 +67,7 @@ class Agent:
         self.defenses_made = 0
         self.herd_defenses = 0
         self.shouts_made = 0
+        self.combat_cooldown = 0  # Phase 9: Combat cooldown (30 frames / 0.5s anti-micro-farming)
 
         # Genome fitness initialization (Holistic fitness system Phase 6)
         self.genome.fitness = 0.0
@@ -244,26 +245,6 @@ class Agent:
         # 22. Self energy level [0.0, 1.0]
         norm_energy = max(0.0, min(self.energy / self.max_energy, 1.0))
 
-        # 23 - 25. Shout and Hearing: Acoustic sensor detecting nearest shouting agent
-        closest_shouter = None
-        min_shout_dist = float('inf')
-        for other in all_agents:
-            if other is not self and other.is_alive and other.is_shouting:
-                d = (self.pos - other.pos).length()
-                if d < min_shout_dist:
-                    min_shout_dist = d
-                    closest_shouter = other
-
-        if closest_shouter is not None and min_shout_dist > 0.0001:
-            norm_shout_dist = min(min_shout_dist / max_dist, 1.0)
-            shout_dir = (closest_shouter.pos - self.pos).normalize()
-            norm_shout_dx = shout_dir.x
-            norm_shout_dy = shout_dir.y
-        else:
-            norm_shout_dist = 0.0
-            norm_shout_dx = 0.0
-            norm_shout_dy = 0.0
-
         return (
             norm_vx, norm_vy,
             norm_food1_dist, norm_food1_dx, norm_food1_dy,
@@ -275,11 +256,20 @@ class Agent:
             norm_agent_rel_heading,
             norm_herd_density,
             norm_wall_dist,
-            norm_energy,
-            norm_shout_dist,
-            norm_shout_dx,
-            norm_shout_dy
+            norm_energy
         )
+
+    def get_state(
+        self,
+        foods: List[Food],
+        poisons: List[Poison],
+        hazards: List[Hazard],
+        all_agents: List["Agent"],
+        width: int,
+        height: int
+    ) -> Tuple[float, ...]:
+        """Calculates and returns the 22 normalized sensory inputs (Phase 9: Acoustic Lobotomy)."""
+        return self._get_sensory_inputs(foods, poisons, hazards, all_agents, width, height)
 
     def think_and_act(
         self,
@@ -296,18 +286,14 @@ class Agent:
 
         self.frames_alive += 1
 
-        # 1. Senses and network activation (Phase 5: 25 inputs, 3 outputs)
-        inputs = self._get_sensory_inputs(foods, poisons, hazards, all_agents, width, height)
+        # Combat cooldown decrement (Phase 9: Anti-micro-farming)
+        if self.combat_cooldown > 0:
+            self.combat_cooldown -= 1
+
+        # 1. Senses and network activation (Phase 9: 22 inputs, 2 outputs)
+        inputs = self.get_state(foods, poisons, hazards, all_agents, width, height)
         outputs = self.net.activate(inputs)
         accel = pygame.math.Vector2(outputs[0], outputs[1])
-
-        # Output #3: Shout communication signal activation
-        if len(outputs) > 2:
-            self.is_shouting = (outputs[2] > 0.0)
-            if self.is_shouting:
-                self.shouts_made += 1
-        else:
-            self.is_shouting = False
 
         # 2. Velocity and position update
         self.vel += accel * 0.8
@@ -334,11 +320,9 @@ class Agent:
             self.pos.y = height - margin
             self.vel.y = 0
 
-        # 3. Relentless Hunger Metabolism (0.20 baseline + sprint + shout)
+        # 3. Relentless Hunger Metabolism (0.20 baseline + sprint)
         speed_ratio = speed / self.max_speed if self.max_speed > 0 else 0.0
         energy_cost = 0.20 + (speed_ratio ** 2) * 0.08
-        if self.is_shouting:
-            energy_cost += 0.20
         self.energy -= energy_cost
 
         # Phase 8: Elimination of "Corner Exploit" - Deadly Zone (Margin = 20px) and warning buffer zone (50px)
@@ -428,7 +412,9 @@ class Agent:
                                 self.vel = -self.vel * 0.5
                                 other.vel = -other.vel * 0.5
                                 if self.energy >= other.energy:
-                                    self.defenses_made += 1
+                                    if self.combat_cooldown == 0:
+                                        self.defenses_made += 1
+                                        self.combat_cooldown = 30
                                 self.energy = max(0.0, self.energy - 3.0)
                                 if self.energy <= 0.0:
                                     self.is_alive = False
@@ -450,9 +436,13 @@ class Agent:
                                     # ENEMY HERD DEFENSE ACTIVATED!
                                     predator_damage = 15.0
                                     self.energy = max(0.0, self.energy - predator_damage)
-                                    other.herd_defenses += 1
+                                    if other.combat_cooldown == 0:
+                                        other.herd_defenses += 1
+                                        other.combat_cooldown = 30
                                     for ally in allies_in_herd:
-                                        ally.herd_defenses += 1
+                                        if ally.combat_cooldown == 0:
+                                            ally.herd_defenses += 1
+                                            ally.combat_cooldown = 30
                                     if self.energy <= 0.0:
                                         self.is_alive = False
                                         self.death_cause = "combat"
@@ -461,10 +451,12 @@ class Agent:
                                     break
                                 else:
                                     # LONELY ENEMY: Successful predator attack
-                                    stolen_energy = min(25.0, other.energy)
-                                    self.energy = min(self.max_energy, self.energy + stolen_energy)
+                                    if self.combat_cooldown == 0:
+                                        stolen_energy = min(25.0, other.energy)
+                                        self.energy = min(self.max_energy, self.energy + stolen_energy)
+                                        self.attacks_made += 1
+                                        self.combat_cooldown = 30
                                     other.energy = max(0.0, other.energy - 25.0)
-                                    self.attacks_made += 1
                                     if other.energy <= 0.0:
                                         other.is_alive = False
                                         other.death_cause = "combat"
@@ -500,11 +492,10 @@ class Agent:
             # Crimson ring for predators with successful attacks
             pygame.draw.circle(screen, (231, 76, 60), center, int(self.radius + 2), 1)
 
-        # Communication (Phase 5): Sound wave / shout (neon turquoise)
-        if self.is_shouting:
-            pygame.draw.circle(screen, (0, 245, 212), center, int(self.radius + 6), 1)
-
         # Draw velocity heading indicator
         if self.vel.length_squared() > 0.01:
             dir_end = self.pos + self.vel.normalize() * (self.radius + 3)
             pygame.draw.line(screen, (241, 196, 15), center, (int(dir_end.x), int(dir_end.y)), 2)
+
+    # Alias for update loop
+    update = think_and_act

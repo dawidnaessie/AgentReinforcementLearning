@@ -28,21 +28,20 @@ class DummyGenome:
 
 
 class DummyNetwork:
-    """Simple dummy neural network returning 3 outputs (movement dx, dy, and shout)."""
-    def __init__(self, output_x=1.0, output_y=0.0, output_shout=0.0):
+    """Simple dummy neural network returning 2 outputs (movement ax, ay) in Phase 9."""
+    def __init__(self, output_x=1.0, output_y=0.0):
         self.output_x = output_x
         self.output_y = output_y
-        self.output_shout = output_shout
 
     def activate(self, inputs):
-        return (self.output_x, self.output_y, self.output_shout)
+        return (self.output_x, self.output_y)
 
     def reset(self):
         pass
 
 
 class TestAgent(unittest.TestCase):
-    """Unit tests for Agent class (Phase 5: Communication, shout, hearing, 25 inputs, 3 outputs)."""
+    """Unit tests for Agent class (Phase 9: Acoustic Lobotomy, 22 inputs, 2 outputs, combat cooldown)."""
 
     def setUp(self):
         self.net = DummyNetwork()
@@ -54,7 +53,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.agent.energy, 150.0)
         self.assertEqual(self.agent.max_energy, 150.0)
         self.assertEqual(self.agent.frames_alive, 0)
-        self.assertFalse(self.agent.is_shouting)
+        self.assertEqual(self.agent.combat_cooldown, 0)
         self.assertEqual(self.agent.genome.fitness, 0.0)
         self.assertEqual(self.agent.foods_eaten, 0)
         self.assertEqual(self.agent.poisons_hit, 0)
@@ -64,55 +63,123 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.agent.herd_defenses, 0)
         self.assertIn(self.agent.tribe_id, [1, 2, 3, 4])
 
-    def test_shout_activation_and_deactivation(self):
-        # Network with shout signal > 0.0
-        shouting_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=0.8)
-        shouter = Agent(shouting_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
-        shouter.think_and_act([], [], [], [shouter], 1280, 720)
-        self.assertTrue(shouter.is_shouting)
+    def test_sensory_and_action_dimensions_phase_9(self):
+        """Phase 9 Lobotomy: agent perceives strictly 22 inputs and activates 2 outputs (Accel X, Accel Y)."""
+        inputs = self.agent.get_state([], [], [], [self.agent], 1280, 720)
+        self.assertEqual(len(inputs), 22)
+        outputs = self.agent.net.activate(inputs)
+        self.assertEqual(len(outputs), 2)
 
-        # Network with shout signal <= 0.0
-        silent_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=-0.5)
-        silent_agent = Agent(silent_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
-        silent_agent.is_shouting = True
-        silent_agent.think_and_act([], [], [], [silent_agent], 1280, 720)
-        self.assertFalse(silent_agent.is_shouting)
+    def test_metabolism_cost_no_shout_penalty(self):
+        """Verifies baseline metabolism burn (0.20/frame) and confirms removal of shout penalty."""
+        stationary_net = DummyNetwork(output_x=0.0, output_y=0.0)
+        agent = Agent(stationary_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
+        initial_energy = agent.energy
+        agent.think_and_act([], [], [], [agent], 1280, 720)
+        energy_loss = initial_energy - agent.energy
+        # Strictly base metabolism of 0.20, no acoustic shout cost
+        self.assertAlmostEqual(energy_loss, 0.20, places=2)
 
-    def test_shout_energy_cost(self):
-        # Agent shouting in place (cost: 0.20 base + 0.20 shout = 0.40)
-        shouting_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=1.0)
-        shouter = Agent(shouting_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
-        initial_shouter_energy = shouter.energy
-        shouter.think_and_act([], [], [], [shouter], 1280, 720)
-        shout_loss = initial_shouter_energy - shouter.energy
-        self.assertAlmostEqual(shout_loss, 0.40, places=2)
+    def test_combat_cooldown_anti_micro_farming_predation(self):
+        """Verifies combat cooldown prevents frame-by-frame attack point farming."""
+        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
+        predator.vel = pygame.math.Vector2(3.0, 0.0)
+        predator.energy = 50.0
+        predator.frames_alive = 100
 
-        # Silent agent in place (cost: 0.20 base)
-        silent_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=-1.0)
-        silent_agent = Agent(silent_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
-        initial_silent_energy = silent_agent.energy
-        silent_agent.think_and_act([], [], [], [silent_agent], 1280, 720)
-        silent_loss = initial_silent_energy - silent_agent.energy
-        self.assertAlmostEqual(silent_loss, 0.20, places=2)
+        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=2)
+        prey.vel = pygame.math.Vector2(1.0, 0.0)
+        prey.energy = 60.0
+        prey.frames_alive = 100
 
-    def test_hearing_sensors(self):
-        # 1. Case where nobody nearby is shouting
-        silent_peer = Agent(DummyNetwork(output_shout=-1.0), DummyGenome(), width=1280, height=720, start_pos=(500, 300))
-        silent_peer.is_shouting = False
-        inputs_quiet = self.agent._get_sensory_inputs([], [], [], [self.agent, silent_peer], 1280, 720)
-        # Sensors #23, #24, #25 should be 0.0
-        self.assertEqual(inputs_quiet[22], 0.0)
-        self.assertEqual(inputs_quiet[23], 0.0)
-        self.assertEqual(inputs_quiet[24], 0.0)
+        # Attack #1: Cooldown is 0 -> Successful attack (+25 energy, attacks_made=1, cooldown=30)
+        predator.think_and_act([], [], [], [predator, prey], 1280, 720)
+        self.assertEqual(predator.attacks_made, 1)
+        self.assertEqual(predator.combat_cooldown, 30)
+        self.assertGreaterEqual(predator.energy, 70.0)
+        self.assertLessEqual(prey.energy, 36.0)
 
-        # 2. Case where another agent is shouting 100px to the right
-        shouting_peer = Agent(DummyNetwork(output_shout=1.0), DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 100, self.agent.pos.y))
-        shouting_peer.is_shouting = True
-        inputs_heard = self.agent._get_sensory_inputs([], [], [], [self.agent, shouting_peer], 1280, 720)
-        # Normalized distance > 0.0 and direction dx close to 1.0, dy close to 0.0
-        self.assertGreater(inputs_heard[22], 0.0)
-        self.assertAlmostEqual(inputs_heard[23], 1.0, places=1)
-        self.assertAlmostEqual(inputs_heard[24], 0.0, places=1)
+        # Attack #2 immediately on next frame: Cooldown decrements to 29 (>0)
+        # Predator cannot receive fitness points or energy, but prey still takes damage!
+        energy_before = predator.energy
+        predator.pos = pygame.math.Vector2(195, 200)
+        prey.pos = pygame.math.Vector2(200, 200)
+        predator.vel = pygame.math.Vector2(3.0, 0.0)
+        prey.vel = pygame.math.Vector2(1.0, 0.0)
+
+        predator.think_and_act([], [], [], [predator, prey], 1280, 720)
+        self.assertEqual(predator.attacks_made, 1, "Attacks count must NOT increase during combat cooldown!")
+        self.assertEqual(predator.combat_cooldown, 29)
+        self.assertLess(predator.energy, energy_before, "Predator must NOT siphon energy while combat cooldown > 0")
+        self.assertAlmostEqual(prey.energy, 10.0, places=1, msg="Prey still takes damage from physical contact")
+
+    def test_combat_cooldown_anti_micro_farming_frontal_defense(self):
+        """Verifies frontal defense respects 30-frame cooldown against collision jamming."""
+        agent_a = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(196, 200), tribe_id=1)
+        agent_a.vel = pygame.math.Vector2(2.0, 0.0)
+        agent_a.energy = 80.0
+        agent_a.frames_alive = 100
+
+        agent_b = Agent(DummyNetwork(output_x=-1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=2)
+        agent_b.vel = pygame.math.Vector2(-2.0, 0.0)
+        agent_b.energy = 40.0
+        agent_b.frames_alive = 100
+
+        # First clash: Successful defense -> defenses_made = 1, cooldown = 30
+        agent_a.think_and_act([], [], [], [agent_a, agent_b], 1280, 720)
+        self.assertEqual(agent_a.defenses_made, 1)
+        self.assertEqual(agent_a.combat_cooldown, 30)
+
+        # Immediate second collision while on cooldown:
+        agent_a.pos = pygame.math.Vector2(196, 200)
+        agent_b.pos = pygame.math.Vector2(200, 200)
+        agent_a.vel = pygame.math.Vector2(2.0, 0.0)
+        agent_b.vel = pygame.math.Vector2(-2.0, 0.0)
+        agent_a.think_and_act([], [], [], [agent_a, agent_b], 1280, 720)
+        self.assertEqual(agent_a.defenses_made, 1, "Defenses count must NOT increase during combat cooldown!")
+        self.assertEqual(agent_a.combat_cooldown, 29)
+
+    def test_combat_cooldown_anti_micro_farming_herd_defense(self):
+        """Verifies herd defense grants 30-frame cooldown to all defenders."""
+        predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
+        predator.vel = pygame.math.Vector2(3.0, 0.0)
+        predator.energy = 80.0
+        predator.frames_alive = 100
+
+        prey = Agent(DummyNetwork(output_x=0.5, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=2)
+        prey.vel = pygame.math.Vector2(1.0, 0.0)
+        prey.energy = 50.0
+        prey.frames_alive = 100
+
+        ally = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(215, 200), tribe_id=2)
+        ally.vel = pygame.math.Vector2(1.0, 0.0)
+        ally.energy = 60.0
+        ally.frames_alive = 100
+
+        predator.think_and_act([], [], [], [predator, prey, ally], 1280, 720)
+        self.assertEqual(prey.herd_defenses, 1)
+        self.assertEqual(ally.herd_defenses, 1)
+        self.assertEqual(prey.combat_cooldown, 30)
+        self.assertEqual(ally.combat_cooldown, 30)
+
+        # Second attack while on cooldown:
+        predator.pos = pygame.math.Vector2(195, 200)
+        predator.vel = pygame.math.Vector2(3.0, 0.0)
+        predator.think_and_act([], [], [], [predator, prey, ally], 1280, 720)
+        self.assertEqual(prey.herd_defenses, 1, "Victim herd defenses must NOT increase while on cooldown!")
+        self.assertEqual(ally.herd_defenses, 1, "Ally herd defenses must NOT increase while on cooldown!")
+
+    def test_combat_cooldown_decrement_to_zero(self):
+        """Verifies combat_cooldown decrements cleanly down to 0 frame by frame."""
+        self.agent.combat_cooldown = 3
+        self.agent.think_and_act([], [], [], [self.agent], 1280, 720)
+        self.assertEqual(self.agent.combat_cooldown, 2)
+        self.agent.think_and_act([], [], [], [self.agent], 1280, 720)
+        self.assertEqual(self.agent.combat_cooldown, 1)
+        self.agent.think_and_act([], [], [], [self.agent], 1280, 720)
+        self.assertEqual(self.agent.combat_cooldown, 0)
+        self.agent.think_and_act([], [], [], [self.agent], 1280, 720)
+        self.assertEqual(self.agent.combat_cooldown, 0)
 
     def test_grace_period_no_combat_or_edge_penalty(self):
         # 1. No edge penalty during Grace Period (< 60 frames / 1 second)
@@ -185,8 +252,8 @@ class TestAgent(unittest.TestCase):
 
         inputs = self.agent._get_sensory_inputs(foods, poisons, hazards, agents, 1280, 720)
 
-        # Phase 5: exactly 25 sensory inputs
-        self.assertEqual(len(inputs), 25)
+        # Phase 9: exactly 22 sensory inputs
+        self.assertEqual(len(inputs), 22)
         for idx, val in enumerate(inputs):
             self.assertGreaterEqual(val, -1.01, f"Input {idx} value {val} is below -1.0")
             self.assertLessEqual(val, 1.01, f"Input {idx} value {val} is above 1.0")

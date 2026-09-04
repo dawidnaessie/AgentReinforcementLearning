@@ -56,8 +56,8 @@ enabled_rate_to_false_add = 0.0
 compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient   = 0.5
 
-# Network architecture (Phase 5: Communication - Shout & Hearing, Herd Defense)
-# 25 normalized perceptual inputs:
+# Network architecture (Phase 9: Acoustic Lobotomy - 22 inputs, 2 action outputs)
+# 22 normalized perceptual inputs:
 # 1. Velocity VX (-1..1)
 # 2. Velocity VY (-1..1)
 # 3. Distance to nearest food #1 (0..1)
@@ -80,13 +80,10 @@ compatibility_weight_coefficient   = 0.5
 # 20. Herd density of own tribe around agent (0..1, safety in numbers)
 # 21. Distance to nearest wall/boundary (0..1)
 # 22. Self energy level (0..1)
-# 23. Distance to nearest shouting agent (0..1)
-# 24. Direction vector to shouting agent X (-1..1)
-# 25. Direction vector to shouting agent Y (-1..1)
-# Network architecture (Phase 6: Short-Term Memory - Recurrent Neural Networks RNN)
-# 25 sensory inputs, 3 action outputs
-num_inputs              = 25
-num_outputs             = 3
+# Network architecture (Phase 9: Recurrent Neural Networks RNN)
+# 22 sensory inputs, 2 action outputs (Accel X, Accel Y)
+num_inputs              = 22
+num_outputs             = 2
 num_hidden              = 0
 feed_forward            = False
 initial_connection      = full_direct

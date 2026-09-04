@@ -32,7 +32,7 @@ graph TD
     P5 --> P6["Phase 6: RNN Short-Term Memory & Holistic Fitness"]
     P6 --> P7["Phase 7: Kin Selection & 4 Tribes"]
     P7 --> P8["Phase 8: Deadly Zone & Faction Balance"]
-    P8 --> P9["Phase 9: Brain Dump Export & Reverse Engineering"]
+    P8 --> P9["Phase 9: Acoustic Lobotomy & Combat Economy Rebalance"]
 ```
 
 ### 🔹 Phase 1: Environment Foundations & 2D Kinematics
@@ -95,22 +95,22 @@ graph TD
   4. **RNN Topology Mutation Tuning (`node_add_prob = 0.15`):**
      - Increasing node addition probability from 0.05 to 0.15 facilitates the growth of recurrent hidden nodes and feedback loops without network bloat.
 
-### 🔹 Phase 9: Neural Inspector "Brain Dump" Topology Export & Reverse Engineering (CURRENT)
-- **Research Problem:** As recurrent neural topologies evolve complex multi-synapse strategies (acoustic rally, stalking from behind, parry reflexes), researchers need an instant, exportable mathematical snapshot of the network's weights, biases, and active pathways without stopping to manually transcribe UI values.
+### 🔹 Phase 9: Acoustic Lobotomy & Combat Economy Rebalance (CURRENT)
+- **Research Problem:** Neural brain dumps and evolutionary telemetry revealed a population collapse into a "micro-farming" local optimum. The acoustic shout mechanic was evolutionarily unviable (agents actively suppressed the output to conserve vital energy), while agents survived by jamming into dense collision clusters to farm collision and defense points rather than hunting or foraging.
 - **Implemented Solutions:**
-  1. **Interactive Hotkey (`[S]` key):**
-     - In the fullscreen Neural Inspector (`self.inspector_active == True`), pressing **`[S]`** invokes `export_brain_to_txt(genome)`.
-  2. **Human-Readable Mathematical Export (`logs/brain_id_{genome.key}.txt`):**
-     - Directly writes an organized topology breakdown:
-       - `--- GENERAL INFO ---`: Genome ID and holistic fitness.
-       - `--- NODES ---`: Lists all hidden interneurons (`node_id not in (0, 1, 2)`), including activation function (`tanh`, `relu`) and bias (`bias:.4f`).
-       - `--- SYNAPSES (CONNECTIONS) ---`: Formats all synaptic links as `[Source Label/Node ID] -> [Target Label/Node ID] | Weight: {weight:.4f} | Status: {Enabled/Disabled}`, translating input keys (-1..-25) and output keys (0..2) into the exact sensory and action labels used in the Neural Inspector UI.
-  3. **Visual Feedback in HUD:**
-     - Displays `"[S] Save brain dump to logs/"` at the bottom of the inspector panel, with an active confirmation flash upon export.
+  1. **Acoustic Lobotomy (22 Inputs / 2 Outputs):**
+     - Excised the 3 auditory sensors (`Nearest Shout Dist`, `Nearest Shout Dir X`, `Nearest Shout Dir Y`) and the `Acoustic Shout` action output.
+     - Pruned architecture strictly to 22 normalized sensory inputs and 2 locomotive motor outputs (`Accel X`, `Accel Y`).
+     - Removed the `-0.20` energy penalty for shouting and synchronized the Neural Inspector UI rendering logic to prevent `IndexError`.
+  2. **Combat Cooldown (Anti-Micro-Farming):**
+     - Introduced `self.combat_cooldown = 30` (0.5s at 60 FPS) applied upon any successful attack, frontal defense, or herd defense.
+     - While `combat_cooldown > 0`, agents are barred from gaining fitness points or stolen energy from combat collisions (damage is still sustained), eliminating parasitic collision micro-farming.
+  3. **Foraging Economy Buff (+40.0 Fitness):**
+     - Increased nominal foraging fitness reward from +15.0 to +40.0 to strongly motivate exploration across the arena.
 
 ---
 
-## 3. Sensory-Motor Space Specification (25 Inputs / 3 Outputs)
+## 3. Sensory-Motor Space Specification (22 Inputs / 2 Outputs)
 
 | # | Sensory Label | Range | Ecological Role / RNN Application |
 |:--:|:-----------------|:------:|:--------------------------------------|
@@ -131,20 +131,17 @@ graph TD
 | **19** | `Tribe Density` | `[0.0, 1.0]` | Ally density from own tribe within 60px radius |
 | **20** | `Wall Dist` | `[0.0, 1.0]` | Distance to boundary ($0.0$ at wall, $1.0$ at arena center) |
 | **21** | `Energy Level` | `[0.0, 1.0]` | Remaining vital energy reserve |
-| **22** | `Shout Dist` | `[0.0, 1.0]` | Distance to nearest agent broadcasting acoustic shout |
-| **23-24**|`Shout Dir (X, Y)` | `[-1.0, 1.0]` | Auditory direction vector to acoustic source |
 
 ### Motor & Behavioral Outputs:
 - **Output 0 (`Accel X`):** Horizontal acceleration force $[-1.0, 1.0]$ (`tanh`).
 - **Output 1 (`Accel Y`):** Vertical acceleration force $[-1.0, 1.0]$ (`tanh`).
-- **Output 2 (`Shout`):** Acoustic activation when $> 0.0$ (energy cost: $0.20$ energy/frame).
 
 ---
 
 ## 4. Physics, Metabolism & Energy Balance Mathematics
 
 1. **Total Frame Energy Metabolism:**
-   $$E_{\text{drain}} = 0.20 + \left(\frac{v}{V_{max}}\right)^2 \times 0.08 + (0.20 \text{ if Shout}) + E_{\text{border}}$$
+   $$E_{\text{drain}} = 0.20 + \left(\frac{v}{V_{max}}\right)^2 \times 0.08 + E_{\text{border}}$$
    where:
    $$E_{\text{border}} = \begin{cases} 
    2.0 & \text{if } \text{frames} \ge 60 \text{ and inside Deadly Zone } (< 20\text{px}) \\ 
@@ -161,9 +158,9 @@ graph TD
 
 ## 5. Quality Assurance & Test-Driven Development (TDD)
 
-The project is backed by a complete suite of **71 unit tests** organized into focused logical modules:
-- `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, `node_add_prob = 0.15`.
-- `tests/test_agent.py` (34 tests): Sensory perception, sprint and shout metabolism, Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination.
+The project is backed by a complete suite of **74 unit tests** organized into focused logical modules:
+- `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, `node_add_prob = 0.15`, 22 inputs / 2 outputs architecture.
+- `tests/test_agent.py` (37 tests): Sensory perception (22 inputs), sprint metabolism without shout drain, combat cooldown anti-micro-farming (attacks, frontal defense, herd defense), Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination.
 - `tests/test_environment.py` (19 tests): Generational lifecycle, headless rendering, event handling, Neural Inspector deepcopy isolation, pre-rendered Deadly Zone surface, balanced 4x10 tribal distribution, `export_brain_to_txt` topology file creation, `[S]` key trigger in active inspector, `[S]` ignored when inactive, and empty network handling.
 - `tests/test_entities.py` (5 tests): Boundary positioning, entity collisions, food and poison respawn mechanics, hazard reflection.
 - `tests/test_stats.py` (9 tests): Generational metrics tracking, telemetry summary, `logs/logs.txt` export, automatic directory creation, size-based rotation, manual archiving workflow, and `export_brain_to_txt` import exposure.

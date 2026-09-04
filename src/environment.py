@@ -29,7 +29,7 @@ SENSORY_DETAILS: Dict[int, Dict[str, str]] = {
         "short": "Food #1 Dist",
         "desc": "Euclidean distance to nearest food apple [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Primary foraging target (+15 fit, +65 energy)"
+        "role": "Primary foraging target (+40 fit, +65 energy)"
     },
     3: {
         "name": "Nearest Food #1 Dir X",
@@ -163,31 +163,10 @@ SENSORY_DETAILS: Dict[int, Dict[str, str]] = {
         "desc": "Current internal vital energy reserve [0.0..1.0]",
         "range": "[0.0, 1.0]",
         "role": "Vital drive: foraging, hunting, or energy conservation"
-    },
-    22: {
-        "name": "Nearest Shout Dist",
-        "short": "Shout Dist",
-        "desc": "Distance to agent broadcasting acoustic shout [0..1]",
-        "range": "[0.0, 1.0]",
-        "role": "Hearing perception: locating rally or distress calls"
-    },
-    23: {
-        "name": "Nearest Shout Dir X",
-        "short": "Shout Dir X",
-        "desc": "X direction vector toward shouting agent [-1..1]",
-        "range": "[-1.0, 1.0]",
-        "role": "Horizontal acoustic orientation toward sound source"
-    },
-    24: {
-        "name": "Nearest Shout Dir Y",
-        "short": "Shout Dir Y",
-        "desc": "Y direction vector toward shouting agent [-1..1]",
-        "range": "[-1.0, 1.0]",
-        "role": "Vertical acoustic orientation toward sound source"
-    },
+    }
 }
 
-# Detailed metadata for the 3 motor and communication action outputs
+# Detailed metadata for the 2 motor action outputs (Phase 9: Acoustic Lobotomy)
 ACTION_DETAILS: Dict[int, Dict[str, str]] = {
     0: {
         "name": "Acceleration (Accel X)",
@@ -202,13 +181,6 @@ ACTION_DETAILS: Dict[int, Dict[str, str]] = {
         "desc": "Vertical propulsion force: Up (-1.0) / Down (+1.0)",
         "range": "[-1.0, 1.0] (tanh activation)",
         "role": "Vertical locomotion control in arena"
-    },
-    2: {
-        "name": "Acoustic Shout (Communication)",
-        "short": "Shout",
-        "desc": "Acoustic sound wave broadcast when > 0.0 (-0.2 energy/frame)",
-        "range": "[-1.0, 1.0] (active when > 0.0)",
-        "role": "Herd warning, rally distress call, or hunger alert"
     }
 }
 
@@ -221,9 +193,9 @@ def format_node_label(node_id: int, is_source: bool = False) -> str:
     """
     Translates a NEAT or inspector node ID into human-readable string labels
     matching the Neural Inspector UI.
-    - Negative IDs (-1 to -25) map to sensory inputs (0 to 24) via SENSORY_INPUT_LABELS.
-    - Output IDs (0, 1, 2) map to action outputs via ACTION_OUTPUT_LABELS.
-    - Hidden node IDs (>= 3 or non-standard) map to 'Node {node_id}'.
+    - Negative IDs (-1 to -22) map to sensory inputs (0 to 21) via SENSORY_INPUT_LABELS.
+    - Output IDs (0, 1) map to action outputs via ACTION_OUTPUT_LABELS.
+    - Hidden node IDs (>= 2 or non-standard) map to 'Node {node_id}'.
     """
     if isinstance(node_id, str):
         return node_id
@@ -257,17 +229,17 @@ def export_brain_to_txt(genome: Any, logs_dir: str = "logs") -> str:
         "--- NODES ---"
     ]
 
-    # Extract hidden nodes from genome.nodes (excluding output nodes 0, 1, 2)
+    # Extract hidden nodes from genome.nodes (excluding output nodes 0, 1)
     nodes_dict = getattr(genome, 'nodes', {}) or {}
     hidden_nodes = []
     if isinstance(nodes_dict, dict):
         for nid, node in nodes_dict.items():
-            if nid not in (0, 1, 2):
+            if nid not in (0, 1):
                 hidden_nodes.append((nid, node))
     elif isinstance(nodes_dict, (list, tuple)):
         for idx, node in enumerate(nodes_dict):
             nid = getattr(node, 'key', idx)
-            if nid not in (0, 1, 2):
+            if nid not in (0, 1):
                 hidden_nodes.append((nid, node))
 
     hidden_nodes.sort(key=lambda item: item[0])
@@ -466,9 +438,9 @@ class Environment:
         for idx, k in enumerate(in_list):
             node_positions[k] = (in_x, int(slot_rect.y + 22 + idx * in_spacing + in_spacing / 2))
 
-        # Outputs (Ax, Ay, Shout, right column)
-        out_list = [0, 1, 2]
-        out_spacing = (slot_rect.height - 30) / 3
+        # Outputs (Ax, Ay, right column)
+        out_list = [0, 1]
+        out_spacing = (slot_rect.height - 30) / 2
         for idx, k in enumerate(out_list):
             node_positions[k] = (out_x, int(slot_rect.y + 22 + idx * out_spacing + out_spacing / 2))
 
@@ -584,7 +556,7 @@ class Environment:
         title_surf = self.inspector_title_font.render(title_text, True, (0, 245, 212))
         self.screen.blit(title_surf, (modal_rect.x + 16, modal_rect.y + 11))
 
-        mode_text = "[TAB] Show: All 25 senses" if not self.inspector_show_all else "[TAB] Show: Active neurons only"
+        mode_text = "[TAB] Show: All 22 senses" if not self.inspector_show_all else "[TAB] Show: Active neurons only"
         tab_hint = self.small_font.render(mode_text, True, (88, 166, 255))
         esc_hint = self.title_font.render("[ESC] Close", True, (241, 196, 15))
         self.screen.blit(tab_hint, (modal_rect.right - 380, modal_rect.y + 14))
@@ -603,17 +575,17 @@ class Environment:
                 active_conns.append((in_k, out_k, conn))
                 if in_k < 0:
                     active_inputs.add(in_k)
-                elif in_k not in (0, 1, 2):
+                elif in_k not in (0, 1):
                     hidden_nodes.add(in_k)
 
-                if out_k in (0, 1, 2):
+                if out_k in (0, 1):
                     active_outputs.add(out_k)
-                elif out_k not in (0, 1, 2):
+                elif out_k not in (0, 1):
                     hidden_nodes.add(out_k)
 
         # Decide which sensory inputs to display
         if self.inspector_show_all:
-            draw_inputs = [-(i + 1) for i in range(25)]
+            draw_inputs = [-(i + 1) for i in range(22)]
         else:
             draw_inputs = sorted(list(active_inputs)) if active_inputs else [-1, -2, -3]
 
@@ -636,9 +608,9 @@ class Environment:
             node_positions[k] = (in_x, pos_y)
             node_types[k] = "input"
 
-        # Output positions (Ax, Ay, Shout)
-        out_step = avail_h / 3.0
-        for idx in range(3):
+        # Output positions (Ax, Ay)
+        out_step = avail_h / 2.0
+        for idx in range(2):
             pos_y = int(start_y + idx * out_step + out_step / 2)
             node_positions[idx] = (out_x, pos_y)
             node_types[idx] = "output"
@@ -744,8 +716,8 @@ class Environment:
                 t_surf = self.small_font.render(line_str, True, title_color)
                 self.screen.blit(t_surf, (modal_rect.x + 16, pos[1] - 6))
 
-        # --- B. ACTION OUTPUTS (3 motor/communication neurons) ---
-        for k in range(3):
+        # --- B. ACTION OUTPUTS (2 motor neurons) ---
+        for k in range(2):
             pos = node_positions[k]
             detail = ACTION_DETAILS[k]
             is_connected = k in active_outputs
@@ -795,7 +767,7 @@ class Environment:
                 h_line1 = f"Sensory function: {det.get('desc', '')}"
                 h_line2 = f"Signal range: {det.get('range', '')}  |  Ecological role: {det.get('role', '')}"
                 c_title = (88, 166, 255)
-            elif hovered_node in (0, 1, 2):
+            elif hovered_node in (0, 1):
                 det = ACTION_DETAILS[hovered_node]
                 h_title = f"🔍 ACTION DETAILS: [{hovered_node}] {det['name']} (Motor Effector / Action)"
                 h_line1 = f"Effector mechanics: {det['desc']}"
@@ -814,7 +786,7 @@ class Environment:
         elif hovered_synapse is not None:
             in_k, out_k, w = hovered_synapse
             src_str = SENSORY_DETAILS[-(in_k + 1)]['name'] if in_k < 0 else f"Neuron #{in_k}"
-            dst_str = ACTION_DETAILS[out_k]['name'] if out_k in (0, 1, 2) else f"Neuron #{out_k}"
+            dst_str = ACTION_DETAILS[out_k]['name'] if out_k in (0, 1) else f"Neuron #{out_k}"
             syn_type = "Excitatory" if w >= 0 else "Inhibitory"
             syn_color = (46, 204, 113) if w >= 0 else (231, 76, 60)
 
@@ -832,8 +804,8 @@ class Environment:
             tot_out = len(active_outputs)
             tot_syn = len(active_conns)
 
-            h_title = f"💡 BRAIN TOPOLOGY SUMMARY: {tot_in}/25 connected senses | {tot_hid} hidden neurons | {tot_out}/3 active actions | {tot_syn} synapses"
-            h_line1 = f"Display mode: {'Active neurons only (clean graph)' if not self.inspector_show_all else 'All 25 sensory inputs'} [Press TAB to toggle]"
+            h_title = f"💡 BRAIN TOPOLOGY SUMMARY: {tot_in}/22 connected senses | {tot_hid} hidden neurons | {tot_out}/2 active actions | {tot_syn} synapses"
+            h_line1 = f"Display mode: {'Active neurons only (clean graph)' if not self.inspector_show_all else 'All 22 sensory inputs'} [Press TAB to toggle]"
             h_line2 = "Hint: Hover mouse cursor over any node or synapse to inspect detailed biological parameters."
 
             self.screen.blit(self.font.render(h_title, True, (0, 245, 212)), (hud_rect.x + 12, hud_rect.y + 8))
@@ -871,7 +843,6 @@ class Environment:
         total_attacks = sum(a.attacks_made for a in agents)
         total_defenses = sum(a.defenses_made for a in agents)
         total_herd = sum(a.herd_defenses for a in agents)
-        active_shouts = sum(1 for a in agents if a.is_alive and a.is_shouting)
 
         stats_lines = [
             f"GENERATION:  {self.generation:<4d} | FRAME: {frames_lived:3d}/{max_frames}",
@@ -884,7 +855,6 @@ class Environment:
             f"• Predator Attacks:    {total_attacks:4d}",
             f"• Frontal Defenses:    {total_defenses:4d}",
             f"• Herd Defenses:       {total_herd:4d}",
-            f"• Active Shouts:       {active_shouts:4d}",
             "---------------------------------------"
         ]
 
@@ -899,8 +869,6 @@ class Environment:
                 color = (46, 204, 113)
             elif "Attacks" in line or "Poisons" in line:
                 color = (231, 76, 60)
-            elif "Shouts" in line:
-                color = (0, 245, 212)
 
             line_surf = self.font.render(line, True, color)
             self.screen.blit(line_surf, (self.arena_width + 14, y_offset))

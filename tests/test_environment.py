@@ -48,27 +48,26 @@ class TestEnvironment(unittest.TestCase):
         self.assertIsNone(self.env.inspected_genome)
 
     def test_sensory_and_action_labels(self):
-        """Verifies correct mapping of 25 inputs and 3 outputs to human-readable labels."""
+        """Verifies correct mapping of 22 inputs and 2 outputs to human-readable labels."""
         from src.environment import SENSORY_INPUT_LABELS, ACTION_OUTPUT_LABELS
-        self.assertEqual(len(SENSORY_INPUT_LABELS), 25)
-        self.assertEqual(len(ACTION_OUTPUT_LABELS), 3)
+        self.assertEqual(len(SENSORY_INPUT_LABELS), 22)
+        self.assertEqual(len(ACTION_OUTPUT_LABELS), 2)
 
         # Check key inputs from README
         self.assertIn("Vel X", SENSORY_INPUT_LABELS[0])
         self.assertIn("Vel Y", SENSORY_INPUT_LABELS[1])
         self.assertIn("Food", SENSORY_INPUT_LABELS[2])
-        self.assertIn("Shout", SENSORY_INPUT_LABELS[22])
+        self.assertIn("Energy", SENSORY_INPUT_LABELS[21])
 
-        # Check 3 outputs
+        # Check 2 outputs
         self.assertIn("Accel X", ACTION_OUTPUT_LABELS[0])
         self.assertIn("Accel Y", ACTION_OUTPUT_LABELS[1])
-        self.assertIn("Shout", ACTION_OUTPUT_LABELS[2])
 
     def test_sensory_and_action_details_metadata(self):
         """Verifies presence of complete functional descriptions, ranges, and roles for each node."""
         from src.environment import SENSORY_DETAILS, ACTION_DETAILS
-        self.assertEqual(len(SENSORY_DETAILS), 25)
-        self.assertEqual(len(ACTION_DETAILS), 3)
+        self.assertEqual(len(SENSORY_DETAILS), 22)
+        self.assertEqual(len(ACTION_DETAILS), 2)
 
         for i, det in SENSORY_DETAILS.items():
             self.assertIn("name", det)
@@ -173,7 +172,7 @@ class TestEnvironment(unittest.TestCase):
             (-1, 0): DummyConn(weight=2.35, enabled=True),    # thick input-output connection (weight label)
             (-2, 3): DummyConn(weight=-1.80, enabled=True),   # thick connection to hidden node
             (3, 1): DummyConn(weight=0.75, enabled=True),     # hidden to output
-            (-23, 2): DummyConn(weight=-0.50, enabled=True),  # shout to shout output
+            (-22, 1): DummyConn(weight=-0.50, enabled=True),  # energy input to output
             (-5, 0): DummyConn(weight=1.0, enabled=False),    # disabled connection
         }
 
@@ -311,7 +310,7 @@ class TestEnvironment(unittest.TestCase):
             (-1, 0): DummyConn(weight=2.5, enabled=True),
             (-2, 3): DummyConn(weight=-1.75, enabled=True),
             (3, 1): DummyConn(weight=0.8, enabled=True),
-            (-25, 2): DummyConn(weight=-0.3, enabled=True),
+            (-22, 1): DummyConn(weight=-0.3, enabled=True),
             (-5, 0): DummyConn(weight=1.1, enabled=False),
         }
 
@@ -337,7 +336,7 @@ class TestEnvironment(unittest.TestCase):
             self.assertIn("[Velocity (Vel X)] -> [Acceleration (Accel X)] | Weight: 2.5000 | Status: Enabled", content)
             self.assertIn("[Velocity (Vel Y)] -> [Node 3] | Weight: -1.7500 | Status: Enabled", content)
             self.assertIn("[Node 3] -> [Acceleration (Accel Y)] | Weight: 0.8000 | Status: Enabled", content)
-            self.assertIn("[Nearest Shout Dir Y] -> [Acoustic Shout (Communication)] | Weight: -0.3000 | Status: Enabled", content)
+            self.assertIn("[Current Energy Level] -> [Acceleration (Accel Y)] | Weight: -0.3000 | Status: Enabled", content)
             self.assertIn("[Nearest Food #1 Dir Y] -> [Acceleration (Accel X)] | Weight: 1.1000 | Status: Disabled", content)
 
     def test_environment_key_s_triggers_brain_dump(self):

@@ -24,9 +24,9 @@ class TestNeatConfig(unittest.TestCase):
             self.config_path
         )
 
-        # Verification of key design assumptions (Phase 8: 25 sensory inputs, 3 outputs, pop_size=40)
-        self.assertEqual(config.genome_config.num_inputs, 25, "Number of inputs must be 25.")
-        self.assertEqual(config.genome_config.num_outputs, 3, "Number of outputs must be 3.")
+        # Verification of key design assumptions (Phase 9: 22 sensory inputs, 2 outputs, pop_size=40)
+        self.assertEqual(config.genome_config.num_inputs, 22, "Number of inputs must be 22.")
+        self.assertEqual(config.genome_config.num_outputs, 2, "Number of outputs must be 2.")
         self.assertEqual(getattr(config, 'pop_size'), 40, "Population size must be 40 (4 tribes of 10 agents each).")
         self.assertEqual(config.reproduction_config.elitism, 4, "Elitism must be 4 (Top 4 unchanged).")
         self.assertFalse(getattr(config, 'reset_on_extinction'))
@@ -39,7 +39,7 @@ class TestNeatConfig(unittest.TestCase):
         self.assertGreater(config.genome_config.conn_add_prob, config.genome_config.conn_delete_prob)
 
     def test_recurrent_network_creation_and_activation(self):
-        """Verifies RecurrentNetwork creation from population and activation of 25 inputs to 3 outputs."""
+        """Verifies RecurrentNetwork creation from population and activation of 22 inputs to 2 outputs."""
         config = neat.config.Config(
             neat.DefaultGenome,
             neat.DefaultReproduction,
@@ -53,10 +53,10 @@ class TestNeatConfig(unittest.TestCase):
         net = neat.nn.RecurrentNetwork.create(sample_genome, config)
         self.assertIsInstance(net, neat.nn.RecurrentNetwork, "Network must be an instance of neat.nn.RecurrentNetwork.")
 
-        # Activation test for 25 sensory inputs
-        inputs = [0.1 * i for i in range(25)]
+        # Activation test for 22 sensory inputs
+        inputs = [0.1 * i for i in range(22)]
         outputs = net.activate(inputs)
-        self.assertEqual(len(outputs), 3, "RecurrentNetwork must return exactly 3 action outputs.")
+        self.assertEqual(len(outputs), 2, "RecurrentNetwork must return exactly 2 action outputs.")
         for out in outputs:
             self.assertIsInstance(out, float)
 

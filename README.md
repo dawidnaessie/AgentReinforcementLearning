@@ -27,8 +27,8 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
   - **Tribe 3:** Electric Yellow `(255, 230, 0)`
   - **Tribe 4:** Pure White `(240, 246, 255)`
   Tribal membership enforces strict social boundaries: **intra-tribe altruism**, **prohibition of cannibalism / friendly fire**, **inter-tribe predation**, and **tribal herd defense**.
-- **Acoustic Communication (Shout & Hearing):**
-  Agents possess an active shouting output neuron to broadcast acoustic distress or rallying calls (costing energy per frame), alongside dedicated auditory sensory inputs that pinpoint the direction and distance to shouting peers.
+- **Acoustic Lobotomy & Combat Economy Rebalance (Phase 9):**
+  Telemetry and reverse-engineering dumps proved that acoustic shout communication was evolutionarily unviable (suppressed to conserve energy) while agents collapsed into dense collision clusters to micro-farm points. Phase 9 excises shout inputs and outputs (down to 22 inputs and 2 outputs), establishes a **30-frame Combat Cooldown** (0.5s at 60 FPS) that blocks rapid repeated point/energy farming, and heavily buffs foraging (+40.0 Fitness) to stimulate active arena exploration.
 - **Top 4 NEAT Brains Visualizer & Fullscreen Neural Inspector:**
   Real-time rendering of the 4 elite neural networks in the sidebar. Clicking on any elite slot pauses the simulation and opens an interactive, fullscreen **Neural Inspector** showcasing node activations, layer layouts, and synaptic weights. Pressing **`[S]`** exports the agent's complete mathematical topology to `logs/brain_id_{key}.txt` for reverse engineering.
 - **Automated Experiment Logging (`logs/logs.txt`):**
@@ -36,7 +36,7 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
 - **Safe Spawn Grace Period (60 frames / 1.0s):**
   Agents spawn with a protective invulnerability shield, allowing initial dispersion across the map without unfair spawn camping or edge penalties.
 - **Strict Energy & Metabolic Pressure:**
-  Base metabolic burn, sprint fatigue costs, communication energy drain, and toxic arena borders prevent passive camping and drive continuous evolution.
+  Base metabolic burn, sprint fatigue costs, and toxic arena borders prevent passive camping and drive continuous evolution.
 - **Deadly Margin & Elimination of Corner Exploit (Phase 8):**
   A lethal 20px perimeter border (**Strefa Śmierci**) with a brutal **-2.0 energy/frame** drain and pre-rendered semi-transparent crimson visual border. Agents pushed into or hiding in corners are terminated in fractions of a second, permanently eliminating parasitic corner collision farming.
 - **Even Faction Balancing & RNN Mutation Tuning (Phase 8):**
@@ -46,7 +46,7 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
 
 ## 👁️ Agent Sensory & Action Space
 
-Each agent evaluates its surroundings through **25 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]`):
+Each agent evaluates its surroundings through **22 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]`):
 
 | Input Index | Sensory Signal | Range | Description & Ecological Role |
 | :---: | :--- | :--- | :--- |
@@ -66,13 +66,10 @@ Each agent evaluates its surroundings through **25 normalized sensory inputs** (
 | **20** | `Local Tribe Herd Density` | `[0.0, 1.0]` | Proximity density of **own tribe allies** within 60px (`0.0` isolated, `1.0` densely packed) |
 | **21** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Proximity to arena borders (`0.0` at wall, `1.0` at center) |
 | **22** | `Current Energy Level` | `[0.0, 1.0]` | Current vitality reserve percentage |
-| **23** | `Nearest Shouting Agent Distance` | `[0.0, 1.0]` | Normalized distance to nearest agent currently shouting (`0.0` if none) |
-| **24 – 25** | `Nearest Shout Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward the shouting agent |
 
-### Action Outputs (3 Neurons with `tanh` activation):
+### Action Outputs (2 Neurons with `tanh` activation):
 - **Output 1 (`Ax`):** Horizontal acceleration force in `[-1.0, 1.0]`.
 - **Output 2 (`Ay`):** Vertical acceleration force in `[-1.0, 1.0]`.
-- **Output 3 (`Shout`):** Acoustic call activation in `[-1.0, 1.0]`. Emits an acoustic wave when `> 0.0` (costs `-0.2` energy/frame).
 
 ---
 
@@ -90,8 +87,9 @@ Each agent evaluates its surroundings through **25 normalized sensory inputs** (
 - **Tribal Herd Defense (+15.0 Fitness for Defenders, -15 Energy for Predator):**
   If an enemy attempts to attack a victim that has $\ge 1$ ally from **its own tribe** within 45px, the entire herd counter-attacks, dealing damage to the predator and granting herd defense fitness to all participating allies.
 
-- **Strict Basal Metabolism:** Baseline burn ($-0.20$ energy/frame) + sprint quadratic cost $(\text{speed}/\text{max})^2 \times 0.08$ + acoustic shout cost ($-0.20$ energy/frame).
-- **Foraging (+15.0 Fitness, +65.0 Energy):** Eating green apples restores energy.
+- **Strict Basal Metabolism:** Baseline burn ($-0.20$ energy/frame) + sprint quadratic cost $(\text{speed}/\text{max})^2 \times 0.08$.
+- **Combat Cooldown (30 frames / 0.5s):** Granted upon attack, frontal defense, or herd defense; subsequent collisions while on cooldown grant zero fitness and zero energy, halting micro-farming.
+- **Foraging (+40.0 Fitness, +65.0 Energy):** Eating green apples restores energy and strongly rewards exploration.
 - **Poison Obstacles (-10.0 Fitness, -35.0 Energy):** Consuming purple square toxins causes severe damage.
 - **Deadly Death Zone (20px Margin):** Severe $-2.0$ energy drain per frame for touching the outer 20px perimeter, liquidating corner campers within fractions of a second with $M_{death} = 0.3$ penalty multiplier.
 - **Toxic Edge Buffer (50px Margin):** Outer warning zone inflicting continuous moderate drain ($-0.5$ energy/frame).
@@ -106,7 +104,7 @@ Each agent evaluates its surroundings through **25 normalized sensory inputs** (
 | **`[SPACE]`** | **Toggle Turbo Mode** | Switches between 60 FPS visual rendering and uncapped simulation speed for rapid evolution. |
 | **`[ESC]` / `[X]`** | **Graceful Exit & Dump** | Safely exits Pygame, prints console summary, and appends the run log to `logs/logs.txt`. |
 | **`Left Mouse Click`** | **Neural Inspector** | Click on any of the **Top 4 elite slots** in the sidebar to open the full-screen Neural Inspector. |
-| **`[TAB]` (in Inspector)** | **Toggle Senses View** | Toggles between active connected neurons only and all 25 sensory inputs. |
+| **`[TAB]` (in Inspector)** | **Toggle Senses View** | Toggles between active connected neurons only and all 22 sensory inputs. |
 | **`[S]` (in Inspector)** | **Brain Dump Export** | Saves the inspected agent's complete mathematical topology into `logs/brain_id_{key}.txt` for reverse engineering. |
 | **`[ESC]` (in Inspector)** | **Close Inspector** | Closes the Neural Inspector and resumes live simulation. |
 
@@ -239,7 +237,7 @@ python -m unittest discover tests -v
 The codebase strictly adheres to **Test-Driven Development (TDD)** and clean separation of concerns:
 - **Headless Testing:** All agent mechanics, RNN outputs, tribal interactions, and telemetry are 100% executable headlessly without opening display windows.
 - **Deepcopy Isolation:** Neural inspection uses isolated deepcopies to avoid mutation or state corruption during live evolution.
-- **Fast Execution:** All **71 unit tests** execute in under 1.5 seconds.
+- **Fast Execution:** All **74 unit tests** execute in under 1.5 seconds.
 
 ---
 

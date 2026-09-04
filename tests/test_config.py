@@ -24,16 +24,16 @@ class TestNeatConfig(unittest.TestCase):
             self.config_path
         )
 
-        # Weryfikacja kluczowych założeń projektowych (Faza 5: 25 wejść sensorycznych, 3 wyjścia akcji)
+        # Weryfikacja kluczowych założeń projektowych (Faza 8: 25 wejść sensorycznych, 3 wyjścia, pop_size=40)
         self.assertEqual(config.genome_config.num_inputs, 25, "Liczba wejść musi wynosić 25.")
         self.assertEqual(config.genome_config.num_outputs, 3, "Liczba wyjść musi wynosić 3.")
-        self.assertEqual(getattr(config, 'pop_size'), 50, "Wielkość populacji musi wynosić 50.")
+        self.assertEqual(getattr(config, 'pop_size'), 40, "Wielkość populacji musi wynosić 40 (4 plemiona po 10 agentów).")
         self.assertEqual(config.reproduction_config.elitism, 4, "Elitaryzm musi wynosić 4 (Top 4 bez zmian).")
         self.assertFalse(getattr(config, 'reset_on_extinction'))
 
-        # Faza 6: Pamięć Krótkotrwała (RNN) - weryfikacja architektury rekurencyjnej
+        # Faza 6 & 8: Pamięć Krótkotrwała (RNN) - weryfikacja architektury rekurencyjnej i rozrostu sieci
         self.assertFalse(config.genome_config.feed_forward, "Architektura sieci musi mieć feed_forward = False dla RNN.")
-        self.assertAlmostEqual(config.genome_config.node_add_prob, 0.05, places=2, msg="node_add_prob powinno wynosić 0.05 dla tworzenia pętli RNN.")
+        self.assertAlmostEqual(config.genome_config.node_add_prob, 0.15, places=2, msg="node_add_prob powinno wynosić 0.15 dla tworzenia węzłów RNN.")
         self.assertAlmostEqual(config.genome_config.conn_add_prob, 0.50, places=2)
         self.assertAlmostEqual(config.genome_config.conn_delete_prob, 0.20, places=2)
         self.assertGreater(config.genome_config.conn_add_prob, config.genome_config.conn_delete_prob)

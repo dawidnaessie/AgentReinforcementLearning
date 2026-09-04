@@ -13,8 +13,13 @@ TRIBE_COLORS = {
 }
 
 
+# Stałe stref brzegowych areny (Faza 8: Eliminacja Corner Exploitu)
+DEADLY_ZONE_MARGIN = 20  # Śmiertelna Strefa Śmierci: -2.0 energii / klatkę
+TOXIC_ZONE_MARGIN = 50   # Ostrzegawcza strefa buforowa: -0.5 energii / klatkę
+
+
 class Agent:
-    """Klasa reprezentująca agenta sterowanego przez sieć neuronową NEAT (Faza 7: Selekcja Krewniacza - Wojny Plemion)."""
+    """Klasa reprezentująca agenta sterowanego przez sieć neuronową NEAT (Faza 8: Balans Plemion i Strefa Śmierci)."""
 
     def __init__(
         self,
@@ -336,21 +341,28 @@ class Agent:
             energy_cost += 0.20
         self.energy -= energy_cost
 
-        # Sprawdzenie obecności w strefie toksycznej (margines 50px od ścian dla obu osi X i Y)
-        edge_margin = 50
+        # Faza 8: Eliminacja "Corner Exploitu" - Strefa Śmierci (Deadly Margin = 20px) oraz strefa ostrzegawcza (50px)
+        in_deadly_zone = (
+            self.pos.x < DEADLY_ZONE_MARGIN or self.pos.x > width - DEADLY_ZONE_MARGIN or
+            self.pos.y < DEADLY_ZONE_MARGIN or self.pos.y > height - DEADLY_ZONE_MARGIN
+        )
         in_toxic_zone = (
-            self.pos.x < edge_margin or self.pos.x > width - edge_margin or
-            self.pos.y < edge_margin or self.pos.y > height - edge_margin
+            self.pos.x < TOXIC_ZONE_MARGIN or self.pos.x > width - TOXIC_ZONE_MARGIN or
+            self.pos.y < TOXIC_ZONE_MARGIN or self.pos.y > height - TOXIC_ZONE_MARGIN
         )
 
-        # Kara za przebywanie w toksycznej strefie krawędziowej (tylko po Grace Period >= 60 klatek / 1.0s)
-        if self.frames_alive >= 60 and in_toxic_zone:
-            self.energy -= 0.5
+        # Kara za przebywanie w strefach brzegowych (po Grace Period >= 60 klatek / 1.0s)
+        # Drastyczny drenaż 2.0 energii/klatkę w Strefie Śmierci eliminuje ukrywanie się w rogach mapy.
+        if self.frames_alive >= 60:
+            if in_deadly_zone:
+                self.energy -= 2.0
+            elif in_toxic_zone:
+                self.energy -= 0.5
 
-        # Sprawdzenie śmierci z głodu / braku energii
+        # Sprawdzenie śmierci z głodu / braku energii / drenażu Strefy Śmierci
         if self.energy <= 0.0:
             self.is_alive = False
-            self.death_cause = "toxic_edge" if in_toxic_zone else "starvation"
+            self.death_cause = "toxic_edge" if (in_toxic_zone or in_deadly_zone) else "starvation"
             self.finalize_fitness()
             return
 
@@ -379,7 +391,7 @@ class Agent:
                 self.energy -= 20.0
                 if self.energy <= 0.0:
                     self.is_alive = False
-                    self.death_cause = "toxic_edge" if in_toxic_zone else "poison"
+                    self.death_cause = "toxic_edge" if (in_toxic_zone or in_deadly_zone) else "poison"
                     self.finalize_fitness()
                     return
 

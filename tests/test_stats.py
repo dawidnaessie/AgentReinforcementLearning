@@ -179,6 +179,77 @@ class TestStats(unittest.TestCase):
             self.assertIn("Liczba aktywnych synaps:   20 polaczen", full_text)
             self.assertIn("Liczba aktywnych synaps:   25 polaczen", full_text)
 
+    def test_dump_to_file_creates_directory_if_missing(self):
+        """Weryfikuje automatyczne tworzenie podkatalogów (np. logs/), jeśli jeszcze nie istnieją."""
+        tracker = EvolutionTracker()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            nested_log_path = os.path.join(tmpdir, "nested", "logs", "logs.txt")
+            self.assertFalse(os.path.exists(os.path.dirname(nested_log_path)))
+
+            content = tracker.dump_to_file(nested_log_path)
+            self.assertTrue(os.path.exists(nested_log_path))
+            self.assertIn("SIMULATION RUN LOG - ", content)
+
+    def test_dump_to_file_auto_rotation_when_exceeds_max_bytes(self):
+        """Weryfikuje rotację: stary plik otrzymuje numer 1 (np. logs1.txt), a nowy raport trafia do czystego logs.txt."""
+        tracker1 = EvolutionTracker()
+        tracker1.record_generation(1, 100.0, 50.0, 5.0, 1, 1.0, best_synapses=20)
+
+        tracker2 = EvolutionTracker()
+        tracker2.record_generation(1, 200.0, 80.0, 6.0, 1, 1.2, best_synapses=25)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = os.path.join(tmpdir, "logs.txt")
+            # Pierwszy zrzut - tworzy logs.txt
+            tracker1.dump_to_file(log_path)
+            self.assertTrue(os.path.exists(log_path))
+            file_size = os.path.getsize(log_path)
+
+            # Drugi zrzut z max_bytes mniejszym niż rozmiar logs.txt -> rotacja
+            tracker2.dump_to_file(log_path, max_bytes=file_size)
+
+            rotated_path = os.path.join(tmpdir, "logs1.txt")
+            self.assertTrue(os.path.exists(rotated_path), "Stary plik powinien zostać zrotowany do logs1.txt.")
+            self.assertTrue(os.path.exists(log_path), "Nowy plik logs.txt powinien zostać utworzony.")
+
+            with open(rotated_path, "r", encoding="utf-8") as f:
+                rotated_content = f.read()
+            with open(log_path, "r", encoding="utf-8") as f:
+                new_content = f.read()
+
+            self.assertIn("100.00 pkt", rotated_content)
+            self.assertNotIn("200.00 pkt", rotated_content)
+            self.assertIn("200.00 pkt", new_content)
+            self.assertNotIn("100.00 pkt", new_content)
+
+    def test_dump_to_file_manual_rename_workflow(self):
+        """Weryfikuje scenariusz, w którym użytkownik sam zmienia nazwę logs.txt na logs1.txt."""
+        tracker1 = EvolutionTracker()
+        tracker1.record_generation(1, 100.0, 50.0, 5.0, 1, 1.0)
+
+        tracker2 = EvolutionTracker()
+        tracker2.record_generation(1, 200.0, 80.0, 6.0, 1, 1.2)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = os.path.join(tmpdir, "logs.txt")
+            tracker1.dump_to_file(log_path)
+
+            # Użytkownik ręcznie zmienia nazwę pliku
+            renamed_manual = os.path.join(tmpdir, "logs1.txt")
+            os.rename(log_path, renamed_manual)
+            self.assertFalse(os.path.exists(log_path))
+            self.assertTrue(os.path.exists(renamed_manual))
+
+            # Kolejna symulacja zapisuje do logs.txt - powinien powstać nowy, świeży plik
+            tracker2.dump_to_file(log_path)
+            self.assertTrue(os.path.exists(log_path))
+
+            with open(log_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            # logs.txt zawiera tylko dane z sesji 2, a logs1.txt z sesji 1
+            self.assertEqual(content.count("SIMULATION RUN LOG - "), 1)
+            self.assertIn("200.00 pkt", content)
+
 
 if __name__ == '__main__':
     unittest.main()

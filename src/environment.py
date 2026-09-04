@@ -3,7 +3,7 @@ import math
 import random
 import pygame
 from typing import List, Dict, Any, Optional, Tuple
-from src.agent import Agent
+from src.agent import Agent, DEADLY_ZONE_MARGIN
 from src.entities import Food, Hazard, Poison
 
 
@@ -255,6 +255,19 @@ class Environment:
         self.overlay_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         self.frozen_screen: Optional[pygame.Surface] = None
 
+        # Faza 8: Pre-renderowana półprzezroczysta czerwona ramka Strefy Śmierci (Deadly Margin = 20px)
+        self.deadly_margin = DEADLY_ZONE_MARGIN
+        self.deadly_zone_surface = pygame.Surface((self.arena_width, self.height), pygame.SRCALPHA)
+        deadly_fill_color = (231, 76, 60, 50)
+        pygame.draw.rect(self.deadly_zone_surface, deadly_fill_color, (0, 0, self.arena_width, self.height), self.deadly_margin)
+        deadly_border_color = (231, 76, 60, 140)
+        pygame.draw.rect(
+            self.deadly_zone_surface,
+            deadly_border_color,
+            (self.deadly_margin - 1, self.deadly_margin - 1, self.arena_width - 2 * self.deadly_margin + 2, self.height - 2 * self.deadly_margin + 2),
+            1
+        )
+
         self.generation = 0
         self.fast_mode = False  # Przełączanie prędkości symulacji (klawisz SPACE)
 
@@ -307,6 +320,9 @@ class Environment:
             pygame.draw.line(self.screen, grid_color, (x, 0), (x, self.height), 1)
         for y in range(0, self.height, 64):
             pygame.draw.line(self.screen, grid_color, (0, y), (self.arena_width, y), 1)
+
+        # Faza 8: Renderowanie Strefy Śmierci (czerwona półprzezroczysta ramka 20px)
+        self.screen.blit(self.deadly_zone_surface, (0, 0))
 
         # Subtelny obrys bezpiecznej strefy (50px od toksycznych krawędzi)
         pygame.draw.rect(self.screen, (30, 38, 48), (50, 50, self.arena_width - 100, self.height - 100), 1)
@@ -791,6 +807,7 @@ class Environment:
         self._reset_world_entities()
 
         # Równomierny rozkład startowy agentów wokół centrum areny (1280 x 720)
+        # Faza 8: Zbalansowany podział na 4 równe plemiona (przy 40 agentach dokładnie 10 na plemię)
         num_agents = len(genomes)
         center_x, center_y = self.arena_width / 2, self.height / 2
         spawn_radius = 240.0
@@ -800,7 +817,8 @@ class Environment:
             angle = (2.0 * math.pi * i) / max(1, num_agents)
             spawn_x = center_x + spawn_radius * math.cos(angle)
             spawn_y = center_y + spawn_radius * math.sin(angle)
-            agents.append(Agent(net, genome, self.arena_width, self.height, start_pos=(spawn_x, spawn_y)))
+            tribe_id = (i % 4) + 1
+            agents.append(Agent(net, genome, self.arena_width, self.height, start_pos=(spawn_x, spawn_y), tribe_id=tribe_id))
 
         frames_lived = 0
         running = True

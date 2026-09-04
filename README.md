@@ -5,14 +5,14 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-RNN-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-58%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-66%20passed-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
 ---
 
 ## 📖 Overview & Core Concepts
 
-**AgentReinforcementLearning** is a rich Artificial Life (ALife) sandbox and evolutionary benchmark where a population of **50 autonomous neural agents** evolves across generations in a dynamic 2D ecosystem.
+**AgentReinforcementLearning** is a rich Artificial Life (ALife) sandbox and evolutionary benchmark where a balanced population of **40 autonomous neural agents** (divided equally into 4 tribes of 10) evolves across generations in a dynamic 2D ecosystem.
 
 Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px telemetry & visualizer sidebar), the simulation models complex ecological, tribal, and neurological phenomena without relying on heavyweight scientific dependencies—powered purely by clean standard Python, NEAT, and Pygame.
 
@@ -31,12 +31,16 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
   Agents possess an active shouting output neuron to broadcast acoustic distress or rallying calls (costing energy per frame), alongside dedicated auditory sensory inputs that pinpoint the direction and distance to shouting peers.
 - **Top 4 NEAT Brains Visualizer & Fullscreen Neural Inspector:**
   Real-time rendering of the 4 elite neural networks in the sidebar. Clicking on any elite slot pauses the simulation and opens an interactive, fullscreen **Neural Inspector** showcasing node activations, layer layouts, and synaptic weights.
-- **Automated Experiment Logging (`logs.txt`):**
-  Closing the simulation automatically appends an executive summary to `logs.txt`, logging the date/time of the run, overall peak fitness, the number of active synapses in the peak genome, and a per-generation progression table.
+- **Automated Experiment Logging (`logs/logs.txt`):**
+  Closing the simulation automatically appends an executive summary to `logs/logs.txt`, logging the date/time of the run, overall peak fitness, the number of active synapses in the peak genome, and a per-generation progression table. Supports automatic directory creation, manual renaming (e.g., `logs1.txt`), and automatic log rotation.
 - **Safe Spawn Grace Period (60 frames / 1.0s):**
   Agents spawn with a protective invulnerability shield, allowing initial dispersion across the map without unfair spawn camping or edge penalties.
 - **Strict Energy & Metabolic Pressure:**
   Base metabolic burn, sprint fatigue costs, communication energy drain, and toxic arena borders prevent passive camping and drive continuous evolution.
+- **Deadly Margin & Elimination of Corner Exploit (Phase 8):**
+  A lethal 20px perimeter border (**Strefa Śmierci**) with a brutal **-2.0 energy/frame** drain and pre-rendered semi-transparent crimson visual border. Agents pushed into or hiding in corners are terminated in fractions of a second, permanently eliminating parasitic corner collision farming.
+- **Even Faction Balancing & RNN Mutation Tuning (Phase 8):**
+  Deterministic allocation of **exactly 10 agents per tribe** (40 total across Cyan, Magenta, Yellow, White) ensuring symmetrical warfare, paired with `node_add_prob = 0.15` in `config-feedforward.txt` to accelerate recurrent hidden node emergence.
 
 ---
 
@@ -86,11 +90,11 @@ Each agent evaluates its surroundings through **25 normalized sensory inputs** (
 - **Tribal Herd Defense (+15.0 Fitness for Defenders, -15 Energy for Predator):**
   If an enemy attempts to attack a victim that has $\ge 1$ ally from **its own tribe** within 45px, the entire herd counter-attacks, dealing damage to the predator and granting herd defense fitness to all participating allies.
 
-### 2. Metabolism & Environmental Pressures
 - **Strict Basal Metabolism:** Baseline burn ($-0.20$ energy/frame) + sprint quadratic cost $(\text{speed}/\text{max})^2 \times 0.08$ + acoustic shout cost ($-0.20$ energy/frame).
 - **Foraging (+15.0 Fitness, +65.0 Energy):** Eating green apples restores energy.
 - **Poison Obstacles (-10.0 Fitness, -35.0 Energy):** Consuming purple square toxins causes severe damage.
-- **Toxic Edge Zones (50px Margin):** Hovering near the perimeter incurs continuous penalties ($-0.5$ energy, $-0.1$ fitness/frame).
+- **Deadly Death Zone (20px Margin):** Severe $-2.0$ energy drain per frame for touching the outer 20px perimeter, liquidating corner campers within fractions of a second with $M_{death} = 0.3$ penalty multiplier.
+- **Toxic Edge Buffer (50px Margin):** Outer warning zone inflicting continuous moderate drain ($-0.5$ energy/frame).
 - **Grace Period (60 frames / 1.0s):** Blue protective glow preventing early collisions, edge penalties, or predation right after spawn.
 
 ---
@@ -100,17 +104,19 @@ Each agent evaluates its surroundings through **25 normalized sensory inputs** (
 | Input | Function | Description |
 | :---: | :--- | :--- |
 | **`[SPACE]`** | **Toggle Turbo Mode** | Switches between 60 FPS visual rendering and uncapped simulation speed for rapid evolution. |
-| **`[ESC]` / `[X]`** | **Graceful Exit & Dump** | Safely exits Pygame, prints console summary, and appends the run log to `logs.txt`. |
+| **`[ESC]` / `[X]`** | **Graceful Exit & Dump** | Safely exits Pygame, prints console summary, and appends the run log to `logs/logs.txt`. |
 | **`Left Mouse Click`** | **Neural Inspector** | Click on any of the **Top 4 elite slots** in the sidebar to open the full-screen Neural Inspector. |
 | **`[ESC]` (in Inspector)** | **Close Inspector** | Closes the Neural Inspector and resumes live simulation. |
 
 ---
 
-## 📝 Automated Experiment Logging (`logs.txt`)
+## 📝 Automated Experiment Logging (`logs/logs.txt`)
 
-Every simulation run automatically appends structured diagnostic records to `logs.txt`. This allows comparing different evolutionary runs, tracking fitness growth over time, and monitoring structural neural complexity (synapses count).
+Every simulation run automatically appends structured diagnostic records to `logs/logs.txt`. If the `logs/` directory does not exist, it is created automatically.
+- **Manual Archiving:** You can rename existing log files at any time (e.g. `logs.txt` -> `logs1.txt`); subsequent runs will seamlessly create a clean, fresh `logs.txt`.
+- **Automatic Rotation:** Built-in safeguards automatically archive the file (to `logs1.txt`, `logs2.txt`, etc.) if it exceeds 5 MB, preventing log files from growing excessively large.
 
-Example log entry appended to `logs.txt`:
+Example log entry appended to `logs/logs.txt`:
 ```text
 ==================================================================================================
 SIMULATION RUN LOG - 2026-09-02 01:45:30
@@ -153,25 +159,27 @@ Gen   | Sr Fitness  | Max Fitness | Synapsy  | Jablka  | Trucizny | Altruizm | A
 ```text
 AgentReinforcementLearning/
 ├── config-feedforward.txt   # NEAT hyperparameters (RNN enabled, mutation probabilities)
-├── logs.txt                 # Automated run logs and evolutionary telemetry (gitignored)
+├── logs/                    # Automated run logs and evolutionary telemetry (gitignored)
+│   └── logs.txt             # Primary log file (auto-rotates or accepts manual renaming to logs1.txt)
 ├── README.md                # Project documentation
-├── .gitignore               # Comprehensive ignores (pycache, venv, checkpoints, logs)
+├── .gitignore               # Comprehensive ignores (pycache, venv, checkpoints, logs/*)
 ├── docs/                    # Architecture and developer guidelines
 │   ├── coding_standards.md  # Clean code, KISS, and standard library rules
+│   ├── documentation.md     # Production technical specification & phase evolution log (Phases 1-8)
 │   ├── project_context.md   # Simulation domain context and phase breakdown
 │   └── workflow_and_testing.md # TDD workflow, testing rules, and QA protocols
 ├── src/                     # Source code
-│   ├── agent.py             # Agent class (sensors, RNN activation, tribes, physics)
+│   ├── agent.py             # Agent class (sensors, RNN activation, tribes, physics, deadly margin)
 │   ├── entities.py          # Food, Hazard, Poison entities
-│   ├── environment.py       # Simulation loop, HUD, Neural Inspector, Top 4 slots
+│   ├── environment.py       # Simulation loop, HUD, Neural Inspector, Top 4 slots, deadly zone surface
 │   ├── main.py              # Runner entry point, eval loop, graceful exit handlers
 │   └── stats.py             # EvolutionTracker statistics, summary printer, dump_to_file
-└── tests/                   # Comprehensive headless unit test suite (58 tests)
-    ├── test_agent.py        # Agent physics, sensors, combat, tribal rules, altruism
-    ├── test_config.py       # NEAT configuration, RNN recurrent validation
+└── tests/                   # Comprehensive headless unit test suite (66 tests)
+    ├── test_agent.py        # Agent physics, sensors, combat, tribal rules, altruism, deadly zone
+    ├── test_config.py       # NEAT configuration, RNN recurrent validation, pop_size=40, node_add_prob=0.15
     ├── test_entities.py     # Entity collisions, boundaries, respawning
-    ├── test_environment.py  # Simulation lifecycle, HUD, inspector deepcopy, runner
-    └── test_stats.py        # Statistics tracking, terminal summary, log dumping
+    ├── test_environment.py  # Simulation lifecycle, HUD, inspector deepcopy, deadly zone, balanced tribes
+    └── test_stats.py        # Statistics tracking, terminal summary, logs/logs.txt auto-mkdir, rotation & manual archiving
 ```
 
 ---
@@ -217,7 +225,7 @@ python -m unittest discover tests -v
 The codebase strictly adheres to **Test-Driven Development (TDD)** and clean separation of concerns:
 - **Headless Testing:** All agent mechanics, RNN outputs, tribal interactions, and telemetry are 100% executable headlessly without opening display windows.
 - **Deepcopy Isolation:** Neural inspection uses isolated deepcopies to avoid mutation or state corruption during live evolution.
-- **Fast Execution:** All **58 unit tests** execute in under 1.5 seconds.
+- **Fast Execution:** All **66 unit tests** execute in under 1.5 seconds.
 
 ---
 

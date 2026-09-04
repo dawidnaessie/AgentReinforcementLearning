@@ -59,6 +59,6 @@ desktop.ini
 .agents/
 .gemini/
 
-#my logs
-logs.txt
+# My logs
+logs/*
 img/*

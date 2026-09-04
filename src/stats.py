@@ -1,10 +1,11 @@
+import os
 import time
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 class EvolutionTracker:
-    """Zbiera statystyki przebiegu ewolucji, drukuje podsumowanie i zapisuje raport do pliku logs.txt."""
+    """Zbiera statystyki przebiegu ewolucji, drukuje podsumowanie i zapisuje raport do pliku logs/logs.txt."""
 
     def __init__(self):
         self.start_datetime = datetime.now()
@@ -135,12 +136,46 @@ class EvolutionTracker:
         print(" Status: Ewolucja zakonczona. Wszystkie dane zostaly podsumowane.")
         print(border + "\n")
 
-    def dump_to_file(self, filepath: str = "logs.txt") -> str:
+    def dump_to_file(
+        self,
+        filepath: Optional[str] = None,
+        max_bytes: Optional[int] = 5 * 1024 * 1024
+    ) -> str:
         """
         Dopisuje (append) najważniejsze informacje z przebiegu symulacji do pliku logu.
-        Zawiera datę i czas, średnie i najwyższe wyniki dla każdej generacji
-        oraz rekordowy wynik w całej symulacji wraz z liczbą synaps.
+        Domyślnie zapisuje do katalogu 'logs/logs.txt'.
+        Jeśli katalog docelowy nie istnieje, zostaje utworzony automatycznie.
+        Jeśli plik przekracza max_bytes (domyślnie 5 MB), następuje automatyczna rotacja
+        do logs1.txt, logs2.txt itd., a nowy raport trafia do czystego pliku logs.txt.
+        Użytkownik może również w dowolnym momencie zmienić nazwę pliku (np. na logs1.txt) -
+        program przy kolejnym uruchomieniu utworzy nowy, czysty plik logs.txt bez błędów.
         """
+        if filepath is None:
+            filepath = os.path.join("logs", "logs.txt")
+
+        # Automatyczne utworzenie katalogu docelowego, jeśli nie istnieje
+        parent_dir = os.path.dirname(os.path.abspath(filepath))
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+
+        # Automatyczna rotacja w przypadku przekroczenia dopuszczalnego rozmiaru pliku
+        if max_bytes is not None and os.path.exists(filepath):
+            try:
+                if os.path.getsize(filepath) >= max_bytes:
+                    dir_name = os.path.dirname(filepath)
+                    file_name = os.path.basename(filepath)
+                    name, ext = os.path.splitext(file_name)
+                    idx = 1
+                    while True:
+                        rotated_path = os.path.join(dir_name, f"{name}{idx}{ext}")
+                        if not os.path.exists(rotated_path):
+                            break
+                        idx += 1
+                    os.rename(filepath, rotated_path)
+                    print(f"[INFO] Plik logow przekroczyl limit {max_bytes / (1024 * 1024):.1f} MB. Zarchiwizowano stary plik jako: {rotated_path}")
+            except OSError as err:
+                print(f"[WARN] Nie udalo sie zrotowac pliku logow: {err}")
+
         end_datetime = datetime.now()
         total_time = time.time() - self.start_time
         total_gens = len(self.generations_data)

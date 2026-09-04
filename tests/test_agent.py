@@ -596,6 +596,57 @@ class TestAgent(unittest.TestCase):
             a.energy = 10.0
             a.draw(surface)
 
+    def test_deadly_zone_drain_after_grace_period(self):
+        """Weryfikuje, że przebywanie w Strefie Śmierci (<20px) drenuje 2.0 energii/klatkę (Faza 8)."""
+        # Agent w odległości 15px od lewej krawędzi (wewnątrz 20px strefy śmierci)
+        deadly_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(15, 300))
+        deadly_agent.vel = pygame.math.Vector2(0.0, 0.0)
+        deadly_agent.frames_alive = 100  # Poza Grace Period
+        initial_energy = deadly_agent.energy
+
+        deadly_agent.think_and_act([], [], [], [deadly_agent], 1280, 720)
+
+        # Traci bazowy metabolizm (0.20) + drastyczną karę Strefy Śmierci (2.0) = 2.20
+        energy_loss = initial_energy - deadly_agent.energy
+        self.assertAlmostEqual(energy_loss, 2.20, places=2)
+
+    def test_deadly_zone_all_four_edges_rapid_death(self):
+        """Weryfikuje, że wszystkie 4 śmiertelne krawędzie (<20px) powodują szybki zgon z death_cause='toxic_edge'."""
+        edges = [
+            (10, 360),    # Lewa krawędź (x=10 < 20)
+            (1270, 360),  # Prawa krawędź (x=1270 > 1280-20)
+            (640, 10),    # Górna krawędź (y=10 < 20)
+            (640, 710),   # Dolna krawędź (y=710 > 720-20)
+        ]
+
+        for pos in edges:
+            agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=pos)
+            agent.frames_alive = 100
+            agent.energy = 1.5  # Mniej niż drenaż 2.0
+            agent.think_and_act([], [], [], [agent], 1280, 720)
+            self.assertFalse(agent.is_alive, f"Agent na pozycji {pos} powinien natychmiast zginąć w Strefie Śmierci.")
+            self.assertEqual(agent.death_cause, "toxic_edge")
+            # Mnożnik M_death dla zgonu krawędziowego powinien wynosić 0.3
+            agent.foods_eaten = 2
+            self.assertAlmostEqual(agent.finalize_fitness(), ((101 * 2.0) / 25.0) * 0.3, places=2)
+
+    def test_deadly_zone_corner_exploit_rapid_kill(self):
+        """Eliminacja Corner Exploitu: agent w rogu (10, 10) z 10 punktami energii ginie w zaledwie kilka klatek."""
+        corner_camper = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(10, 10))
+        corner_camper.frames_alive = 60  # Właśnie skończył się Grace Period
+        corner_camper.energy = 10.0
+
+        # W każdej klatce traci 2.20 energii (2.0 drenaż + 0.2 metabolizm) -> ginie w <= 5 klatek
+        frames = 0
+        while corner_camper.is_alive and frames < 10:
+            corner_camper.think_and_act([], [], [], [corner_camper], 1280, 720)
+            frames += 1
+
+        self.assertFalse(corner_camper.is_alive)
+        self.assertLessEqual(frames, 5, "Agent w rogu musi ginąć w ciągu ułamka sekundy (<= 5 klatek).")
+        self.assertEqual(corner_camper.death_cause, "toxic_edge")
+
 
 if __name__ == '__main__':
     unittest.main()
+

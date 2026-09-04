@@ -248,6 +248,42 @@ class TestEnvironment(unittest.TestCase):
         self.assertGreaterEqual(runner.tracker.generations_data[0]["best_synapses"], 0)
         self.assertEqual(runner.tracker.peak_synapses, runner.tracker.generations_data[0]["best_synapses"])
 
+    def test_deadly_zone_surface_initialization(self):
+        """Weryfikuje poprawną inicjalizację Strefy Śmierci (20px czerwona ramka) w Environment (Faza 8)."""
+        self.assertEqual(self.env.deadly_margin, 20)
+        self.assertIsNotNone(self.env.deadly_zone_surface)
+        self.assertEqual(self.env.deadly_zone_surface.get_width(), self.env.arena_width)
+        self.assertEqual(self.env.deadly_zone_surface.get_height(), self.env.height)
+
+    def test_eval_generation_balanced_tribes_distribution_40_agents(self):
+        """Weryfikuje, że dla 40 agentów generacja tworzy dokładnie po 10 agentów dla każdego z 4 plemion (Faza 8)."""
+        import unittest.mock
+        captured_agents = []
+
+        def mock_think_and_act(agent_self, foods, poisons, hazards, all_agents, width, height):
+            captured_agents.append(agent_self)
+            # Kończymy życie agenta natychmiast, by pętla szybko się skończyła
+            agent_self.is_alive = False
+
+        nets = [DummyNetwork() for _ in range(40)]
+        genomes = [DummyGenome() for _ in range(40)]
+
+        with unittest.mock.patch('src.agent.Agent.think_and_act', mock_think_and_act):
+            self.env.eval_generation(nets, genomes, max_frames=2)
+
+        self.assertEqual(len(captured_agents), 40)
+        tribe_counts = {1: 0, 2: 0, 3: 0, 4: 0}
+        for agent in captured_agents:
+            tribe_counts[agent.tribe_id] += 1
+
+        for tid in (1, 2, 3, 4):
+            self.assertEqual(
+                tribe_counts[tid],
+                10,
+                f"Plemię {tid} powinno mieć dokładnie 10 agentów, a miało {tribe_counts[tid]}."
+            )
+
 
 if __name__ == '__main__':
     unittest.main()
+

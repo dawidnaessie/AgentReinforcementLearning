@@ -116,10 +116,10 @@ def run(config_path: str):
     except (KeyboardInterrupt, SimulationExit) as e:
         print(f"\n[INFO] Zatrzymano symulację ({e})")
     finally:
-        # Czyste zamknięcie okna Pygame, wyświetlenie podsumowania i zrzut do logs.txt
+        # Czyste zamknięcie okna Pygame, wyświetlenie podsumowania i zrzut do logs/logs.txt
         pygame.quit()
         runner.tracker.print_summary()
-        log_path = os.path.join(project_root, 'logs.txt')
+        log_path = os.path.join(project_root, 'logs', 'logs.txt')
         runner.tracker.dump_to_file(log_path)
         print(f"[INFO] Raport z symulacji zostal dopisany do pliku: {log_path}\n")
 

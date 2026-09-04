@@ -1,5 +1,6 @@
 import copy
 import math
+import os
 import random
 import pygame
 from typing import List, Dict, Any, Optional, Tuple
@@ -216,6 +217,98 @@ SENSORY_INPUT_LABELS: Dict[int, str] = {k: v["name"] for k, v in SENSORY_DETAILS
 ACTION_OUTPUT_LABELS: Dict[int, str] = {k: v["name"] for k, v in ACTION_DETAILS.items()}
 
 
+def format_node_label(node_id: int, is_source: bool = False) -> str:
+    """
+    Translates a NEAT or inspector node ID into human-readable string labels
+    matching the Neural Inspector UI.
+    - Negative IDs (-1 to -25) map to sensory inputs (0 to 24) via SENSORY_INPUT_LABELS.
+    - Output IDs (0, 1, 2) map to action outputs via ACTION_OUTPUT_LABELS.
+    - Hidden node IDs (>= 3 or non-standard) map to 'Node {node_id}'.
+    """
+    if isinstance(node_id, str):
+        return node_id
+
+    if node_id < 0:
+        idx = -(node_id + 1)
+        if idx in SENSORY_INPUT_LABELS:
+            return SENSORY_INPUT_LABELS[idx]
+        return f"Input #{idx}"
+    elif node_id in ACTION_OUTPUT_LABELS:
+        return ACTION_OUTPUT_LABELS[node_id]
+    else:
+        return f"Node {node_id}"
+
+
+def export_brain_to_txt(genome: Any, logs_dir: str = "logs") -> str:
+    """
+    Exports the complete mathematical topology of a NEAT genome into a readable .txt file.
+    Saves directly to {logs_dir}/brain_id_{genome.key}.txt.
+    """
+    os.makedirs(logs_dir, exist_ok=True)
+    key = getattr(genome, 'key', 0)
+    fitness = getattr(genome, 'fitness', None)
+    fitness_str = f"{fitness}" if fitness is not None else "0.0"
+
+    lines = [
+        "--- GENERAL INFO ---",
+        f"Genome ID: {key}",
+        f"Fitness: {fitness_str}",
+        "",
+        "--- NODES ---"
+    ]
+
+    # Extract hidden nodes from genome.nodes (excluding output nodes 0, 1, 2)
+    nodes_dict = getattr(genome, 'nodes', {}) or {}
+    hidden_nodes = []
+    if isinstance(nodes_dict, dict):
+        for nid, node in nodes_dict.items():
+            if nid not in (0, 1, 2):
+                hidden_nodes.append((nid, node))
+    elif isinstance(nodes_dict, (list, tuple)):
+        for idx, node in enumerate(nodes_dict):
+            nid = getattr(node, 'key', idx)
+            if nid not in (0, 1, 2):
+                hidden_nodes.append((nid, node))
+
+    hidden_nodes.sort(key=lambda item: item[0])
+    if hidden_nodes:
+        for nid, node in hidden_nodes:
+            bias = getattr(node, 'bias', 0.0)
+            act = getattr(node, 'activation', 'tanh')
+            if isinstance(node, dict):
+                bias = node.get('bias', bias)
+                act = node.get('activation', act)
+            lines.append(f"Node ID: {nid} | Activation: {act} | Bias: {bias:.4f}")
+    else:
+        lines.append("No hidden nodes")
+
+    lines.append("")
+    lines.append("--- SYNAPSES (CONNECTIONS) ---")
+
+    connections = getattr(genome, 'connections', {}) or {}
+    if connections and isinstance(connections, dict):
+        sorted_conns = sorted(connections.items(), key=lambda item: (item[0][0], item[0][1]))
+        for (in_k, out_k), conn in sorted_conns:
+            src_label = format_node_label(in_k, is_source=True)
+            dst_label = format_node_label(out_k, is_source=False)
+            weight = getattr(conn, 'weight', 0.0)
+            enabled = getattr(conn, 'enabled', True)
+            if isinstance(conn, dict):
+                weight = conn.get('weight', weight)
+                enabled = conn.get('enabled', enabled)
+            status_str = "Enabled" if enabled else "Disabled"
+            lines.append(f"[{src_label}] -> [{dst_label}] | Weight: {weight:.4f} | Status: {status_str}")
+    else:
+        lines.append("No connections")
+
+    content = "\n".join(lines) + "\n"
+    filepath = os.path.join(logs_dir, f"brain_id_{key}.txt")
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    return filepath
+
+
 class SimulationExit(Exception):
     """Exception raised when user requests simulation termination (ESC or window close)."""
     pass
@@ -275,6 +368,8 @@ class Environment:
         self.inspector_active: bool = False
         self.inspected_genome: Optional[Any] = None
         self.inspector_show_all: bool = False  # TAB toggle: False = active only, True = all 25 senses
+        self.brain_dump_feedback: Optional[str] = None
+        self.brain_dump_feedback_timer: int = 0
 
         # References to top 4 genomes from previous generation (Top 4 Visualizer)
         self.top_genomes: List[Any] = []
@@ -418,6 +513,13 @@ class Environment:
             rects.append(pygame.Rect(slot_x, slot_y + i * (slot_h + 8), slot_w, slot_h))
         return rects
 
+    def export_brain_to_txt(self, genome: Optional[Any] = None, logs_dir: str = "logs") -> str:
+        """Exports the specified genome (or currently inspected genome) to a readable .txt topology dump."""
+        target = genome if genome is not None else self.inspected_genome
+        if target is None:
+            raise ValueError("No genome specified and no inspected genome active.")
+        return export_brain_to_txt(target, logs_dir=logs_dir)
+
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handles a single Pygame event (keys, mouse clicks, quit)."""
         if event.type == pygame.QUIT:
@@ -430,6 +532,13 @@ class Environment:
                 # Toggle view mode in Neural Inspector (active only vs all 25 senses)
                 if self.inspector_active:
                     self.inspector_show_all = not self.inspector_show_all
+            elif event.key == pygame.K_s:
+                # Save complete mathematical topology dump of inspected genome to logs/
+                if self.inspector_active and self.inspected_genome is not None:
+                    out_path = self.export_brain_to_txt(self.inspected_genome)
+                    file_name = os.path.basename(out_path)
+                    self.brain_dump_feedback = f"[SAVED] {file_name}"
+                    self.brain_dump_feedback_timer = 180
             elif event.key == pygame.K_ESCAPE:
                 if self.inspector_active:
                     self.inspector_active = False
@@ -730,6 +839,18 @@ class Environment:
             self.screen.blit(self.font.render(h_title, True, (0, 245, 212)), (hud_rect.x + 12, hud_rect.y + 8))
             self.screen.blit(self.font.render(h_line1, True, (201, 209, 217)), (hud_rect.x + 12, hud_rect.y + 28))
             self.screen.blit(self.small_font.render(h_line2, True, (139, 148, 158)), (hud_rect.x + 12, hud_rect.y + 48))
+
+        # 8. Bottom text hint for brain dump export
+        if self.brain_dump_feedback and self.brain_dump_feedback_timer > 0:
+            hint_text = self.brain_dump_feedback
+            hint_color = (0, 245, 212)
+            self.brain_dump_feedback_timer -= 1
+        else:
+            hint_text = "[S] Save brain dump to logs/"
+            hint_color = (139, 148, 158)
+
+        hint_surf = self.small_font.render(hint_text, True, hint_color)
+        self.screen.blit(hint_surf, (hud_rect.right - hint_surf.get_width() - 16, hud_rect.y + 50))
 
     def _draw_sidebar(self, agents: List[Agent], frames_lived: int, max_frames: int, alive_count: int, best_current_fitness: float):
         """Renders the telemetry sidebar and Top-4 neural visualizer."""

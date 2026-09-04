@@ -12,6 +12,7 @@ class DummyGenome:
     fitness: float
     key: int
     connections: Dict[Any, Any]
+    nodes: Dict[Any, Any]
     custom_marker: Any
     tag: int
 
@@ -19,6 +20,7 @@ class DummyGenome:
         self.fitness = fitness
         self.key = 0
         self.connections = {}
+        self.nodes = {}
         self.custom_marker = None
         self.tag = 0
         for k, v in kwargs.items():

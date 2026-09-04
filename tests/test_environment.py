@@ -1,4 +1,5 @@
 import os
+import tempfile
 import unittest
 
 # Set dummy video driver before importing pygame for headless test execution
@@ -282,6 +283,114 @@ class TestEnvironment(unittest.TestCase):
                 10,
                 f"Tribe {tid} should have exactly 10 agents, but had {tribe_counts[tid]}."
             )
+
+    def test_export_brain_to_txt_file_creation_and_topology(self):
+        """Verifies export_brain_to_txt generates readable mathematical topology dump in logs/."""
+        from src.environment import export_brain_to_txt
+
+        class DummyConn:
+            def __init__(self, weight: float, enabled: bool = True):
+                self.weight = weight
+                self.enabled = enabled
+
+        class DummyNodeGene:
+            def __init__(self, key: int, bias: float, activation: str = 'tanh'):
+                self.key = key
+                self.bias = bias
+                self.activation = activation
+
+        genome = DummyGenome()
+        genome.key = 77
+        genome.fitness = 450.25
+        genome.nodes = {
+            3: DummyNodeGene(key=3, bias=0.5, activation='tanh'),
+            4: DummyNodeGene(key=4, bias=-1.25, activation='relu'),
+            0: DummyNodeGene(key=0, bias=0.0, activation='tanh'),  # Output node 0 (must NOT be in hidden nodes)
+        }
+        genome.connections = {
+            (-1, 0): DummyConn(weight=2.5, enabled=True),
+            (-2, 3): DummyConn(weight=-1.75, enabled=True),
+            (3, 1): DummyConn(weight=0.8, enabled=True),
+            (-25, 2): DummyConn(weight=-0.3, enabled=True),
+            (-5, 0): DummyConn(weight=1.1, enabled=False),
+        }
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            out_path = export_brain_to_txt(genome, logs_dir=tmp_dir)
+            expected_path = os.path.join(tmp_dir, "brain_id_77.txt")
+            self.assertEqual(out_path, expected_path)
+            self.assertTrue(os.path.exists(expected_path))
+
+            with open(expected_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            self.assertIn("--- GENERAL INFO ---", content)
+            self.assertIn("Genome ID: 77", content)
+            self.assertIn("Fitness: 450.25", content)
+
+            self.assertIn("--- NODES ---", content)
+            self.assertIn("Node ID: 3 | Activation: tanh | Bias: 0.5000", content)
+            self.assertIn("Node ID: 4 | Activation: relu | Bias: -1.2500", content)
+            self.assertNotIn("Node ID: 0", content)
+
+            self.assertIn("--- SYNAPSES (CONNECTIONS) ---", content)
+            self.assertIn("[Velocity (Vel X)] -> [Acceleration (Accel X)] | Weight: 2.5000 | Status: Enabled", content)
+            self.assertIn("[Velocity (Vel Y)] -> [Node 3] | Weight: -1.7500 | Status: Enabled", content)
+            self.assertIn("[Node 3] -> [Acceleration (Accel Y)] | Weight: 0.8000 | Status: Enabled", content)
+            self.assertIn("[Nearest Shout Dir Y] -> [Acoustic Shout (Communication)] | Weight: -0.3000 | Status: Enabled", content)
+            self.assertIn("[Nearest Food #1 Dir Y] -> [Acceleration (Accel X)] | Weight: 1.1000 | Status: Disabled", content)
+
+    def test_environment_key_s_triggers_brain_dump(self):
+        """Verifies pressing [S] key in active Neural Inspector triggers brain dump export and UI feedback."""
+        import pygame
+        from unittest.mock import patch
+
+        g = DummyGenome()
+        g.key = 88
+        g.fitness = 120.0
+        self.env.inspector_active = True
+        self.env.inspected_genome = g
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with patch('src.environment.export_brain_to_txt', wraps=lambda genome, logs_dir="logs": os.path.join(tmp_dir, f"brain_id_{genome.key}.txt")):
+                s_event = pygame.event.Event(pygame.KEYDOWN, {'key': pygame.K_s})
+                self.env.handle_event(s_event)
+
+                self.assertIsNotNone(self.env.brain_dump_feedback)
+                self.assertIn("brain_id_88.txt", self.env.brain_dump_feedback)
+                self.assertGreater(self.env.brain_dump_feedback_timer, 0)
+
+    def test_environment_key_s_ignored_when_inspector_inactive(self):
+        """Verifies pressing [S] key when Neural Inspector is inactive does not trigger brain dump."""
+        import pygame
+
+        self.env.inspector_active = False
+        self.env.inspected_genome = DummyGenome()
+        self.env.brain_dump_feedback = None
+
+        s_event = pygame.event.Event(pygame.KEYDOWN, {'key': pygame.K_s})
+        self.env.handle_event(s_event)
+
+        self.assertIsNone(self.env.brain_dump_feedback)
+
+    def test_export_brain_to_txt_empty_nodes_and_connections(self):
+        """Verifies clean export formatting for genomes with no hidden nodes or connections."""
+        from src.environment import export_brain_to_txt
+
+        g = DummyGenome()
+        g.key = 99
+        g.fitness = 0.0
+        g.nodes = {}
+        g.connections = {}
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            out_path = export_brain_to_txt(g, logs_dir=tmp_dir)
+            with open(out_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            self.assertIn("Genome ID: 99", content)
+            self.assertIn("No hidden nodes", content)
+            self.assertIn("No connections", content)
 
 
 if __name__ == '__main__':

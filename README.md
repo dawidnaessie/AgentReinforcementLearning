@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-RNN-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-66%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-71%20passed-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
 ---
@@ -30,7 +30,7 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
 - **Acoustic Communication (Shout & Hearing):**
   Agents possess an active shouting output neuron to broadcast acoustic distress or rallying calls (costing energy per frame), alongside dedicated auditory sensory inputs that pinpoint the direction and distance to shouting peers.
 - **Top 4 NEAT Brains Visualizer & Fullscreen Neural Inspector:**
-  Real-time rendering of the 4 elite neural networks in the sidebar. Clicking on any elite slot pauses the simulation and opens an interactive, fullscreen **Neural Inspector** showcasing node activations, layer layouts, and synaptic weights.
+  Real-time rendering of the 4 elite neural networks in the sidebar. Clicking on any elite slot pauses the simulation and opens an interactive, fullscreen **Neural Inspector** showcasing node activations, layer layouts, and synaptic weights. Pressing **`[S]`** exports the agent's complete mathematical topology to `logs/brain_id_{key}.txt` for reverse engineering.
 - **Automated Experiment Logging (`logs/logs.txt`):**
   Closing the simulation automatically appends an executive summary to `logs/logs.txt`, logging the date/time of the run, overall peak fitness, the number of active synapses in the peak genome, and a per-generation progression table. Supports automatic directory creation, manual renaming (e.g., `logs1.txt`), and automatic log rotation.
 - **Safe Spawn Grace Period (60 frames / 1.0s):**
@@ -106,7 +106,20 @@ Each agent evaluates its surroundings through **25 normalized sensory inputs** (
 | **`[SPACE]`** | **Toggle Turbo Mode** | Switches between 60 FPS visual rendering and uncapped simulation speed for rapid evolution. |
 | **`[ESC]` / `[X]`** | **Graceful Exit & Dump** | Safely exits Pygame, prints console summary, and appends the run log to `logs/logs.txt`. |
 | **`Left Mouse Click`** | **Neural Inspector** | Click on any of the **Top 4 elite slots** in the sidebar to open the full-screen Neural Inspector. |
+| **`[TAB]` (in Inspector)** | **Toggle Senses View** | Toggles between active connected neurons only and all 25 sensory inputs. |
+| **`[S]` (in Inspector)** | **Brain Dump Export** | Saves the inspected agent's complete mathematical topology into `logs/brain_id_{key}.txt` for reverse engineering. |
 | **`[ESC]` (in Inspector)** | **Close Inspector** | Closes the Neural Inspector and resumes live simulation. |
+
+---
+
+## 🧠 Neural Inspector & "Brain Dump" Export (`logs/brain_id_{key}.txt`)
+
+When inspecting any elite brain in the full-screen Neural Inspector, pressing **`[S]`** generates an instant mathematical topology dump in the `logs/` directory named `logs/brain_id_{genome.key}.txt`.
+
+The exported file provides a complete, human-readable breakdown ready for reverse engineering:
+- **`--- GENERAL INFO ---`**: Genome ID and current holistic fitness score.
+- **`--- NODES ---`**: Hidden interneurons with ID, non-linear activation function (e.g., `tanh`), and bias value.
+- **`--- SYNAPSES (CONNECTIONS) ---`**: All synaptic pathways with source and target IDs translated into the exact human-readable sensor and action labels used in the UI (e.g. `[Velocity (Vel X)] -> [Acceleration (Accel X)] | Weight: 2.3500 | Status: Enabled`).
 
 ---
 
@@ -159,27 +172,28 @@ Gen   | Avg Fitness | Max Fitness | Synapses | Apples  | Poisons  | Altruism | A
 ```text
 AgentReinforcementLearning/
 ├── config-feedforward.txt   # NEAT hyperparameters (RNN enabled, mutation probabilities)
-├── logs/                    # Automated run logs and evolutionary telemetry (gitignored)
-│   └── logs.txt             # Primary log file (auto-rotates or accepts manual renaming to logs1.txt)
+├── logs/                    # Automated run logs and brain dumps (gitignored)
+│   ├── logs.txt             # Primary log file (auto-rotates or accepts manual renaming to logs1.txt)
+│   └── brain_id_{key}.txt   # Reverse engineering brain dumps exported via [S] in Neural Inspector
 ├── README.md                # Project documentation
 ├── .gitignore               # Comprehensive ignores (pycache, venv, checkpoints, logs/*)
 ├── docs/                    # Architecture and developer guidelines
 │   ├── coding_standards.md  # Clean code, KISS, and standard library rules
-│   ├── documentation.md     # Production technical specification & phase evolution log (Phases 1-8)
+│   ├── documentation.md     # Production technical specification & phase evolution log (Phases 1-9)
 │   ├── project_context.md   # Simulation domain context and phase breakdown
 │   └── workflow_and_testing.md # TDD workflow, testing rules, and QA protocols
 ├── src/                     # Source code
 │   ├── agent.py             # Agent class (sensors, RNN activation, tribes, physics, deadly margin)
 │   ├── entities.py          # Food, Hazard, Poison entities
-│   ├── environment.py       # Simulation loop, HUD, Neural Inspector, Top 4 slots, deadly zone surface
+│   ├── environment.py       # Simulation loop, HUD, Neural Inspector, Top 4 slots, brain dump export
 │   ├── main.py              # Runner entry point, eval loop, graceful exit handlers
-│   └── stats.py             # EvolutionTracker statistics, summary printer, dump_to_file
-└── tests/                   # Comprehensive headless unit test suite (66 tests)
+│   └── stats.py             # EvolutionTracker statistics, summary printer, dump_to_file, export_brain_to_txt
+└── tests/                   # Comprehensive headless unit test suite (71 tests)
     ├── test_agent.py        # Agent physics, sensors, combat, tribal rules, altruism, deadly zone
     ├── test_config.py       # NEAT configuration, RNN recurrent validation, pop_size=40, node_add_prob=0.15
     ├── test_entities.py     # Entity collisions, boundaries, respawning
-    ├── test_environment.py  # Simulation lifecycle, HUD, inspector deepcopy, deadly zone, balanced tribes
-    └── test_stats.py        # Statistics tracking, terminal summary, logs/logs.txt auto-mkdir, rotation & manual archiving
+    ├── test_environment.py  # Simulation lifecycle, HUD, inspector deepcopy, brain dump [S] export, balanced tribes
+    └── test_stats.py        # Statistics tracking, terminal summary, log rotation & export_brain_to_txt import
 ```
 
 ---
@@ -225,7 +239,7 @@ python -m unittest discover tests -v
 The codebase strictly adheres to **Test-Driven Development (TDD)** and clean separation of concerns:
 - **Headless Testing:** All agent mechanics, RNN outputs, tribal interactions, and telemetry are 100% executable headlessly without opening display windows.
 - **Deepcopy Isolation:** Neural inspection uses isolated deepcopies to avoid mutation or state corruption during live evolution.
-- **Fast Execution:** All **66 unit tests** execute in under 1.5 seconds.
+- **Fast Execution:** All **71 unit tests** execute in under 1.5 seconds.
 
 ---
 

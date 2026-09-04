@@ -3,6 +3,8 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
+from src.environment import export_brain_to_txt
+
 
 class EvolutionTracker:
     """Collects evolutionary run telemetry, prints summary reports, and dumps logs to logs/logs.txt."""

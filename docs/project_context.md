@@ -7,7 +7,7 @@ Creation of an Artificial Life (ALife) simulation where a balanced population of
 - **Language:** Python 3.x (Pure Python, standard library `math`, `random`, `time`)
 - **Neuroevolution:** `neat-python` (recurrent neural networks RNN, internal hidden state memory, weight and topology mutations, crossover, speciation, and Top 4 elitism).
 - **Environment & Physics:** `pygame` (built-in `pygame.math.Vector2`, simulation loop, headless unit tests, pre-rendered Deadly Zone red border).
-- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 66 tests).
+- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 71 tests).
 
 ## Core Evolutionary Principles
 1. **Generational Cycle:** Each generation runs for a predefined frame duration or terminates early upon population extinction.
@@ -18,10 +18,10 @@ Creation of an Artificial Life (ALife) simulation where a balanced population of
 
 ## Project Structure
 - `/src/main.py` – NEAT initialization, entry point, concise console logging.
-- `/src/environment.py` – Pygame lifecycle, rendering, HUD, world entity management (`Food`, `Poison`, `Hazard`).
+- `/src/environment.py` – Pygame lifecycle, rendering, HUD, Neural Inspector with Brain Dump export (`logs/brain_id_{key}.txt`), world entity management (`Food`, `Poison`, `Hazard`).
 - `/src/agent.py` – `Agent` class, sensory perception, metabolism, interaction mechanics (altruism, predation, defense), fitness assignment.
 - `/src/entities.py` – Modular world entities (`Food`, `Poison`, `Hazard`).
-- `/src/stats.py` – `EvolutionTracker` gathering generational metrics and generating the final simulation summary.
-- `/logs/logs.txt` – Evolutionary telemetry run reports with automatic directory creation and size-based rotation.
+- `/src/stats.py` – `EvolutionTracker` gathering generational metrics, final simulation summary, and `export_brain_to_txt` export.
+- `/logs/` – Evolutionary telemetry run reports (`logs.txt`) and reverse engineering brain dumps (`brain_id_{key}.txt`).
 - `/config-feedforward.txt` – NEAT algorithm hyperparameters.
-- `/tests/` – Comprehensive headless unit test suite (TDD, 66 tests).
+- `/tests/` – Comprehensive headless unit test suite (TDD, 71 tests).

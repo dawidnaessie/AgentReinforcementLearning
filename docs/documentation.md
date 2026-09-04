@@ -1,7 +1,7 @@
 # 🧬 Technical Documentation & System Evolution Log: AgentReinforcementLearning
 
 > **ALife Research Project & NEAT Neuroevolution (RNN) in Pygame**  
-> **Status:** Phase 8 successfully completed | **Test Coverage:** 66 unit tests (100% PASS, TDD)
+> **Status:** Phase 9 successfully completed | **Test Coverage:** 71 unit tests (100% PASS, TDD)
 
 ---
 
@@ -19,7 +19,7 @@ The **AgentReinforcementLearning** project is an Artificial Life (ALife) researc
 
 ---
 
-## 2. Chronological Evolution Roadmap (Phases 1 – 8)
+## 2. Chronological Evolution Roadmap (Phases 1 – 9)
 
 The following log documents the evolutionary milestones, engineering motivations, and key innovations implemented throughout the project.
 
@@ -32,6 +32,7 @@ graph TD
     P5 --> P6["Phase 6: RNN Short-Term Memory & Holistic Fitness"]
     P6 --> P7["Phase 7: Kin Selection & 4 Tribes"]
     P7 --> P8["Phase 8: Deadly Zone & Faction Balance"]
+    P8 --> P9["Phase 9: Brain Dump Export & Reverse Engineering"]
 ```
 
 ### 🔹 Phase 1: Environment Foundations & 2D Kinematics
@@ -80,7 +81,7 @@ graph TD
   - **Inter-Tribal Predation (+25.0 fit, +25.0 energy):** Hunting isolated enemies from behind.
   - **Herd Defense:** Tribe members protect victims against enemy predators.
 
-### 🔹 Phase 8: Elimination of "Corner Exploits", Deadly Zone & Faction Balance (CURRENT)
+### 🔹 Phase 8: Elimination of "Corner Exploits", Deadly Zone & Faction Balance
 - **Research Problem:** Agents evolved an undesirable parasitic behavior ("Corner Exploit") – clustering in arena corners against walls, jamming each other to artificially farm collision and defense scores with zero predation risk. Additionally, randomized tribe assignment created numerical asymmetries between factions.
 - **Implemented Solutions:**
   1. **Deadly Margin (20px):**
@@ -93,6 +94,19 @@ graph TD
      - In `eval_generation()`, tribe assignment is deterministic: `tribe_id = (i % 4) + 1`. This guarantees an **exact balance of power: precisely 10 agents in each of the 4 tribes**.
   4. **RNN Topology Mutation Tuning (`node_add_prob = 0.15`):**
      - Increasing node addition probability from 0.05 to 0.15 facilitates the growth of recurrent hidden nodes and feedback loops without network bloat.
+
+### 🔹 Phase 9: Neural Inspector "Brain Dump" Topology Export & Reverse Engineering (CURRENT)
+- **Research Problem:** As recurrent neural topologies evolve complex multi-synapse strategies (acoustic rally, stalking from behind, parry reflexes), researchers need an instant, exportable mathematical snapshot of the network's weights, biases, and active pathways without stopping to manually transcribe UI values.
+- **Implemented Solutions:**
+  1. **Interactive Hotkey (`[S]` key):**
+     - In the fullscreen Neural Inspector (`self.inspector_active == True`), pressing **`[S]`** invokes `export_brain_to_txt(genome)`.
+  2. **Human-Readable Mathematical Export (`logs/brain_id_{genome.key}.txt`):**
+     - Directly writes an organized topology breakdown:
+       - `--- GENERAL INFO ---`: Genome ID and holistic fitness.
+       - `--- NODES ---`: Lists all hidden interneurons (`node_id not in (0, 1, 2)`), including activation function (`tanh`, `relu`) and bias (`bias:.4f`).
+       - `--- SYNAPSES (CONNECTIONS) ---`: Formats all synaptic links as `[Source Label/Node ID] -> [Target Label/Node ID] | Weight: {weight:.4f} | Status: {Enabled/Disabled}`, translating input keys (-1..-25) and output keys (0..2) into the exact sensory and action labels used in the Neural Inspector UI.
+  3. **Visual Feedback in HUD:**
+     - Displays `"[S] Save brain dump to logs/"` at the bottom of the inspector panel, with an active confirmation flash upon export.
 
 ---
 
@@ -147,15 +161,15 @@ graph TD
 
 ## 5. Quality Assurance & Test-Driven Development (TDD)
 
-The project is backed by a complete suite of **66 unit tests** organized into focused logical modules:
+The project is backed by a complete suite of **71 unit tests** organized into focused logical modules:
 - `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, `node_add_prob = 0.15`.
 - `tests/test_agent.py` (34 tests): Sensory perception, sprint and shout metabolism, Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination.
-- `tests/test_environment.py` (15 tests): Generational lifecycle, headless rendering, event handling, Neural Inspector deepcopy isolation, pre-rendered Deadly Zone surface, balanced 4x10 tribal distribution.
+- `tests/test_environment.py` (19 tests): Generational lifecycle, headless rendering, event handling, Neural Inspector deepcopy isolation, pre-rendered Deadly Zone surface, balanced 4x10 tribal distribution, `export_brain_to_txt` topology file creation, `[S]` key trigger in active inspector, `[S]` ignored when inactive, and empty network handling.
 - `tests/test_entities.py` (5 tests): Boundary positioning, entity collisions, food and poison respawn mechanics, hazard reflection.
-- `tests/test_stats.py` (8 tests): Generational metrics tracking, telemetry summary, `logs/logs.txt` export, automatic directory creation, size-based rotation, and manual archiving workflow.
+- `tests/test_stats.py` (9 tests): Generational metrics tracking, telemetry summary, `logs/logs.txt` export, automatic directory creation, size-based rotation, manual archiving workflow, and `export_brain_to_txt` import exposure.
 
 All tests can be executed via:
 ```powershell
 python -m unittest discover tests -v
 ```
-executing headlessly in ~1.4 seconds.
+executing headlessly in ~1.5 seconds.

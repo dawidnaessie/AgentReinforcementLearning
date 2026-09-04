@@ -250,6 +250,11 @@ class TestStats(unittest.TestCase):
             self.assertEqual(content.count("SIMULATION RUN LOG - "), 1)
             self.assertIn("200.00 pkt", content)
 
+    def test_stats_exports_export_brain_to_txt(self):
+        """Verifies export_brain_to_txt is accessible through src.stats."""
+        from src.stats import export_brain_to_txt
+        self.assertTrue(callable(export_brain_to_txt))
+
 
 if __name__ == '__main__':
     unittest.main()

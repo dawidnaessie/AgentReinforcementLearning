@@ -6,17 +6,17 @@ reset_on_extinction   = False
 no_fitness_termination = False
 
 [DefaultGenome]
-# Opcje aktywacji węzłów (tanh zwraca wartości od -1 do 1, idealne do wektorów ruchu dx, dy)
+# Node activation options (tanh returns values from -1 to 1, ideal for movement vectors dx, dy)
 activation_default      = tanh
 activation_mutate_rate  = 0.05
 activation_options      = tanh
 
-# Opcje agregacji węzłów
+# Node aggregation options
 aggregation_default     = sum
 aggregation_mutate_rate = 0.0
 aggregation_options     = sum
 
-# Bias węzłów (zoptymalizowane, subtelniejsze mutacje)
+# Node bias (optimized, subtle mutations)
 bias_init_mean          = 0.0
 bias_init_stdev         = 1.0
 bias_init_type          = gaussian
@@ -26,7 +26,7 @@ bias_mutate_power       = 0.20
 bias_mutate_rate        = 0.35
 bias_replace_rate       = 0.01
 
-# Wzmocnienie sygnału węzłów (response)
+# Node response / signal amplification
 response_init_mean      = 1.0
 response_init_stdev     = 0.0
 response_init_type      = gaussian
@@ -36,7 +36,7 @@ response_mutate_power   = 0.0
 response_mutate_rate    = 0.0
 response_replace_rate   = 0.0
 
-# Wagi połączeń (subtelne mutacje dla zachowania wyuczonych umiejętności)
+# Connection weights (subtle mutations to preserve learned skills)
 weight_init_mean        = 0.0
 weight_init_stdev       = 1.0
 weight_init_type        = gaussian
@@ -46,52 +46,52 @@ weight_mutate_power     = 0.20
 weight_mutate_rate      = 0.40
 weight_replace_rate     = 0.01
 
-# Włączanie/wyłączanie połączeń
+# Enable/disable connections
 enabled_default           = True
 enabled_mutate_rate       = 0.01
 enabled_rate_to_true_add  = 0.0
 enabled_rate_to_false_add = 0.0
 
-# Kompatybilność genetyczna (podział na gatunki i ochrona nisz ekologicznych)
+# Genetic compatibility (speciation and ecological niche protection)
 compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient   = 0.5
 
-# Architektura sieci (Faza 5: Komunikacja - Krzyk i Słuch, Obrona Stadna)
-# 25 znormalizowanych wejść percepcyjnych:
-# 1. Prędkość VX (-1..1)
-# 2. Prędkość VY (-1..1)
-# 3. Dystans do najbliższego pożywienia #1 (0..1)
-# 4. Wektor kierunku do jedzenia #1 X (-1..1)
-# 5. Wektor kierunku do jedzenia #1 Y (-1..1)
-# 6. Dystans do 2. najbliższego pożywienia #2 (0..1)
-# 7. Wektor kierunku do jedzenia #2 X (-1..1)
-# 8. Wektor kierunku do jedzenia #2 Y (-1..1)
-# 9. Dystans do najbliższej trucizny (0..1)
-# 10. Wektor kierunku do trucizny X (-1..1)
-# 11. Wektor kierunku do trucizny Y (-1..1)
-# 12. Dystans do najbliższego zagrożenia (0..1)
-# 13. Wektor kierunku do zagrożenia X (-1..1)
-# 14. Wektor kierunku do zagrożenia Y (-1..1)
-# 15. Dystans do najbliższego wroga z innego plemienia (0..1)
-# 16. Wektor kierunku do wroga X (-1..1)
-# 17. Wektor kierunku do wroga Y (-1..1)
-# 18. Stan krytyczny sojusznika z własnego plemienia (1.0 jeśli energia < 20%, 0.0 wpp)
-# 19. Relatywny zwrot prędkości wroga (-1..1, >0 gdy ucieka tyłem, <0 gdy szarżuje)
-# 20. Gęstość stada własnego plemienia wokół agenta (0..1, bezpieczeństwo w grupie)
-# 21. Dystans do najbliższej ściany/krawędzi (0..1)
-# 22. Poziom energii własnej agenta (0..1)
-# 23. Dystans do najbliższego krzyczącego agenta (0..1)
-# 24. Wektor kierunku do krzyczącego agenta X (-1..1)
-# 25. Wektor kierunku do krzyczącego agenta Y (-1..1)
-# Architektura sieci (Faza 6: Pamięć Krótkotrwała - Sieci Rekurencyjne RNN)
-# 25 wejść sensorycznych, 3 wyjścia akcji
+# Network architecture (Phase 5: Communication - Shout & Hearing, Herd Defense)
+# 25 normalized perceptual inputs:
+# 1. Velocity VX (-1..1)
+# 2. Velocity VY (-1..1)
+# 3. Distance to nearest food #1 (0..1)
+# 4. Direction vector to food #1 X (-1..1)
+# 5. Direction vector to food #1 Y (-1..1)
+# 6. Distance to 2nd nearest food #2 (0..1)
+# 7. Direction vector to food #2 X (-1..1)
+# 8. Direction vector to food #2 Y (-1..1)
+# 9. Distance to nearest poison (0..1)
+# 10. Direction vector to poison X (-1..1)
+# 11. Direction vector to poison Y (-1..1)
+# 12. Distance to nearest hazard (0..1)
+# 13. Direction vector to hazard X (-1..1)
+# 14. Direction vector to hazard Y (-1..1)
+# 15. Distance to nearest enemy from another tribe (0..1)
+# 16. Direction vector to enemy X (-1..1)
+# 17. Direction vector to enemy Y (-1..1)
+# 18. Critical state of ally from own tribe (1.0 if energy < 20%, 0.0 otherwise)
+# 19. Relative enemy velocity heading (-1..1, >0 retreating away, <0 charging)
+# 20. Herd density of own tribe around agent (0..1, safety in numbers)
+# 21. Distance to nearest wall/boundary (0..1)
+# 22. Self energy level (0..1)
+# 23. Distance to nearest shouting agent (0..1)
+# 24. Direction vector to shouting agent X (-1..1)
+# 25. Direction vector to shouting agent Y (-1..1)
+# Network architecture (Phase 6: Short-Term Memory - Recurrent Neural Networks RNN)
+# 25 sensory inputs, 3 action outputs
 num_inputs              = 25
 num_outputs             = 3
 num_hidden              = 0
 feed_forward            = False
 initial_connection      = full_direct
 
-# Mutacje topologii (wyższa szansa dodawania zapobiega degeneracji sieci i wspiera tworzenie pętli RNN)
+# Topology mutations (higher addition rate prevents network stagnation and fosters RNN loops)
 conn_add_prob           = 0.50
 conn_delete_prob        = 0.20
 node_add_prob           = 0.15
@@ -106,7 +106,7 @@ max_stagnation       = 20
 species_elitism      = 2
 
 [DefaultReproduction]
-# Elitaryzm na poziomie 4 gwarantuje przejście 4 najlepszych sieci w populacji bez zmian
+# Elitism at 4 ensures top 4 networks in population pass unchanged
 elitism            = 4
 survival_threshold = 0.2
 min_species_size   = 2

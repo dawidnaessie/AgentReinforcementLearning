@@ -8,7 +8,7 @@ from src.entities import Food, Hazard, Poison
 
 
 class DummyGenome:
-    """Prosty obiekt atrapa genomu do testów jednostkowych bez zależności od NEAT."""
+    """Simple dummy genome object for unit testing without NEAT dependencies."""
     fitness: float
     key: int
     connections: Dict[Any, Any]
@@ -26,7 +26,7 @@ class DummyGenome:
 
 
 class DummyNetwork:
-    """Prosta atrapa sieci neuronowej zwracająca 3 wyjścia (ruch dx, dy oraz krzyk shout)."""
+    """Simple dummy neural network returning 3 outputs (movement dx, dy, and shout)."""
     def __init__(self, output_x=1.0, output_y=0.0, output_shout=0.0):
         self.output_x = output_x
         self.output_y = output_y
@@ -40,7 +40,7 @@ class DummyNetwork:
 
 
 class TestAgent(unittest.TestCase):
-    """Testy jednostkowe klasy Agent (Faza 5: Komunikacja, krzyk, słuch, 25 wejść, 3 wyjścia)."""
+    """Unit tests for Agent class (Phase 5: Communication, shout, hearing, 25 inputs, 3 outputs)."""
 
     def setUp(self):
         self.net = DummyNetwork()
@@ -63,13 +63,13 @@ class TestAgent(unittest.TestCase):
         self.assertIn(self.agent.tribe_id, [1, 2, 3, 4])
 
     def test_shout_activation_and_deactivation(self):
-        # Sieć z sygnałem krzyku > 0.0
+        # Network with shout signal > 0.0
         shouting_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=0.8)
         shouter = Agent(shouting_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         shouter.think_and_act([], [], [], [shouter], 1280, 720)
         self.assertTrue(shouter.is_shouting)
 
-        # Sieć z sygnałem krzyku <= 0.0
+        # Network with shout signal <= 0.0
         silent_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=-0.5)
         silent_agent = Agent(silent_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         silent_agent.is_shouting = True
@@ -77,7 +77,7 @@ class TestAgent(unittest.TestCase):
         self.assertFalse(silent_agent.is_shouting)
 
     def test_shout_energy_cost(self):
-        # Agent krzyczący w miejscu (koszt: 0.20 bazowo + 0.20 krzyk = 0.40)
+        # Agent shouting in place (cost: 0.20 base + 0.20 shout = 0.40)
         shouting_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=1.0)
         shouter = Agent(shouting_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         initial_shouter_energy = shouter.energy
@@ -85,7 +85,7 @@ class TestAgent(unittest.TestCase):
         shout_loss = initial_shouter_energy - shouter.energy
         self.assertAlmostEqual(shout_loss, 0.40, places=2)
 
-        # Agent cichy w miejscu (koszt: 0.20 bazowo)
+        # Silent agent in place (cost: 0.20 base)
         silent_net = DummyNetwork(output_x=0.0, output_y=0.0, output_shout=-1.0)
         silent_agent = Agent(silent_net, DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         initial_silent_energy = silent_agent.energy
@@ -94,26 +94,26 @@ class TestAgent(unittest.TestCase):
         self.assertAlmostEqual(silent_loss, 0.20, places=2)
 
     def test_hearing_sensors(self):
-        # 1. Przypadek, gdy w pobliżu nikt nie krzyczy
+        # 1. Case where nobody nearby is shouting
         silent_peer = Agent(DummyNetwork(output_shout=-1.0), DummyGenome(), width=1280, height=720, start_pos=(500, 300))
         silent_peer.is_shouting = False
         inputs_quiet = self.agent._get_sensory_inputs([], [], [], [self.agent, silent_peer], 1280, 720)
-        # Sensory #23, #24, #25 powinny mieć 0.0
+        # Sensors #23, #24, #25 should be 0.0
         self.assertEqual(inputs_quiet[22], 0.0)
         self.assertEqual(inputs_quiet[23], 0.0)
         self.assertEqual(inputs_quiet[24], 0.0)
 
-        # 2. Przypadek, gdy inny agent krzyczy w odległości 100px na prawo
+        # 2. Case where another agent is shouting 100px to the right
         shouting_peer = Agent(DummyNetwork(output_shout=1.0), DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 100, self.agent.pos.y))
         shouting_peer.is_shouting = True
         inputs_heard = self.agent._get_sensory_inputs([], [], [], [self.agent, shouting_peer], 1280, 720)
-        # Dystans znormalizowany > 0.0 oraz kierunek dx bliski 1.0, dy bliski 0.0
+        # Normalized distance > 0.0 and direction dx close to 1.0, dy close to 0.0
         self.assertGreater(inputs_heard[22], 0.0)
         self.assertAlmostEqual(inputs_heard[23], 1.0, places=1)
         self.assertAlmostEqual(inputs_heard[24], 0.0, places=1)
 
     def test_grace_period_no_combat_or_edge_penalty(self):
-        # 1. Brak kary krawędziowej w czasie Grace Period (< 60 klatek / 1 sekunda)
+        # 1. No edge penalty during Grace Period (< 60 frames / 1 second)
         ghost_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(30, 300))
         ghost_agent.vel = pygame.math.Vector2(0.0, 0.0)
         ghost_agent.frames_alive = 20  # < 60
@@ -121,10 +121,10 @@ class TestAgent(unittest.TestCase):
 
         ghost_agent.think_and_act([], [], [], [ghost_agent], 1280, 720)
 
-        # Traci tylko bazowy metabolizm (0.20), brak kary strefy (-0.5)
+        # Loses only base metabolism (0.20), no zone penalty (-0.5)
         self.assertAlmostEqual(initial_energy - ghost_agent.energy, 0.20, places=2)
 
-        # 2. Brak możliwości ataku i kradzieży energii w czasie Grace Period
+        # 2. No attacking or energy theft during Grace Period
         predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
         predator.vel = pygame.math.Vector2(3.0, 0.0)
         predator.frames_alive = 20
@@ -142,7 +142,7 @@ class TestAgent(unittest.TestCase):
     def test_strict_hunger_metabolism(self):
         still_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         still_agent.vel = pygame.math.Vector2(0.0, 0.0)
-        still_agent.frames_alive = 100  # Poza grace period
+        still_agent.frames_alive = 100  # Outside grace period
         initial_energy = still_agent.energy
 
         still_agent.think_and_act([], [], [], [still_agent], 1280, 720)
@@ -153,12 +153,12 @@ class TestAgent(unittest.TestCase):
     def test_toxic_edge_penalty_after_grace_period(self):
         edge_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(40, 300))
         edge_agent.vel = pygame.math.Vector2(0.0, 0.0)
-        edge_agent.frames_alive = 100  # Poza grace period
+        edge_agent.frames_alive = 100  # Outside grace period
         initial_energy = edge_agent.energy
 
         edge_agent.think_and_act([], [], [], [edge_agent], 1280, 720)
 
-        # Traci metabolizm (0.20) + karę strefy toksycznej (0.50) = 0.70
+        # Loses metabolism (0.20) + toxic zone penalty (0.50) = 0.70
         energy_loss = initial_energy - edge_agent.energy
         self.assertAlmostEqual(energy_loss, 0.70, places=2)
 
@@ -170,7 +170,7 @@ class TestAgent(unittest.TestCase):
 
         safe_agent.think_and_act([], [], [], [safe_agent], 1280, 720)
 
-        # W bezpiecznej strefie tylko bazowy metabolizm
+        # In safe zone only base metabolism applies
         self.assertAlmostEqual(initial_energy - safe_agent.energy, 0.20, places=2)
 
     def test_sensory_inputs_structure_and_bounds(self):
@@ -183,7 +183,7 @@ class TestAgent(unittest.TestCase):
 
         inputs = self.agent._get_sensory_inputs(foods, poisons, hazards, agents, 1280, 720)
 
-        # Faza 5: dokładnie 25 wejść sensorycznych
+        # Phase 5: exactly 25 sensory inputs
         self.assertEqual(len(inputs), 25)
         for idx, val in enumerate(inputs):
             self.assertGreaterEqual(val, -1.01, f"Input {idx} value {val} is below -1.0")
@@ -233,9 +233,9 @@ class TestAgent(unittest.TestCase):
 
         predator.think_and_act([], [], [], [predator, prey, ally], 1280, 720)
 
-        # Drapieżnik otrzymuje obrażenia
+        # Predator receives damage
         self.assertLessEqual(predator.energy, 66.0)
-        # Obrona stadna nalicza się dla ofiary i sojusznika
+        # Herd defense credited to victim and ally
         self.assertEqual(prey.herd_defenses, 1)
         self.assertEqual(ally.herd_defenses, 1)
 
@@ -282,7 +282,7 @@ class TestAgent(unittest.TestCase):
 
         agent_a.think_and_act([], [], [], [agent_a, agent_b], 1280, 720)
 
-        # Agent A traci 20 energii transferu (+ metabolizm), agent B zyskuje 20 energii
+        # Agent A loses 20 energy transfer (+ metabolism), agent B gains 20 energy
         self.assertAlmostEqual(agent_a.energy, 79.8, places=1)
         self.assertAlmostEqual(agent_b.energy, 30.0, places=1)
         self.assertEqual(agent_a.allies_saved, 1)
@@ -320,11 +320,11 @@ class TestAgent(unittest.TestCase):
         self.assertFalse(self.agent.is_alive)
 
     # =========================================================================
-    # FAZA 6: TESTY HOLISTYCZNEGO FITNESSU ORAZ ŁATEK AUDYTU
+    # PHASE 6: HOLISTIC FITNESS AND AUDIT PATCH TESTS
     # =========================================================================
 
     def test_holistic_fitness_zero_actions_gives_zero(self):
-        """Jeśli agent nie zebrał jedzenia i nie podjął żadnej akcji, fitness wynosi bezwzględnie 0.0."""
+        """If agent collected no food and took no actions, fitness is strictly 0.0."""
         agent = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         agent.frames_alive = 500
         agent.is_alive = False
@@ -335,7 +335,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(agent.genome.fitness, 0.0)
 
     def test_holistic_fitness_formula_and_action_weights(self):
-        """Weryfikacja wag F_akcje: Jabłko (+1), Obrona (+1), Polowanie (+2), Altruizm (+3) oraz wzoru."""
+        """Verification of F_actions weights: Apple (+1), Defense (+1), Hunt (+2), Altruism (+3), and formula."""
         agent = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         agent.frames_alive = 250
         agent.foods_eaten = 2          # 2 * 1 = 2
@@ -343,9 +343,9 @@ class TestAgent(unittest.TestCase):
         agent.herd_defenses = 1        # 1 * 1 = 1
         agent.attacks_made = 3         # 3 * 2 = 6
         agent.allies_saved = 1         # 1 * 3 = 3
-        # F_akcje = 2 + 1 + 1 + 6 + 3 = 13.0
+        # F_actions = 2 + 1 + 1 + 6 + 3 = 13.0
 
-        # Test dla śmierci w walce: M_death = 1.0
+        # Test for combat death: M_death = 1.0
         agent.death_cause = "combat"
         fitness = agent.finalize_fitness()
         # F_total = ((250 * 13.0) / 25.0) * 1.0 = (3250.0 / 25.0) = 130.0
@@ -353,35 +353,35 @@ class TestAgent(unittest.TestCase):
         self.assertAlmostEqual(agent.genome.fitness, 130.0, places=2)
 
     def test_death_multipliers(self):
-        """Weryfikacja mnożników M_death: Survived (1.2), Combat (1.0), Starvation (0.7), Toxic/Poison (0.3)."""
+        """Verification of M_death multipliers: Survived (1.2), Combat (1.0), Starvation (0.7), Toxic/Poison (0.3)."""
         agent = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         agent.frames_alive = 100
-        agent.foods_eaten = 5  # F_akcje = 5.0
-        # Bazowy wynik przed M_death = (100 * 5.0) / 25.0 = 20.0
+        agent.foods_eaten = 5  # F_actions = 5.0
+        # Base score before M_death = (100 * 5.0) / 25.0 = 20.0
 
-        # 1. Przetrwanie całej epoki -> 1.2
+        # 1. Survived entire epoch -> 1.2
         agent.death_cause = "survived"
         self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 1.2, places=2)
 
-        # 2. Śmierć w walce -> 1.0
+        # 2. Death in combat -> 1.0
         agent.death_cause = "combat"
         self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 1.0, places=2)
 
-        # 3. Śmierć głodowa -> 0.7
+        # 3. Death from starvation -> 0.7
         agent.death_cause = "starvation"
         self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 0.7, places=2)
 
-        # 4. Śmierć od krawędzi toksycznej -> 0.3
+        # 4. Death from toxic edge -> 0.3
         agent.death_cause = "toxic_edge"
         self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 0.3, places=2)
 
-        # 5. Śmierć od trucizny -> 0.3
+        # 5. Death from poison -> 0.3
         agent.death_cause = "poison"
         self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 0.3, places=2)
 
     def test_toxic_edges_all_boundaries_set_0_3_multiplier(self):
-        """Weryfikacja, że zgon w strefie 50px (góra, dół, lewo, prawo) przypisuje death_cause='toxic_edge' i M_death=0.3."""
-        # Test 1: Górna ściana (y < 50)
+        """Verification that death in 50px zone (top, bottom, left, right) assigns death_cause='toxic_edge' and M_death=0.3."""
+        # Test 1: Top wall (y < 50)
         agent_top = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 20))
         agent_top.frames_alive = 100
         agent_top.energy = 0.1
@@ -392,7 +392,7 @@ class TestAgent(unittest.TestCase):
         # ((101 * 5) / 25) * 0.3 = 20.2 * 0.3 = 6.06
         self.assertAlmostEqual(agent_top.genome.fitness, ((101 * 5.0) / 25.0) * 0.3, places=2)
 
-        # Test 2: Dolna ściana (y > 720 - 50 = 670)
+        # Test 2: Bottom wall (y > 720 - 50 = 670)
         agent_bottom = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 700))
         agent_bottom.frames_alive = 100
         agent_bottom.energy = 0.1
@@ -401,7 +401,7 @@ class TestAgent(unittest.TestCase):
         self.assertFalse(agent_bottom.is_alive)
         self.assertEqual(agent_bottom.death_cause, "toxic_edge")
 
-        # Test 3: Lewa ściana (x < 50)
+        # Test 3: Left wall (x < 50)
         agent_left = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(20, 300))
         agent_left.frames_alive = 100
         agent_left.energy = 0.1
@@ -410,7 +410,7 @@ class TestAgent(unittest.TestCase):
         self.assertFalse(agent_left.is_alive)
         self.assertEqual(agent_left.death_cause, "toxic_edge")
 
-        # Test 4: Prawa ściana (x > 1280 - 50 = 1230)
+        # Test 4: Right wall (x > 1280 - 50 = 1230)
         agent_right = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(1260, 300))
         agent_right.frames_alive = 100
         agent_right.energy = 0.1
@@ -420,8 +420,8 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(agent_right.death_cause, "toxic_edge")
 
     def test_altruism_strict_energy_conservation_and_conditions(self):
-        """Weryfikacja ścisłego bilansu energii altruizmu: dawca traci 20, biorca zyskuje 20, warunki progowe."""
-        # 1. Warunek spełniony: Dawca > 50, Biorca < 20 (w tym samym plemieniu)
+        """Verification of strict altruism energy conservation: donor loses 20, recipient gains 20, threshold conditions."""
+        # 1. Condition met: Donor > 50, Recipient < 20 (within same tribe)
         donor = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         donor.energy = 80.0
         donor.frames_alive = 100
@@ -431,13 +431,13 @@ class TestAgent(unittest.TestCase):
         recipient.frames_alive = 100
 
         donor.think_and_act([], [], [], [donor, recipient], 1280, 720)
-        # Dawca traci 20 (transfer) + 0.20 (metabolizm) = 59.8
+        # Donor loses 20 (transfer) + 0.20 (metabolism) = 59.8
         self.assertAlmostEqual(donor.energy, 59.8, places=2)
-        # Biorca zyskuje 20
+        # Recipient gains 20
         self.assertAlmostEqual(recipient.energy, 35.0, places=2)
         self.assertEqual(donor.allies_saved, 1)
 
-        # 2. Dawca ma <= 50 energii -> brak transferu
+        # 2. Donor has <= 50 energy -> no transfer
         donor2 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         donor2.energy = 45.0
         donor2.frames_alive = 100
@@ -450,7 +450,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(recipient2.energy, 15.0)
         self.assertEqual(donor2.allies_saved, 0)
 
-        # 3. Biorca ma >= 20 energii -> brak transferu
+        # 3. Recipient has >= 20 energy -> no transfer
         donor3 = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         donor3.energy = 90.0
         donor3.frames_alive = 100
@@ -464,40 +464,40 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(donor3.allies_saved, 0)
 
     def test_grace_period_frame_59_to_60_transition(self):
-        """Weryfikacja precyzyjnego wyłączenia trybu ducha w klatce 60 (aktywacja kary krawędziowej)."""
+        """Verification of precise ghost mode deactivation at frame 60 (edge penalty activation)."""
         edge_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(30, 300))
-        edge_agent.frames_alive = 58  # W klatce 58 -> think_and_act podbija do 59 (< 60)
+        edge_agent.frames_alive = 58  # At frame 58 -> think_and_act increments to 59 (< 60)
         initial_energy = edge_agent.energy
         edge_agent.think_and_act([], [], [], [edge_agent], 1280, 720)
-        # Klatka 59: brak kary krawędziowej, tylko 0.20
+        # Frame 59: no edge penalty, only 0.20
         self.assertAlmostEqual(initial_energy - edge_agent.energy, 0.20, places=2)
 
-        # Następna klatka -> podbicie do 60 (>= 60): kara krawędziowa (-0.5) aktywowana
+        # Next frame -> increments to 60 (>= 60): edge penalty (-0.5) activated
         energy_before_60 = edge_agent.energy
         edge_agent.think_and_act([], [], [], [edge_agent], 1280, 720)
         self.assertAlmostEqual(energy_before_60 - edge_agent.energy, 0.70, places=2)
 
     def test_tribe_initialization_and_colors(self):
-        """Weryfikuje losowe przypisanie tribe_id (1-4), przypisanie jawne oraz paletę TRIBE_COLORS."""
+        """Verifies random tribe_id assignment (1-4), explicit assignment, and TRIBE_COLORS palette."""
         from src.agent import TRIBE_COLORS
         self.assertEqual(len(TRIBE_COLORS), 4)
         for tid in (1, 2, 3, 4):
             self.assertIn(tid, TRIBE_COLORS)
             self.assertEqual(len(TRIBE_COLORS[tid]), 3)
 
-        # Losowe generowanie plemion
+        # Random tribe assignment
         tribes_observed = {Agent(DummyNetwork(), DummyGenome(), 1280, 720).tribe_id for _ in range(50)}
         for tid in tribes_observed:
             self.assertIn(tid, (1, 2, 3, 4))
-        # Przy 50 agentach powinniśmy zaobserwować co najmniej 3 z 4 plemion
+        # With 50 agents, at least 3 out of 4 tribes should be observed
         self.assertGreaterEqual(len(tribes_observed), 3)
 
-        # Jawne przypisanie
+        # Explicit assignment
         custom_agent = Agent(DummyNetwork(), DummyGenome(), 1280, 720, tribe_id=3)
         self.assertEqual(custom_agent.tribe_id, 3)
 
     def test_altruism_blocked_between_different_tribes(self):
-        """Altruizm (transfer energii) NIE działa pomiędzy agentami z różnych plemion."""
+        """Altruism (energy transfer) does NOT work between agents from different tribes."""
         donor = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 300), tribe_id=1)
         donor.energy = 80.0
         donor.frames_alive = 100
@@ -508,13 +508,13 @@ class TestAgent(unittest.TestCase):
 
         donor.think_and_act([], [], [], [donor, recipient], 1280, 720)
 
-        # Dawca traci tylko metabolizm bazowy (brak transferu do innego plemienia)
+        # Donor loses only base metabolism (no transfer to different tribe)
         self.assertAlmostEqual(donor.energy, 79.8, places=2)
         self.assertEqual(recipient.energy, 10.0)
         self.assertEqual(donor.allies_saved, 0)
 
     def test_cannibalism_blocked_within_same_tribe(self):
-        """Drapieżnik NIE może zaatakować ani zabić członka własnego plemienia (kanibalizm zablokowany)."""
+        """Predator CANNOT attack or kill members of own tribe (cannibalism blocked)."""
         predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
         predator.vel = pygame.math.Vector2(3.0, 0.0)
         predator.energy = 50.0
@@ -527,12 +527,12 @@ class TestAgent(unittest.TestCase):
 
         predator.think_and_act([], [], [], [predator, prey], 1280, 720)
 
-        # Brak udanego ataku, brak kradzieży energii
+        # No successful attack, no energy stolen
         self.assertEqual(predator.attacks_made, 0)
         self.assertEqual(prey.energy, 50.0)
 
     def test_herd_defense_only_protects_same_tribe(self):
-        """Obrona stadna aktywuje się TYLKO gdy w pobliżu ofiary znajdują się sojusznicy z JEJ plemienia."""
+        """Herd defense activates ONLY when victim's nearby allies belong to HER tribe."""
         predator = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(195, 200), tribe_id=1)
         predator.vel = pygame.math.Vector2(3.0, 0.0)
         predator.energy = 80.0
@@ -543,107 +543,107 @@ class TestAgent(unittest.TestCase):
         prey.energy = 60.0
         prey.frames_alive = 100
 
-        # Obcy agent z plemienia 3 w pobliżu ofiary (nie należy do plemienia 2 ofiary)
+        # Foreign agent from tribe 3 near victim (does not belong to victim's tribe 2)
         stranger = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(215, 200), tribe_id=3)
         stranger.frames_alive = 100
 
         predator.think_and_act([], [], [], [predator, prey, stranger], 1280, 720)
 
-        # Obcy agent nie broni ofiary -> atak drapieżnika dochodzi do skutku
+        # Foreign agent does not defend victim -> predator attack succeeds
         self.assertEqual(predator.attacks_made, 1)
         self.assertEqual(prey.herd_defenses, 0)
         self.assertEqual(stranger.herd_defenses, 0)
 
     def test_nearest_enemy_sensors(self):
-        """Sensory [14, 15, 16] namierzają najbliższego WROGA z innego plemienia, ignorując bliższego sojusznika."""
-        # Główny agent (Plemię 1) na pozycji (200, 200)
+        """Sensors [14, 15, 16] target nearest ENEMY from another tribe, ignoring closer allies."""
+        # Main agent (Tribe 1) at (200, 200)
         main_agent = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(200, 200), tribe_id=1)
 
-        # Bliski sojusznik (Plemię 1) na pozycji (250, 200) - dystans 50px
+        # Close ally (Tribe 1) at (250, 200) - distance 50px
         close_ally = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(250, 200), tribe_id=1)
-        close_ally.energy = 15.0  # W stanie krytycznym
+        close_ally.energy = 15.0  # In critical state
 
-        # Dalszy wróg (Plemię 2) na pozycji (350, 200) - dystans 150px
+        # Farther enemy (Tribe 2) at (350, 200) - distance 150px
         far_enemy = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(350, 200), tribe_id=2)
         far_enemy.vel = pygame.math.Vector2(1.0, 0.0)
 
         agents = [main_agent, close_ally, far_enemy]
         inputs = main_agent._get_sensory_inputs([], [], [], agents, 1280, 720)
 
-        # Sensor 14: Dystans do wroga (150px / max_dist), a NIE do sojusznika (50px / max_dist)
+        # Sensor 14: Distance to enemy (150px / max_dist), NOT to ally (50px / max_dist)
         max_dist = math.hypot(1280, 720)
         expected_enemy_norm_dist = 150.0 / max_dist
         self.assertAlmostEqual(inputs[14], expected_enemy_norm_dist, places=2)
 
-        # Sensor 15, 16: Kierunek do wroga X bliski 1.0 (na prawo), Y bliski 0.0
+        # Sensors 15, 16: Direction to enemy X close to 1.0 (rightward), Y close to 0.0
         self.assertAlmostEqual(inputs[15], 1.0, places=1)
         self.assertAlmostEqual(inputs[16], 0.0, places=1)
 
-        # Sensor 17: Stan krytyczny sojusznika = 1.0 (close_ally ma 15 energii)
+        # Sensor 17: Critical status of ally = 1.0 (close_ally has 15 energy)
         self.assertEqual(inputs[17], 1.0)
 
-        # Sensor 19: Gęstość stada własnego plemienia (close_ally w zasięgu 60px) > 0
+        # Sensor 19: Herd density of own tribe (close_ally within 60px) > 0
         self.assertGreater(inputs[19], 0.0)
 
     def test_draw_all_tribes_headless(self):
-        """Weryfikuje poprawne wywołanie metody draw() dla każdego z 4 plemion na dummy Surface."""
+        """Verifies correct execution of draw() method for each of the 4 tribes on a dummy Surface."""
         surface = pygame.Surface((1280, 720))
         for tid in (1, 2, 3, 4):
             a = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(100 * tid, 100), tribe_id=tid)
-            # Powinno wyrysować się bez wyjątku
+            # Should draw without exception
             a.draw(surface)
-            # Rysowanie w stanie głodu
+            # Drawing in hunger state
             a.energy = 10.0
             a.draw(surface)
 
     def test_deadly_zone_drain_after_grace_period(self):
-        """Weryfikuje, że przebywanie w Strefie Śmierci (<20px) drenuje 2.0 energii/klatkę (Faza 8)."""
-        # Agent w odległości 15px od lewej krawędzi (wewnątrz 20px strefy śmierci)
+        """Verifies that staying in Deadly Zone (<20px) drains 2.0 energy/frame (Phase 8)."""
+        # Agent at 15px from left edge (inside 20px deadly zone)
         deadly_agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(15, 300))
         deadly_agent.vel = pygame.math.Vector2(0.0, 0.0)
-        deadly_agent.frames_alive = 100  # Poza Grace Period
+        deadly_agent.frames_alive = 100  # Outside Grace Period
         initial_energy = deadly_agent.energy
 
         deadly_agent.think_and_act([], [], [], [deadly_agent], 1280, 720)
 
-        # Traci bazowy metabolizm (0.20) + drastyczną karę Strefy Śmierci (2.0) = 2.20
+        # Loses base metabolism (0.20) + severe Deadly Zone penalty (2.0) = 2.20
         energy_loss = initial_energy - deadly_agent.energy
         self.assertAlmostEqual(energy_loss, 2.20, places=2)
 
     def test_deadly_zone_all_four_edges_rapid_death(self):
-        """Weryfikuje, że wszystkie 4 śmiertelne krawędzie (<20px) powodują szybki zgon z death_cause='toxic_edge'."""
+        """Verifies that all 4 deadly edges (<20px) cause rapid death with death_cause='toxic_edge'."""
         edges = [
-            (10, 360),    # Lewa krawędź (x=10 < 20)
-            (1270, 360),  # Prawa krawędź (x=1270 > 1280-20)
-            (640, 10),    # Górna krawędź (y=10 < 20)
-            (640, 710),   # Dolna krawędź (y=710 > 720-20)
+            (10, 360),    # Left edge (x=10 < 20)
+            (1270, 360),  # Right edge (x=1270 > 1280-20)
+            (640, 10),    # Top edge (y=10 < 20)
+            (640, 710),   # Bottom edge (y=710 > 720-20)
         ]
 
         for pos in edges:
             agent = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=pos)
             agent.frames_alive = 100
-            agent.energy = 1.5  # Mniej niż drenaż 2.0
+            agent.energy = 1.5  # Less than 2.0 drain
             agent.think_and_act([], [], [], [agent], 1280, 720)
-            self.assertFalse(agent.is_alive, f"Agent na pozycji {pos} powinien natychmiast zginąć w Strefie Śmierci.")
+            self.assertFalse(agent.is_alive, f"Agent at position {pos} should immediately die in the Deadly Zone.")
             self.assertEqual(agent.death_cause, "toxic_edge")
-            # Mnożnik M_death dla zgonu krawędziowego powinien wynosić 0.3
+            # M_death multiplier for edge death should be 0.3
             agent.foods_eaten = 2
             self.assertAlmostEqual(agent.finalize_fitness(), ((101 * 2.0) / 25.0) * 0.3, places=2)
 
     def test_deadly_zone_corner_exploit_rapid_kill(self):
-        """Eliminacja Corner Exploitu: agent w rogu (10, 10) z 10 punktami energii ginie w zaledwie kilka klatek."""
+        """Corner Exploit elimination: agent in corner (10, 10) with 10 energy points dies within a few frames."""
         corner_camper = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(10, 10))
-        corner_camper.frames_alive = 60  # Właśnie skończył się Grace Period
+        corner_camper.frames_alive = 60  # Grace Period just ended
         corner_camper.energy = 10.0
 
-        # W każdej klatce traci 2.20 energii (2.0 drenaż + 0.2 metabolizm) -> ginie w <= 5 klatek
+        # Loses 2.20 energy each frame (2.0 drain + 0.2 metabolism) -> dies in <= 5 frames
         frames = 0
         while corner_camper.is_alive and frames < 10:
             corner_camper.think_and_act([], [], [], [corner_camper], 1280, 720)
             frames += 1
 
         self.assertFalse(corner_camper.is_alive)
-        self.assertLessEqual(frames, 5, "Agent w rogu musi ginąć w ciągu ułamka sekundy (<= 5 klatek).")
+        self.assertLessEqual(frames, 5, "Agent in corner must die within a fraction of a second (<= 5 frames).")
         self.assertEqual(corner_camper.death_cause, "toxic_edge")
 
 

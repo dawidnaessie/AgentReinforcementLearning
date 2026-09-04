@@ -7,222 +7,222 @@ from src.agent import Agent, DEADLY_ZONE_MARGIN
 from src.entities import Food, Hazard, Poison
 
 
-# Szczegółowe metadane 25 znormalizowanych wejść sensorycznych zgodnie z README.md
+# Detailed metadata for the 25 normalized sensory inputs according to README.md
 SENSORY_DETAILS: Dict[int, Dict[str, str]] = {
     0: {
         "name": "Velocity (Vel X)",
         "short": "Vel X",
-        "desc": "Predkosc pozioma agenta [-1.0..1.0]",
+        "desc": "Agent horizontal velocity [-1.0..1.0]",
         "range": "[-1.0, 1.0]",
-        "role": "Orientacja pedu i bezwladnosci w osi X"
+        "role": "X-axis momentum and inertia tracking"
     },
     1: {
         "name": "Velocity (Vel Y)",
         "short": "Vel Y",
-        "desc": "Predkosc pionowa agenta [-1.0..1.0]",
+        "desc": "Agent vertical velocity [-1.0..1.0]",
         "range": "[-1.0, 1.0]",
-        "role": "Orientacja pedu i bezwladnosci w osi Y"
+        "role": "Y-axis momentum and inertia tracking"
     },
     2: {
         "name": "Nearest Food #1 Dist",
         "short": "Food #1 Dist",
-        "desc": "Dystans euklidesowy do najblizszego jablka [0..1]",
+        "desc": "Euclidean distance to nearest food apple [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Glowny cel zerowania (+15 fit, +65 energii)"
+        "role": "Primary foraging target (+15 fit, +65 energy)"
     },
     3: {
         "name": "Nearest Food #1 Dir X",
         "short": "Food #1 Dir X",
-        "desc": "Wektor kierunku X do najblizszego jablka [-1..1]",
+        "desc": "X direction vector to nearest food [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Nawigacja pozioma w strone jablka #1"
+        "role": "Horizontal navigation toward food #1"
     },
     4: {
         "name": "Nearest Food #1 Dir Y",
         "short": "Food #1 Dir Y",
-        "desc": "Wektor kierunku Y do najblizszego jablka [-1..1]",
+        "desc": "Y direction vector to nearest food [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Nawigacja pionowa w strone jablka #1"
+        "role": "Vertical navigation toward food #1"
     },
     5: {
         "name": "Secondary Food #2 Dist",
         "short": "Food #2 Dist",
-        "desc": "Dystans do 2. najblizszego jablka [0..1]",
+        "desc": "Distance to 2nd nearest food apple [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Planowanie alternatywnej trasy zerowania"
+        "role": "Secondary trajectory planning for foraging"
     },
     6: {
         "name": "Secondary Food #2 Dir X",
         "short": "Food #2 Dir X",
-        "desc": "Wektor kierunku X do 2. najblizszego jablka [-1..1]",
+        "desc": "X direction vector to 2nd nearest food [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Nawigacja pozioma do jablka #2"
+        "role": "Horizontal navigation toward food #2"
     },
     7: {
         "name": "Secondary Food #2 Dir Y",
         "short": "Food #2 Dir Y",
-        "desc": "Wektor kierunku Y do 2. najblizszego jablka [-1..1]",
+        "desc": "Y direction vector to 2nd nearest food [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Nawigacja pionowa do jablka #2"
+        "role": "Vertical navigation toward food #2"
     },
     8: {
         "name": "Nearest Poison Dist",
         "short": "Poison Dist",
-        "desc": "Dystans do najblizszej fioletowej trucizny [0..1]",
+        "desc": "Distance to nearest purple poison [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Unikanie toksyn (-10 fit, -35 energii)"
+        "role": "Toxin avoidance (-10 fit, -35 energy)"
     },
     9: {
         "name": "Nearest Poison Dir X",
         "short": "Poison Dir X",
-        "desc": "Wektor kierunku X do najblizszej trucizny [-1..1]",
+        "desc": "X direction vector to nearest poison [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Repulsja pozioma od fioletowych toksyn"
+        "role": "Horizontal repulsion from purple toxins"
     },
     10: {
         "name": "Nearest Poison Dir Y",
         "short": "Poison Dir Y",
-        "desc": "Wektor kierunku Y do najblizszej trucizny [-1..1]",
+        "desc": "Y direction vector to nearest poison [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Repulsja pionowa od fioletowych toksyn"
+        "role": "Vertical repulsion from purple toxins"
     },
     11: {
         "name": "Nearest Hazard Dist",
         "short": "Hazard Dist",
-        "desc": "Dystans do wedrujacego drapiezcy [0..1]",
+        "desc": "Distance to roving predator hazard [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Ucieczka przed zagrozeniem (-5 fit, -20 energii)"
+        "role": "Threat evasion (-5 fit, -20 energy)"
     },
     12: {
         "name": "Nearest Hazard Dir X",
         "short": "Hazard Dir X",
-        "desc": "Wektor kierunku X do ruchomego zagrozenia [-1..1]",
+        "desc": "X direction vector to moving hazard [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Unik poziomy przed ruchomym zagrozeniem"
+        "role": "Horizontal evasion from roving hazard"
     },
     13: {
         "name": "Nearest Hazard Dir Y",
         "short": "Hazard Dir Y",
-        "desc": "Wektor kierunku Y do ruchomego zagrozenia [-1..1]",
+        "desc": "Y direction vector to moving hazard [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Unik pionowy przed ruchomym zagrozeniem"
+        "role": "Vertical evasion from roving hazard"
     },
     14: {
         "name": "Nearest Enemy Dist",
         "short": "Enemy Dist",
-        "desc": "Dystans do najblizszego wroga z innego plemienia [0..1]",
+        "desc": "Distance to nearest enemy from different tribe [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Percepcja miedzyplemienna: namierzanie wrogow i ofiar"
+        "role": "Inter-tribal perception: enemy targeting and prey tracking"
     },
     15: {
         "name": "Nearest Enemy Dir X",
         "short": "Enemy Dir X",
-        "desc": "Wektor kierunku X do najblizszego wroga [-1..1]",
+        "desc": "X direction vector to nearest enemy [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Kierunek poziomy w strone wrogiego plemienia"
+        "role": "Horizontal orientation toward enemy tribe"
     },
     16: {
         "name": "Nearest Enemy Dir Y",
         "short": "Enemy Dir Y",
-        "desc": "Wektor kierunku Y do najblizszego wroga [-1..1]",
+        "desc": "Y direction vector to nearest enemy [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Kierunek pionowy w strone wrogiego plemienia"
+        "role": "Vertical orientation toward enemy tribe"
     },
     17: {
         "name": "Nearest Ally Critical State",
         "short": "Ally Critical",
-        "desc": "1.0 jesli sojusznik z plemienia ma <20% energii, wpp 0.0",
+        "desc": "1.0 if tribe ally has <20% energy, otherwise 0.0",
         "range": "{0.0, 1.0}",
-        "role": "Wyzwalacz altruizmu plemiennego (+50 fit za pomoc swojemu)"
+        "role": "Kin altruism trigger (+50 fit for aiding ally)"
     },
     18: {
         "name": "Nearest Enemy Rel Heading",
         "short": "Enemy Heading",
-        "desc": "Zwrot predkosci wroga: >0 ucieka tylem, <0 szarzuje czolowo",
+        "desc": "Enemy heading alignment: >0 fleeing back exposed, <0 charging head-on",
         "range": "[-1.0, 1.0]",
-        "role": "Taktyka walki: atak na wroga od tylu (+25 fit) vs parowanie"
+        "role": "Combat tactics: backstab hunting (+25 fit) vs parrying"
     },
     19: {
         "name": "Local Tribe Herd Density",
         "short": "Tribe Density",
-        "desc": "Gestosc sojusznikow z wlasnego plemienia w 60px [0..1]",
+        "desc": "Density of allies from own tribe within 60px [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Obrona stadna plemienia (+15 nagrody za wspolna obrone)"
+        "role": "Tribe herd defense (+15 reward for cooperative defense)"
     },
     20: {
         "name": "Proximity to Nearest Wall",
         "short": "Wall Dist",
-        "desc": "Dystans do krawedzi areny (0 przy scianie, 1 w centrum)",
+        "desc": "Distance to arena boundary (0 at wall, 1 at center)",
         "range": "[0.0, 1.0]",
-        "role": "Unikanie toksycznej sciany (-0.5 energii/klatke)"
+        "role": "Boundary repulsion to avoid Deadly Zone (-2.0 energy/frame)"
     },
     21: {
         "name": "Current Energy Level",
         "short": "Energy Level",
-        "desc": "Poziom wlasnej energii zyciowej [0.0..1.0]",
+        "desc": "Current internal vital energy reserve [0.0..1.0]",
         "range": "[0.0, 1.0]",
-        "role": "Naped witalny: zjadanie, polowanie lub bezpieczny spoczynek"
+        "role": "Vital drive: foraging, hunting, or energy conservation"
     },
     22: {
         "name": "Nearest Shout Dist",
         "short": "Shout Dist",
-        "desc": "Dystans do agenta emitujacego krzyk akustyczny [0..1]",
+        "desc": "Distance to agent broadcasting acoustic shout [0..1]",
         "range": "[0.0, 1.0]",
-        "role": "Zmysl sluchu: lokalizacja wzywajacego pomocy lub zbiorki"
+        "role": "Hearing perception: locating rally or distress calls"
     },
     23: {
         "name": "Nearest Shout Dir X",
         "short": "Shout Dir X",
-        "desc": "Wektor kierunku X w strone krzyczacego agenta [-1..1]",
+        "desc": "X direction vector toward shouting agent [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Orientacja sluchowa X w strone zrodla dzwieku"
+        "role": "Horizontal acoustic orientation toward sound source"
     },
     24: {
         "name": "Nearest Shout Dir Y",
         "short": "Shout Dir Y",
-        "desc": "Wektor kierunku Y w strone krzyczacego agenta [-1..1]",
+        "desc": "Y direction vector toward shouting agent [-1..1]",
         "range": "[-1.0, 1.0]",
-        "role": "Orientacja sluchowa Y w strone zrodla dzwieku"
+        "role": "Vertical acoustic orientation toward sound source"
     },
 }
 
-# Szczegółowe metadane 3 wyjść motorycznych i komunikacyjnych
+# Detailed metadata for the 3 motor and communication action outputs
 ACTION_DETAILS: Dict[int, Dict[str, str]] = {
     0: {
         "name": "Acceleration (Accel X)",
         "short": "Accel X",
-        "desc": "Pozioma sila napedowa: Lewo (-1.0) / Prawo (+1.0)",
-        "range": "[-1.0, 1.0] (aktywacja tanh)",
-        "role": "Sterowanie ruchem horyzontalnym agenta na arenie"
+        "desc": "Horizontal propulsion force: Left (-1.0) / Right (+1.0)",
+        "range": "[-1.0, 1.0] (tanh activation)",
+        "role": "Horizontal locomotion control in arena"
     },
     1: {
         "name": "Acceleration (Accel Y)",
         "short": "Accel Y",
-        "desc": "Pionowa sila napedowa: Gora (-1.0) / Dol (+1.0)",
-        "range": "[-1.0, 1.0] (aktywacja tanh)",
-        "role": "Sterowanie ruchem wertykalnym agenta na arenie"
+        "desc": "Vertical propulsion force: Up (-1.0) / Down (+1.0)",
+        "range": "[-1.0, 1.0] (tanh activation)",
+        "role": "Vertical locomotion control in arena"
     },
     2: {
-        "name": "Acoustic Shout (Komunikacja)",
+        "name": "Acoustic Shout (Communication)",
         "short": "Shout",
-        "desc": "Emisja fali dzwiekowej gdy > 0.0 (-0.2 energii/klatke)",
-        "range": "[-1.0, 1.0] (aktywacja > 0.0)",
-        "role": "Ostrzeganie stada, wezwanie do obrony lub sygnal glodu"
+        "desc": "Acoustic sound wave broadcast when > 0.0 (-0.2 energy/frame)",
+        "range": "[-1.0, 1.0] (active when > 0.0)",
+        "role": "Herd warning, rally distress call, or hunger alert"
     }
 }
 
-# Słowniki kompatybilności wstecznej dla modułów zewnętrznych i testów
+# Backward-compatibility dictionaries for external modules and unit tests
 SENSORY_INPUT_LABELS: Dict[int, str] = {k: v["name"] for k, v in SENSORY_DETAILS.items()}
 ACTION_OUTPUT_LABELS: Dict[int, str] = {k: v["name"] for k, v in ACTION_DETAILS.items()}
 
 
 class SimulationExit(Exception):
-    """Wyjątek rzucany przy żądaniu zakończenia symulacji przez użytkownika (ESC lub zamknięcie okna)."""
+    """Exception raised when user requests simulation termination (ESC or window close)."""
     pass
 
 
 class Environment:
-    """Środowisko symulacji 2D zarządzające cyklem życia Pygame, encjami, panelem UI oraz wizualizatorem sieci NEAT."""
+    """2D simulation environment managing Pygame lifecycle, world entities, UI panel, and NEAT visualizer."""
 
     def __init__(
         self,
@@ -245,17 +245,17 @@ class Environment:
         pygame.display.set_caption("Agent Reinforcement Learning - ALife Research Dashboard")
         self.clock = pygame.time.Clock()
 
-        # Inicjalizacja czcionek o stałej szerokości (monospace) jednokrotnie w konstruktorze
+        # Monospace font initialization (initialized once in constructor)
         self.inspector_title_font = pygame.font.SysFont("Consolas, Courier, monospace", 16, bold=True)
         self.title_font = pygame.font.SysFont("Consolas, Courier, monospace", 14, bold=True)
         self.font = pygame.font.SysFont("Consolas, Courier, monospace", 13)
         self.small_font = pygame.font.SysFont("Consolas, Courier, monospace", 11)
 
-        # Powierzchnia nakładki dla przyciemnienia (tworzona raz dla optymalizacji pamięci)
+        # Overlay surface for dimming (allocated once for memory efficiency)
         self.overlay_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         self.frozen_screen: Optional[pygame.Surface] = None
 
-        # Faza 8: Pre-renderowana półprzezroczysta czerwona ramka Strefy Śmierci (Deadly Margin = 20px)
+        # Phase 8: Pre-rendered semi-transparent red frame for Deadly Zone (Deadly Margin = 20px)
         self.deadly_margin = DEADLY_ZONE_MARGIN
         self.deadly_zone_surface = pygame.Surface((self.arena_width, self.height), pygame.SRCALPHA)
         deadly_fill_color = (231, 76, 60, 50)
@@ -269,17 +269,17 @@ class Environment:
         )
 
         self.generation = 0
-        self.fast_mode = False  # Przełączanie prędkości symulacji (klawisz SPACE)
+        self.fast_mode = False  # Toggle simulation speed (SPACE key)
 
-        # Stan interaktywnego Inspektora Sieci (Neural Inspector)
+        # Interactive Neural Inspector state
         self.inspector_active: bool = False
         self.inspected_genome: Optional[Any] = None
-        self.inspector_show_all: bool = False  # Przełącznik TAB: False = tylko aktywne, True = wszystkie 25 zmysłów
+        self.inspector_show_all: bool = False  # TAB toggle: False = active only, True = all 25 senses
 
-        # Referencje do 4 najlepszych genomów z poprzedniej generacji (Wizualizator Top 4)
+        # References to top 4 genomes from previous generation (Top 4 Visualizer)
         self.top_genomes: List[Any] = []
 
-        # Stała pula encji w świecie w granicach areny (1280 x 720)
+        # World entity pools within arena boundaries (1280 x 720)
         self.food_count = food_count
         self.poison_count = poison_count
         self.hazard_count = hazard_count
@@ -298,7 +298,7 @@ class Environment:
         ]
 
     def _reset_world_entities(self):
-        """Resetuje pozycje pożywienia, trucizn i zagrożeń na start nowej generacji w granicach areny."""
+        """Resets food, poison, and hazard positions across the arena at the start of a new generation."""
         for food in self.foods:
             food.respawn(self.arena_width, self.height)
         for poison in self.poisons:
@@ -310,40 +310,40 @@ class Environment:
             )
 
     def _draw_arena_grid(self):
-        """Rysuje ciemne tło badawcze (#0b0c10) oraz subtelną siatkę na arenie symulacji."""
-        # Wypełnienie areny
+        """Renders dark research background (#0b0c10) and subtle grid on the simulation arena."""
+        # Arena background fill
         pygame.draw.rect(self.screen, (11, 12, 16), (0, 0, self.arena_width, self.height))
 
-        # Subtelna siatka co 64 piksele
+        # Subtle grid every 64 pixels
         grid_color = (18, 22, 28)
         for x in range(0, self.arena_width, 64):
             pygame.draw.line(self.screen, grid_color, (x, 0), (x, self.height), 1)
         for y in range(0, self.height, 64):
             pygame.draw.line(self.screen, grid_color, (0, y), (self.arena_width, y), 1)
 
-        # Faza 8: Renderowanie Strefy Śmierci (czerwona półprzezroczysta ramka 20px)
+        # Phase 8: Render Deadly Zone (red semi-transparent 20px frame)
         self.screen.blit(self.deadly_zone_surface, (0, 0))
 
-        # Subtelny obrys bezpiecznej strefy (50px od toksycznych krawędzi)
+        # Subtle boundary for safe zone (50px from boundaries)
         pygame.draw.rect(self.screen, (30, 38, 48), (50, 50, self.arena_width - 100, self.height - 100), 1)
 
     def _draw_network_graph(self, genome, slot_rect: pygame.Rect, title: str):
-        """Renderuje uproszczony graf sieci neuronowej genomu w dedykowanym slocie panelu bocznego."""
-        # Tło i obramowanie slotu
+        """Renders a simplified neural network graph for a genome in a dedicated sidebar slot."""
+        # Slot background and outline
         pygame.draw.rect(self.screen, (15, 18, 24), slot_rect)
         pygame.draw.rect(self.screen, (40, 50, 65), slot_rect, 1)
 
-        # Nagłówek slotu
+        # Slot header title
         title_surf = self.small_font.render(title, True, (0, 245, 212))
         self.screen.blit(title_surf, (slot_rect.x + 8, slot_rect.y + 4))
 
         if not hasattr(genome, 'connections') or not genome.connections:
-            placeholder = self.small_font.render("Brak polaczen", True, (120, 130, 140))
+            placeholder = self.small_font.render("No connections", True, (120, 130, 140))
             self.screen.blit(placeholder, (slot_rect.x + 10, slot_rect.y + 35))
             return
 
-        # Ekstrakcja węzłów
-        # Wejścia: klucze ujemne (-1 do -25), Wyjścia: klucze (0, 1, 2), Ukryte: klucze > 2
+        # Node extraction
+        # Inputs: negative keys (-1 to -25), Outputs: keys (0, 1, 2), Hidden: keys > 2
         active_inputs = set()
         active_outputs = {0, 1, 2}
         hidden_nodes = set()
@@ -359,56 +359,56 @@ class Environment:
                 elif out_k >= 0:
                     hidden_nodes.add(out_k)
 
-        # Pozycjonowanie węzłów w przestrzeni slotu
+        # Node positioning within slot bounds
         node_positions: Dict[int, Tuple[int, int]] = {}
         in_x = slot_rect.x + 25
         out_x = slot_rect.x + slot_rect.width - 25
         mid_x = slot_rect.x + slot_rect.width // 2
 
-        # Wejścia (posortowane, lewa kolumna)
+        # Inputs (sorted, left column)
         in_list = sorted(list(active_inputs)) if active_inputs else [-1, -2, -3]
         in_spacing = (slot_rect.height - 30) / max(1, len(in_list))
         for idx, k in enumerate(in_list):
             node_positions[k] = (in_x, int(slot_rect.y + 22 + idx * in_spacing + in_spacing / 2))
 
-        # Wyjścia (Ax, Ay, Shout, prawa kolumna)
+        # Outputs (Ax, Ay, Shout, right column)
         out_list = [0, 1, 2]
         out_spacing = (slot_rect.height - 30) / 3
         for idx, k in enumerate(out_list):
             node_positions[k] = (out_x, int(slot_rect.y + 22 + idx * out_spacing + out_spacing / 2))
 
-        # Węzły ukryte (środkowa kolumna)
+        # Hidden nodes (middle column)
         hid_list = sorted(list(hidden_nodes))
         if hid_list:
             hid_spacing = (slot_rect.height - 30) / len(hid_list)
             for idx, k in enumerate(hid_list):
                 node_positions[k] = (mid_x, int(slot_rect.y + 22 + idx * hid_spacing + hid_spacing / 2))
 
-        # Rysowanie połączeń (synaps)
+        # Draw synaptic connections
         for (in_k, out_k), conn in genome.connections.items():
             if conn.enabled and in_k in node_positions and out_k in node_positions:
                 start_pos = node_positions[in_k]
                 end_pos = node_positions[out_k]
                 w = conn.weight
-                # Kolor: zielony dla wag dodatnich, czerwony dla ujemnych
+                # Color: green for positive weights, red for negative weights
                 line_color = (46, 204, 113) if w >= 0 else (231, 76, 60)
                 line_width = max(1, min(3, int(abs(w) * 1.2)))
                 pygame.draw.line(self.screen, line_color, start_pos, end_pos, line_width)
 
-        # Rysowanie węzłów (kółek)
+        # Draw node circles
         for k, pos in node_positions.items():
             if k < 0:
-                # Wejścia: błękitne
+                # Inputs: blue
                 pygame.draw.circle(self.screen, (52, 152, 219), pos, 3)
             elif k in active_outputs:
-                # Wyjścia: turkusowe
+                # Outputs: cyan
                 pygame.draw.circle(self.screen, (0, 245, 212), pos, 4)
             else:
-                # Ukryte: żółte
+                # Hidden: yellow
                 pygame.draw.circle(self.screen, (241, 196, 15), pos, 3)
 
     def get_top_genome_slot_rects(self) -> List[pygame.Rect]:
-        """Zwraca prostokąty (Rect) dla 4 slotów wizualizatora Top 4 w panelu bocznym."""
+        """Returns Rect bounding boxes for the 4 Top-4 visualizer slots in the sidebar."""
         rects = []
         slot_x = self.arena_width + 12
         slot_y = 278
@@ -419,15 +419,15 @@ class Environment:
         return rects
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        """Obsługuje pojedyncze zdarzenie Pygame (klawisze, kliknięcia myszy, wyjście)."""
+        """Handles a single Pygame event (keys, mouse clicks, quit)."""
         if event.type == pygame.QUIT:
-            raise SimulationExit("Użytkownik zamknął okno symulacji.")
+            raise SimulationExit("User closed simulation window.")
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                # Przełączanie trybu przyspieszonego
+                # Toggle fast simulation mode
                 self.fast_mode = not self.fast_mode
             elif event.key == pygame.K_TAB:
-                # Przełączanie widoku w Inspektorze (tylko aktywne vs wszystkie zmysły)
+                # Toggle view mode in Neural Inspector (active only vs all 25 senses)
                 if self.inspector_active:
                     self.inspector_show_all = not self.inspector_show_all
             elif event.key == pygame.K_ESCAPE:
@@ -436,7 +436,7 @@ class Environment:
                     self.inspected_genome = None
                     self.frozen_screen = None
                 else:
-                    raise SimulationExit("Wciśnięto klawisz ESC.")
+                    raise SimulationExit("ESC key pressed.")
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1 and not self.inspector_active:
                 for i, rect in enumerate(self.get_top_genome_slot_rects()):
@@ -448,40 +448,40 @@ class Environment:
                         break
 
     def _draw_neural_inspector(self):
-        """Renderuje pełnoekranowy, szczegółowy schemat sieci neuronowej z bogatymi opisami każdego węzła."""
+        """Renders the fullscreen interactive Neural Inspector with rich descriptions for each node and synapse."""
         if self.inspected_genome is None:
             return
 
         genome = self.inspected_genome
         mouse_pos = pygame.mouse.get_pos()
 
-        # 1. Półprzezroczyste przyciemnienie tła całej areny i dashboardu (1600 x 720)
+        # 1. Semi-transparent background dimming across arena and dashboard (1600 x 720)
         self.overlay_surface.fill((10, 14, 20, 235))
         self.screen.blit(self.overlay_surface, (0, 0))
 
-        # 2. Główna ramka modalna
+        # 2. Main modal frame
         modal_rect = pygame.Rect(30, 15, self.width - 60, self.height - 30)
         pygame.draw.rect(self.screen, (13, 17, 24), modal_rect)
         pygame.draw.rect(self.screen, (35, 48, 68), modal_rect, 2)
 
-        # Belka nagłówka
+        # Header bar
         header_h = 42
         pygame.draw.rect(self.screen, (20, 28, 40), (modal_rect.x, modal_rect.y, modal_rect.width, header_h))
         pygame.draw.line(self.screen, (0, 245, 212), (modal_rect.x, modal_rect.y + header_h), (modal_rect.right, modal_rect.y + header_h), 2)
 
         fit_val = getattr(genome, 'fitness', 0.0) or 0.0
-        gid = getattr(genome, 'key', 'Top Genom')
-        title_text = f"NEURAL INSPECTOR - ARCHITEKTURA MÓZGU AGENTA [ID: {gid} | FITNESS: {fit_val:.1f}]"
+        gid = getattr(genome, 'key', 'Top Genome')
+        title_text = f"NEURAL INSPECTOR - AGENT BRAIN ARCHITECTURE [ID: {gid} | FITNESS: {fit_val:.1f}]"
         title_surf = self.inspector_title_font.render(title_text, True, (0, 245, 212))
         self.screen.blit(title_surf, (modal_rect.x + 16, modal_rect.y + 11))
 
-        mode_text = "[TAB] Pokaz: Wszystkie 25 zmyslow" if not self.inspector_show_all else "[TAB] Pokaz: Tylko aktywne neurony"
+        mode_text = "[TAB] Show: All 25 senses" if not self.inspector_show_all else "[TAB] Show: Active neurons only"
         tab_hint = self.small_font.render(mode_text, True, (88, 166, 255))
-        esc_hint = self.title_font.render("[ESC] Zamknij", True, (241, 196, 15))
+        esc_hint = self.title_font.render("[ESC] Close", True, (241, 196, 15))
         self.screen.blit(tab_hint, (modal_rect.right - 380, modal_rect.y + 14))
         self.screen.blit(esc_hint, (modal_rect.right - 140, modal_rect.y + 12))
 
-        # 3. Ekstrakcja i pozycjonowanie węzłów
+        # 3. Node extraction and positioning
         connections = getattr(genome, 'connections', {}) or {}
 
         active_inputs = set()
@@ -502,7 +502,7 @@ class Environment:
                 elif out_k not in (0, 1, 2):
                     hidden_nodes.add(out_k)
 
-        # Decyzja, które wejścia wyświetlić
+        # Decide which sensory inputs to display
         if self.inspector_show_all:
             draw_inputs = [-(i + 1) for i in range(25)]
         else:
@@ -511,7 +511,7 @@ class Environment:
         node_positions: Dict[int, Tuple[int, int]] = {}
         node_types: Dict[int, str] = {}
 
-        # Granice przestrzeni roboczej grafu
+        # Graph workspace boundaries
         hud_height = 80
         avail_h = modal_rect.height - header_h - hud_height - 30
         start_y = modal_rect.y + header_h + 16
@@ -520,21 +520,21 @@ class Environment:
         out_x = modal_rect.right - 460
         mid_x = (in_x + out_x) // 2
 
-        # Pozycje wejść sensorycznych
+        # Sensory input positions
         in_step = avail_h / max(1, len(draw_inputs))
         for idx, k in enumerate(draw_inputs):
             pos_y = int(start_y + idx * in_step + in_step / 2)
             node_positions[k] = (in_x, pos_y)
             node_types[k] = "input"
 
-        # Pozycje 3 wyjść motorycznych / komunikacyjnych
+        # Output positions (Ax, Ay, Shout)
         out_step = avail_h / 3.0
         for idx in range(3):
             pos_y = int(start_y + idx * out_step + out_step / 2)
             node_positions[idx] = (out_x, pos_y)
             node_types[idx] = "output"
 
-        # Pozycje węzłów ukrytych (jeśli wyewoluowały)
+        # Hidden node positions (if evolved)
         hid_list = sorted(list(hidden_nodes))
         if hid_list:
             hid_step = avail_h / float(len(hid_list))
@@ -543,7 +543,7 @@ class Environment:
                 node_positions[k] = (mid_x, pos_y)
                 node_types[k] = "hidden"
 
-        # 4. Wykrywanie najechania myszą (Hover)
+        # 4. Mouse hover detection
         hovered_node = None
         for k, pos in node_positions.items():
             if math.hypot(pos[0] - mouse_pos[0], pos[1] - mouse_pos[1]) <= 14:
@@ -566,7 +566,7 @@ class Environment:
                             hovered_synapse = (in_k, out_k, getattr(conn, 'weight', 0.0))
                             break
 
-        # 5. Rysowanie linii połączeń (synaps)
+        # 5. Draw synaptic connections
         thick_connections = []
         for (in_k, out_k, conn) in active_conns:
             if in_k in node_positions and out_k in node_positions:
@@ -587,7 +587,7 @@ class Environment:
                 if abs(w) >= 1.4 or is_hovered_conn or len(active_conns) <= 8:
                     thick_connections.append((w, start_pos, end_pos, is_hovered_conn))
 
-        # Wypisanie wartości wag na liniach
+        # Render weight values on connection lines
         for w, start_pos, end_pos, is_h in thick_connections:
             mid_p = ((start_pos[0] + end_pos[0]) // 2, (start_pos[1] + end_pos[1]) // 2)
             w_text = f"{w:+.2f}"
@@ -598,8 +598,8 @@ class Environment:
             pygame.draw.rect(self.screen, (60, 75, 95), bg_rect, 1)
             self.screen.blit(w_surf, mid_p)
 
-        # 6. Rysowanie węzłów i wyczerpujących opisów
-        # --- A. WEJŚCIA SENSORYCZNE ---
+        # 6. Draw nodes and descriptions
+        # --- A. SENSORY INPUTS ---
         is_dense = len(draw_inputs) > 12
         for k in draw_inputs:
             pos = node_positions[k]
@@ -607,9 +607,9 @@ class Environment:
             detail = SENSORY_DETAILS.get(idx_num, {
                 "name": f"Sensor {idx_num}",
                 "short": f"In {idx_num}",
-                "desc": "Zmysł percepcyjny",
+                "desc": "Perceptual sense",
                 "range": "[-1..1]",
-                "role": "Percepcja środowiska"
+                "role": "Environmental perception"
             })
             is_connected = k in active_inputs
             is_h = hovered_node == k
@@ -621,7 +621,7 @@ class Environment:
 
             pygame.draw.circle(self.screen, circle_color, pos, 6 if is_connected else 4)
 
-            # Opisy tekstowe po lewej stronie węzła
+            # Text labels to the left of the node
             title_color = (240, 246, 252) if is_connected else (130, 140, 150)
             desc_color = (0, 210, 255) if is_connected else (90, 100, 110)
 
@@ -635,7 +635,7 @@ class Environment:
                 t_surf = self.small_font.render(line_str, True, title_color)
                 self.screen.blit(t_surf, (modal_rect.x + 16, pos[1] - 6))
 
-        # --- B. WYJŚCIA AKCJI (3 neurony motoryczne/komunikacyjne) ---
+        # --- B. ACTION OUTPUTS (3 motor/communication neurons) ---
         for k in range(3):
             pos = node_positions[k]
             detail = ACTION_DETAILS[k]
@@ -649,17 +649,17 @@ class Environment:
 
             pygame.draw.circle(self.screen, circle_color, pos, 8)
 
-            # Wielowierszowy, bogaty opis wyjścia po prawej stronie
-            out_title_surf = self.title_font.render(f"[Wyjście #{k}] {detail['name']}", True, (0, 245, 212))
+            # Multi-line description to the right of output node
+            out_title_surf = self.title_font.render(f"[Output #{k}] {detail['name']}", True, (0, 245, 212))
             out_desc_surf = self.font.render(detail['desc'], True, (240, 246, 252))
-            out_role_surf = self.small_font.render(f"Rola: {detail['role']}  |  Zakres: {detail['range']}", True, (139, 148, 158))
+            out_role_surf = self.small_font.render(f"Role: {detail['role']}  |  Range: {detail['range']}", True, (139, 148, 158))
 
             text_x = pos[0] + 18
             self.screen.blit(out_title_surf, (text_x, pos[1] - 22))
             self.screen.blit(out_desc_surf, (text_x, pos[1] - 3))
             self.screen.blit(out_role_surf, (text_x, pos[1] + 15))
 
-        # --- C. WĘZŁY UKRYTE (Żółte interneurony) ---
+        # --- C. HIDDEN NODES (Yellow interneuons) ---
         for k in hid_list:
             pos = node_positions[k]
             is_h = hovered_node == k
@@ -672,7 +672,7 @@ class Environment:
             self.screen.blit(hid_title, (pos[0] + 12, pos[1] - 12))
             self.screen.blit(hid_sub, (pos[0] + 12, pos[1] + 2))
 
-        # 7. Dolny Panel Szczegółowej Inspekcji (Interactive HUD Card)
+        # 7. Bottom Detailed Inspection Panel (Interactive HUD Card)
         hud_y = modal_rect.bottom - hud_height - 6
         hud_rect = pygame.Rect(modal_rect.x + 14, hud_y, modal_rect.width - 28, hud_height)
         pygame.draw.rect(self.screen, (16, 22, 32), hud_rect)
@@ -682,20 +682,20 @@ class Environment:
             if hovered_node < 0:
                 idx_num = -(hovered_node + 1)
                 det = SENSORY_DETAILS.get(idx_num, {})
-                h_title = f"🔍 SZCZEGÓŁY ZMYSŁU: [{idx_num}] {det.get('name', 'Sensor')} (Sygnał Wejściowy #{idx_num})"
-                h_line1 = f"Funkcja sensoryczna: {det.get('desc', '')}"
-                h_line2 = f"Zakres sygnału: {det.get('range', '')}  |  Rola w ekosystemie: {det.get('role', '')}"
+                h_title = f"🔍 SENSORY DETAILS: [{idx_num}] {det.get('name', 'Sensor')} (Input Signal #{idx_num})"
+                h_line1 = f"Sensory function: {det.get('desc', '')}"
+                h_line2 = f"Signal range: {det.get('range', '')}  |  Ecological role: {det.get('role', '')}"
                 c_title = (88, 166, 255)
             elif hovered_node in (0, 1, 2):
                 det = ACTION_DETAILS[hovered_node]
-                h_title = f"🔍 SZCZEGÓŁY WYJŚCIA: [{hovered_node}] {det['name']} (Efektor Motoryczny / Akcja)"
-                h_line1 = f"Mechanika efektora: {det['desc']}"
-                h_line2 = f"Dynamika biologiczna: {det['role']}  |  Zakres sygnału: {det['range']}"
+                h_title = f"🔍 ACTION DETAILS: [{hovered_node}] {det['name']} (Motor Effector / Action)"
+                h_line1 = f"Effector mechanics: {det['desc']}"
+                h_line2 = f"Biological role: {det['role']}  |  Signal range: {det['range']}"
                 c_title = (0, 245, 212)
             else:
-                h_title = f"🔍 SZCZEGÓŁY INTERNEURONU: Neuron ukryty #{hovered_node}"
-                h_line1 = "Funkcja: Pośredniczy w przetwarzaniu sygnałów sensorycznych i kształtuje emergentne zachowania agenta."
-                h_line2 = "Matematyka: Nieliniowa funkcja aktywacji tanh [-1.0 .. 1.0] z sumowaniem wag wejściowych."
+                h_title = f"🔍 INTERNEURON DETAILS: Hidden Neuron #{hovered_node}"
+                h_line1 = "Function: Mediates sensory processing and shapes emergent agent behavior."
+                h_line2 = "Mathematics: Non-linear tanh activation [-1.0 .. 1.0] with weighted input summation."
                 c_title = (241, 196, 15)
 
             self.screen.blit(self.font.render(h_title, True, c_title), (hud_rect.x + 12, hud_rect.y + 8))
@@ -706,12 +706,12 @@ class Environment:
             in_k, out_k, w = hovered_synapse
             src_str = SENSORY_DETAILS[-(in_k + 1)]['name'] if in_k < 0 else f"Neuron #{in_k}"
             dst_str = ACTION_DETAILS[out_k]['name'] if out_k in (0, 1, 2) else f"Neuron #{out_k}"
-            syn_type = "Pobudzająca (Excitatory)" if w >= 0 else "Hamująca (Inhibitory)"
+            syn_type = "Excitatory" if w >= 0 else "Inhibitory"
             syn_color = (46, 204, 113) if w >= 0 else (231, 76, 60)
 
-            h_title = f"🔍 SZCZEGÓŁY SYNAPSY: {src_str}  ───( Waga: {w:+.3f} )───>  {dst_str}"
-            h_line1 = f"Charakter połączenia: {syn_type} | Siła synaptyczna: |w| = {abs(w):.3f}"
-            h_line2 = f"Wpływ na agenta: {'Wzmacnia wyzwalanie akcji docelowej' if w >= 0 else 'Tłumi wyzwalanie akcji docelowej'}"
+            h_title = f"🔍 SYNAPSE DETAILS: {src_str}  ───( Weight: {w:+.3f} )───>  {dst_str}"
+            h_line1 = f"Connection nature: {syn_type} | Synaptic strength: |w| = {abs(w):.3f}"
+            h_line2 = f"Agent impact: {'Excites target action trigger' if w >= 0 else 'Inhibits target action trigger'}"
 
             self.screen.blit(self.font.render(h_title, True, syn_color), (hud_rect.x + 12, hud_rect.y + 8))
             self.screen.blit(self.font.render(h_line1, True, (240, 246, 252)), (hud_rect.x + 12, hud_rect.y + 28))
@@ -723,23 +723,23 @@ class Environment:
             tot_out = len(active_outputs)
             tot_syn = len(active_conns)
 
-            h_title = f"💡 PODSUMOWANIE TOPOLOGII MÓZGU: {tot_in}/25 podłączonych zmysłów | {tot_hid} neuronów ukrytych | {tot_out}/3 aktywnych akcji | {tot_syn} synaps"
-            h_line1 = f"Tryb wyświetlania: {'Tylko aktywne neurony (przejrzysty schemat)' if not self.inspector_show_all else 'Wszystkie 25 zmysłów sensorycznych'} [Klawisz TAB przełącza]"
-            h_line2 = "Wskazówka: Najedź kursorem myszy na dowolny węzeł lub synapsę, aby wyświetlić szczegółowe parametry biologiczne."
+            h_title = f"💡 BRAIN TOPOLOGY SUMMARY: {tot_in}/25 connected senses | {tot_hid} hidden neurons | {tot_out}/3 active actions | {tot_syn} synapses"
+            h_line1 = f"Display mode: {'Active neurons only (clean graph)' if not self.inspector_show_all else 'All 25 sensory inputs'} [Press TAB to toggle]"
+            h_line2 = "Hint: Hover mouse cursor over any node or synapse to inspect detailed biological parameters."
 
             self.screen.blit(self.font.render(h_title, True, (0, 245, 212)), (hud_rect.x + 12, hud_rect.y + 8))
             self.screen.blit(self.font.render(h_line1, True, (201, 209, 217)), (hud_rect.x + 12, hud_rect.y + 28))
             self.screen.blit(self.small_font.render(h_line2, True, (139, 148, 158)), (hud_rect.x + 12, hud_rect.y + 48))
 
     def _draw_sidebar(self, agents: List[Agent], frames_lived: int, max_frames: int, alive_count: int, best_current_fitness: float):
-        """Renderuje panel boczny z metrykami badawczymi oraz wizualizatorem sieci Top 4."""
+        """Renders the telemetry sidebar and Top-4 neural visualizer."""
         sidebar_rect = pygame.Rect(self.arena_width, 0, self.sidebar_width, self.height)
-        # Tło panelu bocznego (#161b22)
+        # Sidebar background (#161b22)
         pygame.draw.rect(self.screen, (22, 27, 34), sidebar_rect)
-        # Linia oddzielająca areny od panelu (#2d3748)
+        # Boundary line separating arena from sidebar (#2d3748)
         pygame.draw.line(self.screen, (45, 55, 72), (self.arena_width, 0), (self.arena_width, self.height), 2)
 
-        # 1. Nagłówek i Statystyki Główne
+        # 1. Main Header and Stats
         title_surf = self.title_font.render("=== NEURAL RESEARCH DASHBOARD ===", True, (240, 246, 252))
         self.screen.blit(title_surf, (self.arena_width + 12, 12))
 
@@ -753,17 +753,17 @@ class Environment:
         active_shouts = sum(1 for a in agents if a.is_alive and a.is_shouting)
 
         stats_lines = [
-            f"GENERACJA:   {self.generation:<4d} | KLATKA: {frames_lived:3d}/{max_frames}",
-            f"POPULACJA:   {alive_count:2d}/{len(agents):<2d} | TRYB: {'TURBO' if self.fast_mode else '60 FPS'}",
+            f"GENERATION:  {self.generation:<4d} | FRAME: {frames_lived:3d}/{max_frames}",
+            f"POPULATION:  {alive_count:2d}/{len(agents):<2d} | MODE: {'TURBO' if self.fast_mode else '60 FPS'}",
             f"MAX FITNESS: {best_current_fitness:<6.1f} | FPS:  {fps_val:2d}",
             "---------------------------------------",
-            f"• Zebrane Jablka:       {total_foods:4d}",
-            f"• Trucizny:             {total_poisons:4d}",
-            f"• Altruizm (Ratunek):   {total_saved:4d}",
-            f"• Ataki Drapieznikow:   {total_attacks:4d}",
-            f"• Obrony Czolowe:       {total_defenses:4d}",
-            f"• Obrony Stadne:        {total_herd:4d}",
-            f"• Aktywne Krzyki:       {active_shouts:4d}",
+            f"• Eaten Apples:        {total_foods:4d}",
+            f"• Poisons Hit:         {total_poisons:4d}",
+            f"• Altruism (Rescues):  {total_saved:4d}",
+            f"• Predator Attacks:    {total_attacks:4d}",
+            f"• Frontal Defenses:    {total_defenses:4d}",
+            f"• Herd Defenses:       {total_herd:4d}",
+            f"• Active Shouts:       {active_shouts:4d}",
             "---------------------------------------"
         ]
 
@@ -772,20 +772,20 @@ class Environment:
             color = (201, 209, 217)
             if "MAX FITNESS" in line:
                 color = (241, 196, 15)
-            elif "POPULACJA" in line:
+            elif "POPULATION" in line:
                 color = (88, 166, 255)
-            elif "Altruizm" in line or "Jablka" in line:
+            elif "Altruism" in line or "Apples" in line:
                 color = (46, 204, 113)
-            elif "Ataki" in line or "Trucizny" in line:
+            elif "Attacks" in line or "Poisons" in line:
                 color = (231, 76, 60)
-            elif "Krzyki" in line:
+            elif "Shouts" in line:
                 color = (0, 245, 212)
 
             line_surf = self.font.render(line, True, color)
             self.screen.blit(line_surf, (self.arena_width + 14, y_offset))
             y_offset += 18
 
-        # 2. Wizualizator Sieci Top 4 (4 sloty ułożone pionowo)
+        # 2. Top-4 Neural Visualizer (4 vertically stacked slots)
         section_surf = self.title_font.render("--- TOP 4 NEURAL BRAINS ---", True, (139, 148, 158))
         self.screen.blit(section_surf, (self.arena_width + 12, y_offset + 4))
 
@@ -793,21 +793,21 @@ class Environment:
             if i < len(self.top_genomes):
                 genome = self.top_genomes[i]
                 fit_val = getattr(genome, 'fitness', 0.0) or 0.0
-                title = f"[#{i+1} ELITA] Fitness: {fit_val:.1f}"
+                title = f"[#{i+1} ELITE] Fitness: {fit_val:.1f}"
                 self._draw_network_graph(genome, rect, title)
             else:
                 pygame.draw.rect(self.screen, (15, 18, 24), rect)
                 pygame.draw.rect(self.screen, (35, 45, 55), rect, 1)
-                ph = self.small_font.render(f"[#{i+1} PUSTY] Oczekiwanie na epoke...", True, (80, 90, 100))
+                ph = self.small_font.render(f"[#{i+1} EMPTY] Awaiting epoch...", True, (80, 90, 100))
                 self.screen.blit(ph, (rect.x + 10, rect.y + 35))
 
     def eval_generation(self, nets, genomes, max_frames: int = 900) -> Dict[str, Any]:
-        """Ewaluuje pojedynczą generację 50 agentów NEAT."""
+        """Evaluates a single generation of NEAT agents."""
         self.generation += 1
         self._reset_world_entities()
 
-        # Równomierny rozkład startowy agentów wokół centrum areny (1280 x 720)
-        # Faza 8: Zbalansowany podział na 4 równe plemiona (przy 40 agentach dokładnie 10 na plemię)
+        # Uniform agent spawn distribution around arena center (1280 x 720)
+        # Phase 8: Balanced division across 4 equal tribes (precisely 10 per tribe for 40 agents)
         num_agents = len(genomes)
         center_x, center_y = self.arena_width / 2, self.height / 2
         spawn_radius = 240.0
@@ -824,11 +824,11 @@ class Environment:
         running = True
 
         while running and frames_lived < max_frames:
-            # 1. Obsługa zdarzeń Pygame
+            # 1. Event handling
             for event in pygame.event.get():
                 self.handle_event(event)
 
-            # Jeśli aktywny jest Inspektor Sieci – pauzujemy fizykę i ewolucję, renderujemy tylko nakładkę
+            # If Neural Inspector is active – pause physics and evolution, render overlay only
             if self.inspector_active:
                 if self.frozen_screen is not None:
                     self.screen.blit(self.frozen_screen, (0, 0))
@@ -837,11 +837,11 @@ class Environment:
                 self.clock.tick(60)
                 continue
 
-            # 2. Aktualizacja zagrożeń w granicach areny
+            # 2. Update dynamic hazards
             for hazard in self.hazards:
                 hazard.update(self.arena_width, self.height)
 
-            # 3. Aktualizacja agentów
+            # 3. Update agents
             alive_count = 0
             best_current_fitness = -999999.0
 
@@ -853,35 +853,35 @@ class Environment:
                 if agent.genome.fitness > best_current_fitness:
                     best_current_fitness = agent.genome.fitness
 
-            # Wczesne zakończenie generacji po wyginięciu całej populacji
+            # Early generation termination if entire population dies
             if alive_count == 0:
                 break
 
-            # 4. Renderowanie Areny i Siatki
+            # 4. Render arena and grid
             self._draw_arena_grid()
 
-            # Rysowanie pożywienia (zielone okręgi)
+            # Render food entities (green circles)
             for food in self.foods:
                 food.draw(self.screen)
 
-            # Rysowanie trucizny (fioletowe kwadraty)
+            # Render poison entities (purple squares)
             for poison in self.poisons:
                 poison.draw(self.screen)
 
-            # Rysowanie zagrożeń ruchomych (czerwone okręgi)
+            # Render roving hazards (red circles)
             for hazard in self.hazards:
                 hazard.draw(self.screen)
 
-            # Rysowanie agentów
+            # Render agents
             for agent in agents:
                 agent.draw(self.screen)
 
-            # 5. Renderowanie Panelu Bocznego i Wizualizatora Top 4
+            # 5. Render sidebar and Top-4 visualizer
             self._draw_sidebar(agents, frames_lived, max_frames, alive_count, best_current_fitness)
 
             pygame.display.flip()
 
-            # Kontrola FPS: 60 FPS w trybie normalnym, nielimitowany w trybie turbo
+            # Control FPS: 60 FPS normal mode, uncapped in turbo mode
             if self.fast_mode:
                 self.clock.tick(0)
             else:
@@ -889,13 +889,13 @@ class Environment:
 
             frames_lived += 1
 
-        # Finalizacja holistycznego fitnessu dla agentów, którzy przetrwali całą epokę (M_death = 1.2)
+        # Finalize holistic fitness for agents that survived the entire epoch (M_death = 1.2)
         for agent in agents:
             if agent.is_alive:
                 agent.death_cause = "survived"
                 agent.finalize_fitness()
 
-        # Zapisanie 4 najlepszych genomów na koniec generacji dla wizualizatora (głębokie kopie dla stabilności)
+        # Preserve Top 4 genomes at generation completion (deepcopies for isolation)
         sorted_elites = sorted(
             genomes,
             key=lambda g: getattr(g, 'fitness', -999999.0) if getattr(g, 'fitness', None) is not None else -999999.0,

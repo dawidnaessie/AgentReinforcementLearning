@@ -1,18 +1,18 @@
-# Workflow i Testowanie (TDD & Incremental Development)
+# Workflow and Testing (TDD & Incremental Development)
 
-Aby zapobiec destabilizacji całego systemu, asystent musi bezwzględnie stosować podejście inkrementalne i pokrywać kod testami jednostkowymi.
+To prevent destabilizing the entire system, the assistant must strictly adopt an incremental development approach and ensure comprehensive unit test coverage.
 
-## 1. Praca Segmentowa (Baby Steps)
-- Nigdy nie generuj całego systemu na raz. Pisz kod małymi modułami (np. najpierw sama funkcja poruszania się agenta, potem jedzenie, potem sensory).
-- Po wygenerowaniu jednego segmentu, upewnij się, że działa, zanim przejdziesz do kolejnego.
+## 1. Incremental Development (Baby Steps)
+- Never generate or refactor the entire system at once. Write code in small, focused modules (e.g., first basic agent locomotion, then food consumption, then sensors).
+- After implementing a single segment, ensure it passes all tests before proceeding to the next.
 
-## 2. Zawsze Pisz Testy (Test-Driven Development)
-- Każda nowa klasa, metoda lub funkcja logiczna musi posiadać odpowiadający jej test jednostkowy (używaj standardowej biblioteki `unittest` lub `pytest`).
-- Testy przechowuj w osobnym folderze `/tests/` w korzeniu projektu (np. `tests/test_agent.py`, `tests/test_environment.py`).
+## 2. Always Write Tests (Test-Driven Development)
+- Every new class, method, or business logic function must be backed by a corresponding unit test (using the standard `unittest` or `pytest` framework).
+- Store all tests in a dedicated `/tests/` directory at the project root (e.g., `tests/test_agent.py`, `tests/test_environment.py`).
 
-## 3. Izolacja Logiki od Renderowania (Pygame)
-- Aby testy mogły działać automatycznie, logika gry (matematyka, kolizje, genetyka) musi być odseparowana od renderowania (`pygame.draw`).
-- Klasy takie jak `Agent` powinny pozwalać na aktualizację stanu bez konieczności inicjalizowania całego okna Pygame. Zależności od Pygame (jak `Surface` czy ekran) przekazuj tylko do metod odpowiedzialnych za rysowanie (np. `draw(screen)`).
+## 3. Separation of Logic from Rendering (Pygame)
+- For tests to execute automatically and headlessly, game logic (mathematics, collision detection, genetics) must be strictly decoupled from rendering routines (`pygame.draw`).
+- Classes such as `Agent` must allow state updates without requiring an active Pygame window. Pass Pygame dependencies (such as `Surface` or screen displays) only to methods specifically dedicated to rendering (e.g., `draw(screen)`).
 
-## 4. Ochrona przed Regresją
-- Modyfikując istniejący kod, najpierw zaktualizuj lub napisz nowy test. Dopiero potem zmieniaj implementację.
+## 4. Regression Prevention
+- When modifying existing code, update or write new test cases first. Only then adjust the implementation to ensure zero regressions.

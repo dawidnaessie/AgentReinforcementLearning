@@ -121,30 +121,30 @@ Example log entry appended to `logs/logs.txt`:
 ==================================================================================================
 SIMULATION RUN LOG - 2026-09-02 01:45:30
 ==================================================================================================
-• Data rozpoczecia:    2026-09-02 01:41:15
-• Data zakonczenia:    2026-09-02 01:45:30
-• Czas trwania:        255.40 s (4.26 min)
-• Ukonczone generacje: 12
+• Start Date:           2026-09-02 01:41:15
+• End Date:             2026-09-02 01:45:30
+• Duration:             255.40 s (4.26 min)
+• Completed Generations: 12
 
-NAJLEPSZY WYNIK W CALEJ SYMULACJI (PEAK PERFORMANCE):
-• Najwyzszy fitness w ogole: 1420.50 pkt
-• Osiagniety w generacji:    Gen 9
-• Liczba aktywnych synaps:   38 polaczen
+PEAK SIMULATION PERFORMANCE:
+• All-Time Highest Fitness: 1420.50 pts
+• Achieved in Generation:   Gen 9
+• Active Synaptic Count:    38 connections
 
-PODSUMOWANIE EKOSYSTEMU I ZACHOWAN:
-• Sredni fitness startowy (Gen 1):  14.20 pkt
-• Sredni fitness koncowy (Gen 12):  285.60 pkt
-• Wzrost sredniej sprawnosci:       +1911.3%
-• Zebrane jablka:                   485 szt.
-• Zjedzone trucizny:                72 szt.
-• Akty altruizmu (uratowani):       104
-• Ataki drapieznikow:               135
-• Obrony czolowe:                   62
-• Obrony stadne:                    89
-• Wyemitowane krzyki:               340
+ECOSYSTEM & BEHAVIORAL SUMMARY:
+• Initial Average Fitness (Gen 1):  14.20 pts
+• Final Average Fitness (Gen 12):   285.60 pts
+• Average Fitness Growth:           +1911.3%
+• Collected Apples:                 485 pcs.
+• Consumed Poisons:                 72 pcs.
+• Altruistic Rescues:               104
+• Predator Attacks:                 135
+• Frontal Defenses:                 62
+• Herd Defenses:                    89
+• Broadcast Shouts:                 340
 
-SZCZEGOLOWY PRZEBIEG GENERACJA PO GENERACJI (AVG SCORE & PEAK):
-Gen   | Sr Fitness  | Max Fitness | Synapsy  | Jablka  | Trucizny | Altruizm | Ataki  | Obrony | Stado  | Czas   
+DETAILED PROGRESSION GENERATION BY GENERATION (AVG SCORE & PEAK):
+Gen   | Avg Fitness | Max Fitness | Synapses | Apples  | Poisons  | Altruism | Attacks| Defense| Herd   | Time   
 --------------------------------------------------------------------------------------------------
 1     | 14.20       | 52.40       | 25       | 18      | 12       | 3        | 2      | 1      | 0      | 18.20s
 2     | 38.60       | 120.10      | 26       | 29      | 8        | 6        | 5      | 2      | 2      | 21.05s

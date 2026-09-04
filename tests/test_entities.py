@@ -4,7 +4,7 @@ from src.entities import Food, Hazard, Poison
 
 
 class TestEntities(unittest.TestCase):
-    """Testy jednostkowe encji środowiska (Food, Hazard, Poison) bez wymogu renderowania okna."""
+    """Unit tests for environment entities (Food, Hazard, Poison) without requiring a display window."""
 
     def test_food_initialization(self):
         food = Food(100, 200, radius=4.0)
@@ -28,8 +28,8 @@ class TestEntities(unittest.TestCase):
         self.assertEqual(poison.pos.x, 150)
         self.assertEqual(poison.pos.y, 250)
         self.assertEqual(poison.size, 8.0)
-        self.assertEqual(poison.radius, 4.0)  # promień kolizji = size / 2
-        self.assertEqual(poison.color, (155, 89, 182))  # fioletowy kolor
+        self.assertEqual(poison.radius, 4.0)  # collision radius = size / 2
+        self.assertEqual(poison.color, (155, 89, 182))  # purple color
 
         poison.respawn(800, 600, margin=30)
         self.assertGreaterEqual(poison.pos.x, 30)
@@ -47,7 +47,7 @@ class TestEntities(unittest.TestCase):
         hazard = Hazard(790, 300, radius=12.0)
         hazard.vel = pygame.math.Vector2(5.0, 0.0)
         hazard.update(800, 600, margin=20)
-        # Po zderzeniu z prawą ścianą (x > 800 - 20) prędkość x powinna zmienić znak na ujemny
+        # After colliding with right wall (x > 800 - 20), velocity x should reverse to negative
         self.assertLess(hazard.vel.x, 0.0)
 
 

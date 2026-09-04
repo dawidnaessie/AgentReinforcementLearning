@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 
 
 class EvolutionTracker:
-    """Zbiera statystyki przebiegu ewolucji, drukuje podsumowanie i zapisuje raport do pliku logs/logs.txt."""
+    """Collects evolutionary run telemetry, prints summary reports, and dumps logs to logs/logs.txt."""
 
     def __init__(self):
         self.start_datetime = datetime.now()
@@ -39,7 +39,7 @@ class EvolutionTracker:
         shouts_made: int = 0,
         best_synapses: int = 0
     ):
-        """Zapisuje dane pojedynczej generacji."""
+        """Records metrics for a single completed generation."""
         if best_fitness > self.peak_fitness:
             self.peak_fitness = best_fitness
             self.peak_generation = generation
@@ -71,7 +71,7 @@ class EvolutionTracker:
         })
 
     def print_summary(self):
-        """Wyświetla czytelne, estetyczne podsumowanie sesji ewolucyjnej."""
+        """Displays a structured console summary of the evolutionary session."""
         total_time = time.time() - self.start_time
         total_gens = len(self.generations_data)
 
@@ -142,23 +142,23 @@ class EvolutionTracker:
         max_bytes: Optional[int] = 5 * 1024 * 1024
     ) -> str:
         """
-        Dopisuje (append) najważniejsze informacje z przebiegu symulacji do pliku logu.
-        Domyślnie zapisuje do katalogu 'logs/logs.txt'.
-        Jeśli katalog docelowy nie istnieje, zostaje utworzony automatycznie.
-        Jeśli plik przekracza max_bytes (domyślnie 5 MB), następuje automatyczna rotacja
-        do logs1.txt, logs2.txt itd., a nowy raport trafia do czystego pliku logs.txt.
-        Użytkownik może również w dowolnym momencie zmienić nazwę pliku (np. na logs1.txt) -
-        program przy kolejnym uruchomieniu utworzy nowy, czysty plik logs.txt bez błędów.
+        Appends key simulation run metrics and generational telemetry to a log file.
+        Defaults to 'logs/logs.txt'.
+        Automatically creates the target directory if it does not exist.
+        If the file exceeds max_bytes (default 5 MB), it automatically rotates
+        to logs1.txt, logs2.txt, etc., and writes the fresh report to a clean logs.txt.
+        Users can also manually rename logs.txt at any time — subsequent runs will
+        cleanly initialize a new logs.txt file without errors.
         """
         if filepath is None:
             filepath = os.path.join("logs", "logs.txt")
 
-        # Automatyczne utworzenie katalogu docelowego, jeśli nie istnieje
+        # Automatically create target directory if missing
         parent_dir = os.path.dirname(os.path.abspath(filepath))
         if parent_dir:
             os.makedirs(parent_dir, exist_ok=True)
 
-        # Automatyczna rotacja w przypadku przekroczenia dopuszczalnego rozmiaru pliku
+        # Automatic rotation if file exceeds allowable size threshold
         if max_bytes is not None and os.path.exists(filepath):
             try:
                 if os.path.getsize(filepath) >= max_bytes:
@@ -172,9 +172,9 @@ class EvolutionTracker:
                             break
                         idx += 1
                     os.rename(filepath, rotated_path)
-                    print(f"[INFO] Plik logow przekroczyl limit {max_bytes / (1024 * 1024):.1f} MB. Zarchiwizowano stary plik jako: {rotated_path}")
+                    print(f"[INFO] Log file exceeded {max_bytes / (1024 * 1024):.1f} MB threshold. Archived as: {rotated_path}")
             except OSError as err:
-                print(f"[WARN] Nie udalo sie zrotowac pliku logow: {err}")
+                print(f"[WARN] Failed to rotate log file: {err}")
 
         end_datetime = datetime.now()
         total_time = time.time() - self.start_time

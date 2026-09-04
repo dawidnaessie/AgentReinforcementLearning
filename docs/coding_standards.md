@@ -1,23 +1,23 @@
-# Standardy Kodu dla Asystenta AI
+# Coding Standards for the AI Assistant
 
-Pisząc lub modyfikując kod w tym projekcie, bezwzględnie przestrzegaj poniższych zasad:
+When writing or modifying code in this project, strictly adhere to the following principles:
 
-## Zasady dotyczące AI i NEAT
-1. **Używaj tylko `neat-python`:** Nie implementuj algorytmów genetycznych ani sieci neuronowych od zera (np. w PyTorch czy NumPy), chyba że użytkownik wyraźnie o to poprosi. Używaj gotowych mechanizmów `neat`.
-2. **Wejścia (Inputs) i Wyjścia (Outputs):** Zawsze weryfikuj, czy liczba wejść i wyjść w `agent.py` zgadza się z plikiem `config-feedforward.txt`. 
-3. **Funkcja Fitness:** Punkty fitness muszą być przypisywane bezpośrednio do obiektu `genome.fitness`. Unikaj lokalnych liczników punktów, które nie są przekazywane do genomu.
+## AI and NEAT Principles
+1. **Use Only `neat-python`:** Do not implement genetic algorithms or neural networks from scratch (e.g., in PyTorch or NumPy) unless explicitly requested by the user. Rely on the established mechanisms provided by `neat`.
+2. **Inputs and Outputs Alignment:** Always verify that the number of sensory inputs and motor outputs in `agent.py` precisely matches the configuration in `config-feedforward.txt`.
+3. **Fitness Assignment:** Fitness points must be assigned directly to the `genome.fitness` attribute. Avoid maintaining local score counters that fail to transfer to the genome.
 
-## Zasady dotyczące Środowiska (Pygame)
-1. **Wydajność:** Ogranicz rysowanie skomplikowanych kształtów. Symulacja musi działać płynnie dla 50+ agentów. Używaj prostych `pygame.draw.rect` lub `pygame.draw.circle`.
-2. **Separacja Logiki:** Kod renderowania (Pygame) musi znajdować się głównie w `environment.py` lub w dedykowanych metodach `draw()` obiektów. Nie umieszczaj logiki fizyki w `main.py`.
+## Environment Principles (Pygame)
+1. **Performance:** Restrict the rendering of complex geometries. The simulation must run smoothly for 50+ agents. Prefer lightweight primitives like `pygame.draw.rect` or `pygame.draw.circle`.
+2. **Separation of Logic:** Rendering routines (Pygame) must reside primarily in `environment.py` or dedicated object `draw()` methods. Do not place physics or game logic in `main.py`.
 
-## Styl Kodu Python
-- Stosuj PEP 8 (Type Hinting jest mile widziany, ale nie obowiązkowy dla głównych skryptów symulacji).
-- Zawsze komentuj zawiłą logikę wejść do sieci neuronowej (np. tłumacząc, co oznacza dana wartość przekazywana agentowi jako "wzrok").
-- Zachowaj modularność: nowe encje w świecie (np. Jedzenie, Zagrożenie) twórz jako osobne klasy.
+## Python Code Style
+- Follow PEP 8 (Type Hinting is encouraged and welcomed across the codebase).
+- Always document intricate sensory inputs into the neural network (e.g., explaining what each value passed to the agent represents as "vision" or "hearing").
+- Maintain modularity: encapsulate new world entities (e.g., Food, Hazard) in dedicated, standalone classes.
 
-## Jakość Kodu i Zależności (Production-Grade & Clean Code)
-1. **Zasada KISS (Keep It Simple, Stupid):** Pisz kod zwięzły, modularny i gotowy na produkcję. Unikaj over-engineeringu, zbędnych warstw abstrakcji i zawiłych "sprytnych" jednolinijkowców, które utrudniają czytanie.
-2. **Don't Reinvent the Wheel:** Zanim napiszesz niestandardową funkcję (np. do obliczania dystansu, kątów, czy kolizji), sprawdź, czy `pygame.math.Vector2` lub standardowe moduły Pythona (`math`, `itertools`) już tego nie robią. Używaj wbudowanych, zoptymalizowanych metod.
-3. **Zero Over-Importing:** Utrzymuj absolutne minimum zależności. Do prostej matematyki 2D używaj standardowej biblioteki `math` lub wektorów z `pygame`. Kategorycznie nie importuj ciężkich zewnętrznych bibliotek (takich jak `numpy`, `pandas`, `scipy`, `matplotlib`), chyba że użytkownik o to wyraźnie poprosi.
-4. **Zarządzanie Pamięcią:** W pętli głównej `pygame` (wewnątrz `while running:`) unikaj ciągłego inicjowania nowych obiektów, ładowania czcionek czy grafik. Inicjuj je raz w `__init__`, aby zapobiec wyciekom pamięci i spadkom FPS przy 50+ agentach.
+## Code Quality & Dependencies (Production-Grade & Clean Code)
+1. **KISS Principle (Keep It Simple, Stupid):** Write concise, modular, and production-ready code. Avoid over-engineering, unnecessary abstraction layers, and convoluted "clever" one-liners that impair readability.
+2. **Don't Reinvent the Wheel:** Before implementing custom helper functions (e.g., for calculating Euclidean distances, angles, or collisions), check if `pygame.math.Vector2` or standard Python modules (`math`, `itertools`) already provide them. Utilize built-in, optimized methods.
+3. **Zero Over-Importing:** Maintain an absolute minimum of dependencies. For 2D vector mathematics, rely on the standard library `math` or vectors from `pygame`. Strictly avoid importing heavy third-party packages (such as `numpy`, `pandas`, `scipy`, `matplotlib`) unless explicitly requested by the user.
+4. **Memory Management:** Within the main Pygame rendering loop (inside `while running:`), avoid continuously instantiating new objects, allocating surfaces, or reloading fonts and assets. Initialize them once during `__init__` to prevent memory leaks and maintain steady FPS.

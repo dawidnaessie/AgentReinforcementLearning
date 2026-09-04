@@ -1,27 +1,27 @@
-# Kontekst Projektu: AgentReinforcementLearning
+# Project Context: AgentReinforcementLearning
 
-## Cel Projektu
-Stworzenie symulacji sztucznego życia (ALife), w której zbalansowana populacja 40 agentów AI (podzielona na 4 równe plemiona po 10 osobników, sterowane przez rekurencyjne sieci neuronowe NEAT RNN) funkcjonuje we wspólnym, ciągłym środowisku 2D. Celem nadrzędnym jest zaobserwowanie emergencji zachowań społecznych, podziału na role cywilizacyjne (zbieracz, drapieżnik, obrońca) oraz współpracy (altruistyczny transfer energii) wymuszonej przez odpowiednio zaprojektowane środowisko ze Strefą Śmierci (Deadly Margin = 20px) i holistyczną funkcję dopasowania (fitness function).
+## Project Objective
+Creation of an Artificial Life (ALife) simulation where a balanced population of 40 AI agents (divided into 4 equal tribes of 10 individuals, governed by NEAT Recurrent Neural Networks - RNN) operates within a shared, continuous 2D environment. The primary objective is observing the emergence of social behaviors, division of civilizational roles (forager, predator, defender), and cooperation (altruistic energy transfer) enforced by an engineered environment featuring a Deadly Margin (20px) and a holistic fitness function.
 
-## Stos Technologiczny
-- **Język:** Python 3.x (czysty Python, standardowa biblioteka `math`, `random`, `time`)
-- **Neuroewolucja:** `neat-python` (obsługa rekurencyjnych sieci neuronowych RNN, pamięci stanów wewnętrznych, mutacji wag i topologii, krzyżowania, speciacji oraz elitaryzmu Top 4).
-- **Środowisko i Fizyka:** `pygame` (wbudowany `pygame.math.Vector2`, pętla symulacji, headless testy, pre-renderowana czerwona ramka Strefy Śmierci).
-- **Testy:** `unittest` (TDD, pełna izolacja logiki bez wymogu okna graficznego, 66 testów).
+## Technology Stack
+- **Language:** Python 3.x (Pure Python, standard library `math`, `random`, `time`)
+- **Neuroevolution:** `neat-python` (recurrent neural networks RNN, internal hidden state memory, weight and topology mutations, crossover, speciation, and Top 4 elitism).
+- **Environment & Physics:** `pygame` (built-in `pygame.math.Vector2`, simulation loop, headless unit tests, pre-rendered Deadly Zone red border).
+- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 66 tests).
 
-## Główne Założenia Ewolucyjne
-1. **Pętla Pokoleniowa:** Generacja trwa określoną liczbę klatek lub kończy się wcześniej po wymarciu populacji.
-2. **Elitaryzm:** 4 najlepsze genomy (Top 4) przechodzą do kolejnego pokolenia bez żadnych mutacji.
-3. **Początkowy Minimalizm & RNN:** Sieci startują z 0 warstw ukrytych (bezpośrednie połączenia wejścia-wyjścia z obsługą pętli rekurencyjnych) i samodzielnie rozbudowują topologię poprzez mutacje (`node_add_prob = 0.15`).
-4. **Metabolizm i Zasoby:** Każdy krok kosztuje energię; zjedzenie pożywienia odnawia zasoby, trucizna i drapieżnictwo odbierają siły witalne, a Strefa Śmierci (20px) błyskawicznie drenuje energię (-2.0/klatkę), eliminując bierność i corner exploit.
-5. **Autonomia i Równowaga Plemion:** Ekosystem dzieli się równomiernie na 4 plemiona po 10 agentów (Cyjan, Magenta, Żółty, Biały), badając dynamikę walki i kooperacji wewnątrzplemiennej.
+## Core Evolutionary Principles
+1. **Generational Cycle:** Each generation runs for a predefined frame duration or terminates early upon population extinction.
+2. **Elitism:** The top 4 genomes (Top 4) advance to the next generation without mutation.
+3. **Initial Minimalism & RNN:** Networks initialize with 0 hidden layers (direct input-output connections supporting recurrent feedback loops) and autonomously expand their topology via mutations (`node_add_prob = 0.15`).
+4. **Metabolism & Resources:** Every step costs energy; eating food replenishes vitality, poison and predation drain energy, and the Deadly Zone (20px) rapidly drains energy (-2.0/frame), eliminating idling and corner camping exploits.
+5. **Autonomy & Tribal Balance:** The ecosystem is distributed evenly across 4 tribes of 10 agents (Cyan, Magenta, Yellow, White), investigating intra-tribal cooperation and inter-tribal combat dynamics.
 
-## Struktura Projektu
-- `/src/main.py` – Inicjalizacja NEAT, punkt wejścia, zwięzłe logi w konsoli.
-- `/src/environment.py` – Cykl życia Pygame, renderowanie, HUD, zarządzanie encjami (`Food`, `Poison`, `Hazard`).
-- `/src/agent.py` – Klasa `Agent`, zmysły percepcyjne, metabolizm, mechaniki interakcji (altruizm, drapieżnictwo, obrona), przypisywanie fitnessu.
-- `/src/entities.py` – Modularne encje świata (`Food`, `Poison`, `Hazard`).
-- `/src/stats.py` – `EvolutionTracker` zbierający metryki generacji i generujący raport końcowy.
-- `/logs/logs.txt` – Raporty telemetryczne symulacji z obsługą auto-tworzenia i rotacji.
-- `/config-feedforward.txt` – Parametry algorytmu NEAT.
-- `/tests/` – Pełny zestaw testów jednostkowych (TDD, 66 testów).
+## Project Structure
+- `/src/main.py` – NEAT initialization, entry point, concise console logging.
+- `/src/environment.py` – Pygame lifecycle, rendering, HUD, world entity management (`Food`, `Poison`, `Hazard`).
+- `/src/agent.py` – `Agent` class, sensory perception, metabolism, interaction mechanics (altruism, predation, defense), fitness assignment.
+- `/src/entities.py` – Modular world entities (`Food`, `Poison`, `Hazard`).
+- `/src/stats.py` – `EvolutionTracker` gathering generational metrics and generating the final simulation summary.
+- `/logs/logs.txt` – Evolutionary telemetry run reports with automatic directory creation and size-based rotation.
+- `/config-feedforward.txt` – NEAT algorithm hyperparameters.
+- `/tests/` – Comprehensive headless unit test suite (TDD, 66 tests).

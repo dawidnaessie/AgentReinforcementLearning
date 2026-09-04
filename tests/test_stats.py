@@ -7,7 +7,7 @@ from src.stats import EvolutionTracker
 
 
 class TestStats(unittest.TestCase):
-    """Testy jednostkowe modułu zbierania statystyk i generowania podsumowania ewolucji (Faza 4)."""
+    """Unit tests for statistics tracking module and evolution summary generation (Phase 4)."""
 
     def test_tracker_empty_summary(self):
         tracker = EvolutionTracker()
@@ -87,7 +87,7 @@ class TestStats(unittest.TestCase):
         self.assertIn("Wzrost sredniej sprawnosci:         +140.0%", output)
 
     def test_dump_to_file_empty(self):
-        """Weryfikuje zrzut pustego trackera (symulacja przerwana od razu) z datą i statusem."""
+        """Verifies dump of empty tracker (simulation aborted immediately) with timestamp and status."""
         tracker = EvolutionTracker()
         with tempfile.TemporaryDirectory() as tmpdir:
             log_path = os.path.join(tmpdir, "test_logs.txt")
@@ -100,7 +100,7 @@ class TestStats(unittest.TestCase):
             self.assertIn("Symulacja przerwana przed ukonczeniem pierwszej generacji", content)
 
     def test_dump_to_file_with_generations_and_synapses(self):
-        """Weryfikuje zrzut statystyk generacji, daty, średnich wyników, rekordu i liczby synaps."""
+        """Verifies dump of generation statistics, dates, average scores, record, and synapse count."""
         tracker = EvolutionTracker()
         tracker.record_generation(
             generation=1,
@@ -139,17 +139,17 @@ class TestStats(unittest.TestCase):
             log_path = os.path.join(tmpdir, "test_logs.txt")
             content = tracker.dump_to_file(log_path)
 
-            # 1. Sprawdzenie nagłówka i daty
+            # 1. Check header and date
             self.assertIn("SIMULATION RUN LOG - ", content)
             self.assertIn("Data rozpoczecia:", content)
             self.assertIn("Data zakonczenia:", content)
 
-            # 2. Sprawdzenie najwyższego wyniku i liczby synaps rekordzisty
+            # 2. Check peak score and record-holder synapse count
             self.assertIn("Najwyzszy fitness w ogole: 350.00 pkt", content)
             self.assertIn("Osiagniety w generacji:    Gen 2", content)
             self.assertIn("Liczba aktywnych synaps:   32 polaczen", content)
 
-            # 3. Sprawdzenie średnich wyników dla każdej generacji
+            # 3. Check average scores for each generation
             self.assertIn("SZCZEGOLOWY PRZEBIEG GENERACJA PO GENERACJI", content)
             # Gen 1 row: avg 45.00, best 120.00, synapsy 26
             self.assertIn("1     | 45.00       | 120.00      | 26", content)
@@ -157,7 +157,7 @@ class TestStats(unittest.TestCase):
             self.assertIn("2     | 110.00      | 350.00      | 32", content)
 
     def test_dump_to_file_appends_multiple_sessions(self):
-        """Weryfikuje tryb 'append' — kolejne sesje symulacji dopisują się na końcu pliku."""
+        """Verifies 'append' mode — successive simulation sessions append to the end of the file."""
         tracker1 = EvolutionTracker()
         tracker1.record_generation(1, 100.0, 50.0, 5.0, 1, 1.0, best_synapses=20)
 
@@ -172,7 +172,7 @@ class TestStats(unittest.TestCase):
             with open(log_path, "r", encoding="utf-8") as f:
                 full_text = f.read()
 
-            # Plik zawiera dwa nagłówki oddzielnych symulacji
+            # File contains two headers from distinct simulation runs
             self.assertEqual(full_text.count("SIMULATION RUN LOG - "), 2)
             self.assertIn("Najwyzszy fitness w ogole: 100.00 pkt", full_text)
             self.assertIn("Najwyzszy fitness w ogole: 200.00 pkt", full_text)
@@ -180,7 +180,7 @@ class TestStats(unittest.TestCase):
             self.assertIn("Liczba aktywnych synaps:   25 polaczen", full_text)
 
     def test_dump_to_file_creates_directory_if_missing(self):
-        """Weryfikuje automatyczne tworzenie podkatalogów (np. logs/), jeśli jeszcze nie istnieją."""
+        """Verifies automatic creation of subdirectories (e.g., logs/) if they do not yet exist."""
         tracker = EvolutionTracker()
         with tempfile.TemporaryDirectory() as tmpdir:
             nested_log_path = os.path.join(tmpdir, "nested", "logs", "logs.txt")
@@ -191,7 +191,7 @@ class TestStats(unittest.TestCase):
             self.assertIn("SIMULATION RUN LOG - ", content)
 
     def test_dump_to_file_auto_rotation_when_exceeds_max_bytes(self):
-        """Weryfikuje rotację: stary plik otrzymuje numer 1 (np. logs1.txt), a nowy raport trafia do czystego logs.txt."""
+        """Verifies log rotation: old file receives suffix 1 (e.g., logs1.txt), and new report writes to a fresh logs.txt."""
         tracker1 = EvolutionTracker()
         tracker1.record_generation(1, 100.0, 50.0, 5.0, 1, 1.0, best_synapses=20)
 
@@ -200,17 +200,17 @@ class TestStats(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             log_path = os.path.join(tmpdir, "logs.txt")
-            # Pierwszy zrzut - tworzy logs.txt
+            # First dump - creates logs.txt
             tracker1.dump_to_file(log_path)
             self.assertTrue(os.path.exists(log_path))
             file_size = os.path.getsize(log_path)
 
-            # Drugi zrzut z max_bytes mniejszym niż rozmiar logs.txt -> rotacja
+            # Second dump with max_bytes smaller than logs.txt size -> triggers rotation
             tracker2.dump_to_file(log_path, max_bytes=file_size)
 
             rotated_path = os.path.join(tmpdir, "logs1.txt")
-            self.assertTrue(os.path.exists(rotated_path), "Stary plik powinien zostać zrotowany do logs1.txt.")
-            self.assertTrue(os.path.exists(log_path), "Nowy plik logs.txt powinien zostać utworzony.")
+            self.assertTrue(os.path.exists(rotated_path), "Old file should be rotated to logs1.txt.")
+            self.assertTrue(os.path.exists(log_path), "New logs.txt file should be created.")
 
             with open(rotated_path, "r", encoding="utf-8") as f:
                 rotated_content = f.read()
@@ -223,7 +223,7 @@ class TestStats(unittest.TestCase):
             self.assertNotIn("100.00 pkt", new_content)
 
     def test_dump_to_file_manual_rename_workflow(self):
-        """Weryfikuje scenariusz, w którym użytkownik sam zmienia nazwę logs.txt na logs1.txt."""
+        """Verifies manual rename workflow where user renames logs.txt to logs1.txt."""
         tracker1 = EvolutionTracker()
         tracker1.record_generation(1, 100.0, 50.0, 5.0, 1, 1.0)
 
@@ -234,19 +234,19 @@ class TestStats(unittest.TestCase):
             log_path = os.path.join(tmpdir, "logs.txt")
             tracker1.dump_to_file(log_path)
 
-            # Użytkownik ręcznie zmienia nazwę pliku
+            # User manually renames the log file
             renamed_manual = os.path.join(tmpdir, "logs1.txt")
             os.rename(log_path, renamed_manual)
             self.assertFalse(os.path.exists(log_path))
             self.assertTrue(os.path.exists(renamed_manual))
 
-            # Kolejna symulacja zapisuje do logs.txt - powinien powstać nowy, świeży plik
+            # Next simulation writes to logs.txt - a fresh file should be created
             tracker2.dump_to_file(log_path)
             self.assertTrue(os.path.exists(log_path))
 
             with open(log_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            # logs.txt zawiera tylko dane z sesji 2, a logs1.txt z sesji 1
+            # logs.txt contains only session 2 data, while logs1.txt holds session 1
             self.assertEqual(content.count("SIMULATION RUN LOG - "), 1)
             self.assertIn("200.00 pkt", content)
 

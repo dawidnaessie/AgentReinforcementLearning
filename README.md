@@ -236,7 +236,7 @@ AgentReinforcementLearning/
 ### 1. Clone the repository
 ```bash
 git clone https://github.com/dawidnaessie/AgentReinforcementLearning.git
-cd AgentReinforcmentLearning
+cd AgentReinforcementLearning
 ```
 
 ### 2. Set up a virtual environment

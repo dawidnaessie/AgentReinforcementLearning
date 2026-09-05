@@ -56,8 +56,8 @@ enabled_rate_to_false_add = 0.0
 compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient   = 0.5
 
-# Network architecture (Phase 9: Acoustic Lobotomy - 22 inputs, 2 action outputs)
-# 22 normalized perceptual inputs:
+# Network architecture (Phase 10: Directional Altruism - 23 inputs, 2 action outputs)
+# 23 normalized perceptual inputs:
 # 1. Velocity VX (-1..1)
 # 2. Velocity VY (-1..1)
 # 3. Distance to nearest food #1 (0..1)
@@ -75,27 +75,28 @@ compatibility_weight_coefficient   = 0.5
 # 15. Distance to nearest enemy from another tribe (0..1)
 # 16. Direction vector to enemy X (-1..1)
 # 17. Direction vector to enemy Y (-1..1)
-# 18. Critical state of ally from own tribe (1.0 if energy < 20%, 0.0 otherwise)
-# 19. Relative enemy velocity heading (-1..1, >0 retreating away, <0 charging)
-# 20. Herd density of own tribe around agent (0..1, safety in numbers)
-# 21. Distance to nearest wall/boundary (0..1)
-# 22. Self energy level (0..1)
-# Network architecture (Phase 9: Recurrent Neural Networks RNN)
-# 22 sensory inputs, 2 action outputs (Accel X, Accel Y)
-num_inputs              = 22
+# 18. Critical ally direction X (-1..1, normalized direction to nearest starving ally < 20% energy)
+# 19. Critical ally direction Y (-1..1, normalized direction to nearest starving ally < 20% energy)
+# 20. Relative enemy velocity heading (-1..1, >0 retreating away, <0 charging)
+# 21. Herd density of own tribe around agent (0..1, safety in numbers)
+# 22. Distance to nearest wall/boundary (0..1)
+# 23. Self energy level (0..1)
+# Network architecture (Phase 10: Recurrent Neural Networks RNN)
+# 23 sensory inputs, 2 action outputs (Accel X, Accel Y)
+num_inputs              = 23
 num_outputs             = 2
 num_hidden              = 0
 feed_forward            = False
 initial_connection      = full_direct
 
-# Topology mutations (higher addition rate prevents network stagnation and fosters RNN loops)
-conn_add_prob           = 0.50
-conn_delete_prob        = 0.20
-node_add_prob           = 0.15
-node_delete_prob        = 0.02
+# Topology mutations (optimized structural pruning to favor synaptic refinement)
+conn_add_prob           = 0.08
+conn_delete_prob        = 0.06
+node_add_prob           = 0.015
+node_delete_prob        = 0.025
 
 [DefaultSpeciesSet]
-compatibility_threshold = 2.8
+compatibility_threshold = 3.8
 
 [DefaultStagnation]
 species_fitness_func = max

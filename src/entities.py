@@ -1,3 +1,4 @@
+from typing import List, Optional, Tuple
 import random
 import pygame
 
@@ -5,15 +6,105 @@ import pygame
 class Food:
     """Represents an ecological resource (food / apple) in the simulation world."""
 
+    _active_hotspot: Optional[Tuple[float, float]] = None
+    _cluster_remaining: int = 0
+
     def __init__(self, x: float, y: float, radius: float = 4.0):
         self.pos = pygame.math.Vector2(x, y)
         self.radius = radius
         self.color = (46, 204, 113)  # Vibrant green color
 
-    def respawn(self, width: int, height: int, margin: int = 30):
-        """Relocates the existing food entity to a new random location, preventing repeated allocations."""
-        self.pos.x = random.randint(margin, width - margin)
-        self.pos.y = random.randint(margin, height - margin)
+    @classmethod
+    def reset_cluster_state(cls):
+        """Resets dynamic cluster state for clean simulation boundaries and unit testing."""
+        cls._active_hotspot = None
+        cls._cluster_remaining = 0
+
+    @classmethod
+    def set_hotspot(cls, cx: float, cy: float, cluster_size: int = 5):
+        """Manually sets an active hotspot and remaining apple budget for testing or scenarios."""
+        cls._active_hotspot = (cx, cy)
+        cls._cluster_remaining = cluster_size
+
+    @classmethod
+    def create_clustered(
+        cls,
+        count: int,
+        width: int,
+        height: int,
+        margin: int = 60,
+        sigma: float = 60.0
+    ) -> List['Food']:
+        """
+        Spawns food entities distributed in dense spatial clusters (patch dispersion).
+        Picks random hotspots (cx, cy) and places 4-6 apples using Gaussian offsets.
+        """
+        foods: List['Food'] = []
+        remaining = count
+        while remaining > 0:
+            cluster_size = min(remaining, random.randint(4, 6))
+            cx = random.uniform(margin + 40, max(margin + 40, width - margin - 40))
+            cy = random.uniform(margin + 40, max(margin + 40, height - margin - 40))
+            for _ in range(cluster_size):
+                ox = random.gauss(0.0, sigma)
+                oy = random.gauss(0.0, sigma)
+                fx = max(float(margin), min(float(width - margin), cx + ox))
+                fy = max(float(margin), min(float(height - margin), cy + oy))
+                foods.append(cls(fx, fy))
+            remaining -= cluster_size
+        return foods
+
+    @classmethod
+    def respawn_clustered(
+        cls,
+        foods: List['Food'],
+        width: int,
+        height: int,
+        margin: int = 60,
+        sigma: float = 60.0
+    ):
+        """Relocates an existing list of food entities into dense spatial clusters/patches."""
+        idx = 0
+        total = len(foods)
+        while idx < total:
+            cluster_size = min(total - idx, random.randint(4, 6))
+            cx = random.uniform(margin + 40, max(margin + 40, width - margin - 40))
+            cy = random.uniform(margin + 40, max(margin + 40, height - margin - 40))
+            for _ in range(cluster_size):
+                ox = random.gauss(0.0, sigma)
+                oy = random.gauss(0.0, sigma)
+                foods[idx].pos.x = max(float(margin), min(float(width - margin), cx + ox))
+                foods[idx].pos.y = max(float(margin), min(float(height - margin), cy + oy))
+                idx += 1
+
+    def respawn(
+        self,
+        width: int,
+        height: int,
+        margin: int = 30,
+        hotspot: Optional[Tuple[float, float]] = None,
+        sigma: float = 60.0
+    ):
+        """
+        Relocates the existing food entity using patch dispersion (dynamic clustering).
+        Periodically selects a new hotspot coordinate (cx, cy) and groups 4-6 apples
+        around it using Gaussian distribution clamped to arena margins.
+        """
+        if hotspot is not None:
+            cx, cy = hotspot
+        else:
+            if Food._active_hotspot is None or Food._cluster_remaining <= 0:
+                cx = random.uniform(margin + 40, max(margin + 40, width - margin - 40))
+                cy = random.uniform(margin + 40, max(margin + 40, height - margin - 40))
+                Food._active_hotspot = (cx, cy)
+                Food._cluster_remaining = random.randint(4, 6)
+            cx, cy = Food._active_hotspot
+            Food._cluster_remaining -= 1
+
+        ox = random.gauss(0.0, sigma)
+        oy = random.gauss(0.0, sigma)
+        self.pos.x = max(float(margin), min(float(width - margin), cx + ox))
+        self.pos.y = max(float(margin), min(float(height - margin), cy + oy))
 
     def draw(self, screen: pygame.Surface):
         """Renders the food entity as an efficient circle primitive."""

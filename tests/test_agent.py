@@ -63,10 +63,10 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.agent.herd_defenses, 0)
         self.assertIn(self.agent.tribe_id, [1, 2, 3, 4])
 
-    def test_sensory_and_action_dimensions_phase_9(self):
-        """Phase 9 Lobotomy: agent perceives strictly 22 inputs and activates 2 outputs (Accel X, Accel Y)."""
+    def test_sensory_and_action_dimensions_phase_10(self):
+        """Phase 10: agent perceives strictly 23 inputs and activates 2 outputs (Accel X, Accel Y)."""
         inputs = self.agent.get_state([], [], [], [self.agent], 1280, 720)
-        self.assertEqual(len(inputs), 22)
+        self.assertEqual(len(inputs), 23)
         outputs = self.agent.net.activate(inputs)
         self.assertEqual(len(outputs), 2)
 
@@ -252,8 +252,8 @@ class TestAgent(unittest.TestCase):
 
         inputs = self.agent._get_sensory_inputs(foods, poisons, hazards, agents, 1280, 720)
 
-        # Phase 9: exactly 22 sensory inputs
-        self.assertEqual(len(inputs), 22)
+        # Phase 10: exactly 23 sensory inputs
+        self.assertEqual(len(inputs), 23)
         for idx, val in enumerate(inputs):
             self.assertGreaterEqual(val, -1.01, f"Input {idx} value {val} is below -1.0")
             self.assertLessEqual(val, 1.01, f"Input {idx} value {val} is above 1.0")
@@ -264,10 +264,10 @@ class TestAgent(unittest.TestCase):
         ally3 = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(self.agent.pos.x + 30, self.agent.pos.y), tribe_id=self.agent.tribe_id)
 
         inputs_dense = self.agent._get_sensory_inputs([], [], [], [self.agent, ally1, ally2, ally3], 1280, 720)
-        self.assertGreater(inputs_dense[19], 0.4)
+        self.assertGreater(inputs_dense[20], 0.4)
 
         inputs_lonely = self.agent._get_sensory_inputs([], [], [], [self.agent], 1280, 720)
-        self.assertEqual(inputs_lonely[19], 0.0)
+        self.assertEqual(inputs_lonely[20], 0.0)
 
     def test_sprint_fatigue_metabolism_cost(self):
         sprinting_agent = Agent(DummyNetwork(output_x=1.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(200, 200))
@@ -648,11 +648,42 @@ class TestAgent(unittest.TestCase):
         self.assertAlmostEqual(inputs[15], 1.0, places=1)
         self.assertAlmostEqual(inputs[16], 0.0, places=1)
 
-        # Sensor 17: Critical status of ally = 1.0 (close_ally has 15 energy)
-        self.assertEqual(inputs[17], 1.0)
+        # Sensors 17, 18: Direction to nearest critical ally (<20% energy)
+        # close_ally at (250, 200) relative to main_agent at (200, 200): dx = 1.0, dy = 0.0
+        self.assertAlmostEqual(inputs[17], 1.0, places=2)
+        self.assertAlmostEqual(inputs[18], 0.0, places=2)
 
-        # Sensor 19: Herd density of own tribe (close_ally within 60px) > 0
-        self.assertGreater(inputs[19], 0.0)
+        # Sensor 20: Herd density of own tribe (close_ally within 60px) > 0
+        self.assertGreater(inputs[20], 0.0)
+
+    def test_directional_altruism_sensor_variations(self):
+        """Verifies Critical Ally Dir X/Y sensors point toward starving ally (<20% energy) and return 0 if none."""
+        main = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(500, 500), tribe_id=1)
+
+        # 1. No allies at all -> (0.0, 0.0)
+        inputs_no_ally = main._get_sensory_inputs([], [], [], [main], 1280, 720)
+        self.assertEqual(inputs_no_ally[17], 0.0)
+        self.assertEqual(inputs_no_ally[18], 0.0)
+
+        # 2. Ally present but healthy (energy 50.0 >= 20.0) -> (0.0, 0.0)
+        healthy_ally = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(500, 400), tribe_id=1)
+        healthy_ally.energy = 50.0
+        inputs_healthy = main._get_sensory_inputs([], [], [], [main, healthy_ally], 1280, 720)
+        self.assertEqual(inputs_healthy[17], 0.0)
+        self.assertEqual(inputs_healthy[18], 0.0)
+
+        # 3. Ally starving (energy 10.0 < 20.0) positioned directly above at (500, 400): dx=0.0, dy=-1.0
+        healthy_ally.energy = 10.0
+        inputs_starving = main._get_sensory_inputs([], [], [], [main, healthy_ally], 1280, 720)
+        self.assertAlmostEqual(inputs_starving[17], 0.0, places=2)
+        self.assertAlmostEqual(inputs_starving[18], -1.0, places=2)
+
+        # 4. Enemy starving (<20%) must NOT trigger ally altruism sensor
+        starving_enemy = Agent(self.net, DummyGenome(), width=1280, height=720, start_pos=(600, 500), tribe_id=2)
+        starving_enemy.energy = 5.0
+        inputs_enemy_only = main._get_sensory_inputs([], [], [], [main, starving_enemy], 1280, 720)
+        self.assertEqual(inputs_enemy_only[17], 0.0)
+        self.assertEqual(inputs_enemy_only[18], 0.0)
 
     def test_draw_all_tribes_headless(self):
         """Verifies correct execution of draw() method for each of the 4 tribes on a dummy Surface."""

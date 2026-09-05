@@ -130,7 +130,7 @@ class TestAnalyze(unittest.TestCase):
         brain_data = {"brain_id_42.txt": "Node ID: 3 | tanh"}
 
         prompt = analyze.construct_prompt(log_data, brain_data)
-        self.assertIn("Phase 9: 22 normalized inputs", prompt)
+        self.assertIn("Phase 10: 23 normalized inputs", prompt)
         self.assertIn("Combat Cooldown", prompt)
         self.assertIn("LOG FILE: logs.txt", prompt)
         self.assertIn("BRAIN DUMP: brain_id_42.txt", prompt)

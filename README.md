@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-RNN-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-86%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-90%20passed-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
 ---
@@ -27,6 +27,8 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
   - **Tribe 3:** Electric Yellow `(255, 230, 0)`
   - **Tribe 4:** Pure White `(240, 246, 255)`
   Tribal membership enforces strict social boundaries: **intra-tribe altruism**, **prohibition of cannibalism / friendly fire**, **inter-tribe predation**, and **tribal herd defense**.
+- **Dynamic Resource Clustering & Directional Altruism (Phase 10):**
+  To break the "Peaceful Forager Local Optimum", resource dispersion is overhauled from uniform random scattering to dynamic Gaussian patch clustering (hotspots with 4–6 apples), forcing inter-tribal territorial friction over dense resource hubs. The altruism sensor is upgraded from a scalar binary flag to two continuous directional navigation vectors (`Critical Ally Dir X`, `Critical Ally Dir Y`), granting agents precise directional steering to locate and rescue starving kin (<20% energy). NEAT hyperparameters are pruned (`compatibility_threshold = 3.8`, `conn_add_prob = 0.08`, `conn_delete_prob = 0.06`, `node_add_prob = 0.015`, `node_delete_prob = 0.025`) to favor synaptic refinement over uncontrolled topological bloat.
 - **Acoustic Lobotomy & Combat Economy Rebalance (Phase 9):**
   Telemetry and reverse-engineering dumps proved that acoustic shout communication was evolutionarily unviable (suppressed to conserve energy) while agents collapsed into dense collision clusters to micro-farm points. Phase 9 excises shout inputs and outputs (down to 22 inputs and 2 outputs), establishes a **30-frame Combat Cooldown** (0.5s at 60 FPS) that blocks rapid repeated point/energy farming, and heavily buffs foraging (+40.0 Fitness) to stimulate active arena exploration.
 - **Top 4 NEAT Brains Visualizer & Fullscreen Neural Inspector:**
@@ -48,7 +50,7 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
 
 ## 👁️ Agent Sensory & Action Space
 
-Each agent evaluates its surroundings through **22 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]`):
+Each agent evaluates its surroundings through **23 normalized sensory inputs** (scaled to `[0.0, 1.0]` or `[-1.0, 1.0]`):
 
 | Input Index | Sensory Signal | Range | Description & Ecological Role |
 | :---: | :--- | :--- | :--- |
@@ -63,11 +65,11 @@ Each agent evaluates its surroundings through **22 normalized sensory inputs** (
 | **13 – 14** | `Nearest Hazard Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward hazard |
 | **15** | `Nearest Enemy Distance` | `[0.0, 1.0]` | Normalized distance to closest agent from a **foreign tribe** (`other.tribe_id != self.tribe_id`) |
 | **16 – 17** | `Nearest Enemy Direction (DX, DY)` | `[-1.0, 1.0]` | Unit direction vector pointing toward nearest enemy |
-| **18** | `Nearest Ally Critical State` | `{0.0, 1.0}` | Binary trigger: `1.0` if nearest **own tribe ally** has energy `< 20%` (starving), else `0.0` |
-| **19** | `Nearest Enemy Relative Heading` | `[-1.0, 1.0]` | Heading alignment with enemy: `> 0.0` if enemy is fleeing, `< 0.0` if charging head-on |
-| **20** | `Local Tribe Herd Density` | `[0.0, 1.0]` | Proximity density of **own tribe allies** within 60px (`0.0` isolated, `1.0` densely packed) |
-| **21** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Proximity to arena borders (`0.0` at wall, `1.0` at center) |
-| **22** | `Current Energy Level` | `[0.0, 1.0]` | Current vitality reserve percentage |
+| **18 – 19** | `Critical Ally Direction (DX, DY)` | `[-1.0, 1.0]` | Normalized unit direction vector to nearest starving ally (< 20% energy) from same tribe (`(0.0, 0.0)` if none) |
+| **20** | `Nearest Enemy Relative Heading` | `[-1.0, 1.0]` | Heading alignment with enemy: `> 0.0` if enemy is fleeing, `< 0.0` if charging head-on |
+| **21** | `Local Tribe Herd Density` | `[0.0, 1.0]` | Proximity density of **own tribe allies** within 60px (`0.0` isolated, `1.0` densely packed) |
+| **22** | `Proximity to Nearest Wall` | `[0.0, 1.0]` | Proximity to arena borders (`0.0` at wall, `1.0` at center) |
+| **23** | `Current Energy Level` | `[0.0, 1.0]` | Current vitality reserve percentage |
 
 ### Action Outputs (2 Neurons with `tanh` activation):
 - **Output 1 (`Ax`):** Horizontal acceleration force in `[-1.0, 1.0]`.
@@ -106,7 +108,7 @@ Each agent evaluates its surroundings through **22 normalized sensory inputs** (
 | **`[SPACE]`** | **Toggle Turbo Mode** | Switches between 60 FPS visual rendering and uncapped simulation speed for rapid evolution. |
 | **`[ESC]` / `[X]`** | **Graceful Exit & Dump** | Safely exits Pygame, prints console summary, and appends the run log to `logs/logs.txt`. |
 | **`Left Mouse Click`** | **Neural Inspector** | Click on any of the **Top 4 elite slots** in the sidebar to open the full-screen Neural Inspector. |
-| **`[TAB]` (in Inspector)** | **Toggle Senses View** | Toggles between active connected neurons only and all 22 sensory inputs. |
+| **`[TAB]` (in Inspector)** | **Toggle Senses View** | Toggles between active connected neurons only and all 23 sensory inputs. |
 | **`[S]` (in Inspector)** | **Brain Dump Export** | Saves the inspected agent's complete mathematical topology into `logs/brain_id_{key}.txt` for reverse engineering. |
 | **`[ESC]` (in Inspector)** | **Close Inspector** | Closes the Neural Inspector and resumes live simulation. |
 
@@ -227,7 +229,7 @@ AgentReinforcementLearning/
 │   ├── environment.py       # Simulation loop, HUD, Neural Inspector, Top 4 slots, brain dump export
 │   ├── main.py              # Runner entry point, eval loop, graceful exit handlers
 │   └── stats.py             # EvolutionTracker statistics, summary printer, dump_to_file, export_brain_to_txt
-└── tests/                   # Comprehensive headless unit test suite (86 tests)
+└── tests/                   # Comprehensive headless unit test suite (90 tests)
     ├── test_agent.py        # Agent physics, sensors, combat, tribal rules, altruism, deadly zone
     ├── test_analyze.py      # Automated analysis pipeline, .env parser, API mocking, archiving
     ├── test_config.py       # NEAT configuration, RNN recurrent validation, pop_size=40, node_add_prob=0.15
@@ -290,7 +292,7 @@ python -m unittest discover tests -v
 The codebase strictly adheres to **Test-Driven Development (TDD)** and clean separation of concerns:
 - **Headless Testing:** All agent mechanics, RNN outputs, tribal interactions, and telemetry are 100% executable headlessly without opening display windows.
 - **Deepcopy Isolation:** Neural inspection uses isolated deepcopies to avoid mutation or state corruption during live evolution.
-- **Fast Execution:** All **86 unit tests** execute in under 1.8 seconds.
+- **Fast Execution:** All **90 unit tests** execute in under 1.8 seconds.
 
 ---
 

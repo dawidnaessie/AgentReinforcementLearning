@@ -48,16 +48,18 @@ class TestEnvironment(unittest.TestCase):
         self.assertIsNone(self.env.inspected_genome)
 
     def test_sensory_and_action_labels(self):
-        """Verifies correct mapping of 22 inputs and 2 outputs to human-readable labels."""
+        """Verifies correct mapping of 23 inputs and 2 outputs to human-readable labels."""
         from src.environment import SENSORY_INPUT_LABELS, ACTION_OUTPUT_LABELS
-        self.assertEqual(len(SENSORY_INPUT_LABELS), 22)
+        self.assertEqual(len(SENSORY_INPUT_LABELS), 23)
         self.assertEqual(len(ACTION_OUTPUT_LABELS), 2)
 
         # Check key inputs from README
         self.assertIn("Vel X", SENSORY_INPUT_LABELS[0])
         self.assertIn("Vel Y", SENSORY_INPUT_LABELS[1])
         self.assertIn("Food", SENSORY_INPUT_LABELS[2])
-        self.assertIn("Energy", SENSORY_INPUT_LABELS[21])
+        self.assertIn("Critical Ally Dir X", SENSORY_INPUT_LABELS[17])
+        self.assertIn("Critical Ally Dir Y", SENSORY_INPUT_LABELS[18])
+        self.assertIn("Energy", SENSORY_INPUT_LABELS[22])
 
         # Check 2 outputs
         self.assertIn("Accel X", ACTION_OUTPUT_LABELS[0])
@@ -66,7 +68,7 @@ class TestEnvironment(unittest.TestCase):
     def test_sensory_and_action_details_metadata(self):
         """Verifies presence of complete functional descriptions, ranges, and roles for each node."""
         from src.environment import SENSORY_DETAILS, ACTION_DETAILS
-        self.assertEqual(len(SENSORY_DETAILS), 22)
+        self.assertEqual(len(SENSORY_DETAILS), 23)
         self.assertEqual(len(ACTION_DETAILS), 2)
 
         for i, det in SENSORY_DETAILS.items():
@@ -172,7 +174,7 @@ class TestEnvironment(unittest.TestCase):
             (-1, 0): DummyConn(weight=2.35, enabled=True),    # thick input-output connection (weight label)
             (-2, 3): DummyConn(weight=-1.80, enabled=True),   # thick connection to hidden node
             (3, 1): DummyConn(weight=0.75, enabled=True),     # hidden to output
-            (-22, 1): DummyConn(weight=-0.50, enabled=True),  # energy input to output
+            (-23, 1): DummyConn(weight=-0.50, enabled=True),  # energy input to output
             (-5, 0): DummyConn(weight=1.0, enabled=False),    # disabled connection
         }
 
@@ -310,7 +312,7 @@ class TestEnvironment(unittest.TestCase):
             (-1, 0): DummyConn(weight=2.5, enabled=True),
             (-2, 3): DummyConn(weight=-1.75, enabled=True),
             (3, 1): DummyConn(weight=0.8, enabled=True),
-            (-22, 1): DummyConn(weight=-0.3, enabled=True),
+            (-23, 1): DummyConn(weight=-0.3, enabled=True),
             (-5, 0): DummyConn(weight=1.1, enabled=False),
         }
 

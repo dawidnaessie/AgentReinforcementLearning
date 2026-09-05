@@ -24,22 +24,23 @@ class TestNeatConfig(unittest.TestCase):
             self.config_path
         )
 
-        # Verification of key design assumptions (Phase 9: 22 sensory inputs, 2 outputs, pop_size=40)
-        self.assertEqual(config.genome_config.num_inputs, 22, "Number of inputs must be 22.")
+        # Verification of key design assumptions (Phase 10: 23 sensory inputs, 2 outputs, pop_size=40)
+        self.assertEqual(config.genome_config.num_inputs, 23, "Number of inputs must be 23.")
         self.assertEqual(config.genome_config.num_outputs, 2, "Number of outputs must be 2.")
         self.assertEqual(getattr(config, 'pop_size'), 40, "Population size must be 40 (4 tribes of 10 agents each).")
         self.assertEqual(config.reproduction_config.elitism, 4, "Elitism must be 4 (Top 4 unchanged).")
         self.assertFalse(getattr(config, 'reset_on_extinction'))
 
-        # Phase 6 & 8: Short-Term Memory (RNN) - verification of recurrent architecture and network growth
+        # Phase 10: Structural pruning optimization and compatibility threshold
         self.assertFalse(config.genome_config.feed_forward, "Network architecture must have feed_forward = False for RNN.")
-        self.assertAlmostEqual(config.genome_config.node_add_prob, 0.15, places=2, msg="node_add_prob should be 0.15 for RNN node creation.")
-        self.assertAlmostEqual(config.genome_config.conn_add_prob, 0.50, places=2)
-        self.assertAlmostEqual(config.genome_config.conn_delete_prob, 0.20, places=2)
-        self.assertGreater(config.genome_config.conn_add_prob, config.genome_config.conn_delete_prob)
+        self.assertAlmostEqual(config.genome_config.node_add_prob, 0.015, places=3)
+        self.assertAlmostEqual(config.genome_config.node_delete_prob, 0.025, places=3)
+        self.assertAlmostEqual(config.genome_config.conn_add_prob, 0.08, places=2)
+        self.assertAlmostEqual(config.genome_config.conn_delete_prob, 0.06, places=2)
+        self.assertAlmostEqual(config.species_set_config.compatibility_threshold, 3.8, places=2)
 
     def test_recurrent_network_creation_and_activation(self):
-        """Verifies RecurrentNetwork creation from population and activation of 22 inputs to 2 outputs."""
+        """Verifies RecurrentNetwork creation from population and activation of 23 inputs to 2 outputs."""
         config = neat.config.Config(
             neat.DefaultGenome,
             neat.DefaultReproduction,
@@ -53,8 +54,8 @@ class TestNeatConfig(unittest.TestCase):
         net = neat.nn.RecurrentNetwork.create(sample_genome, config)
         self.assertIsInstance(net, neat.nn.RecurrentNetwork, "Network must be an instance of neat.nn.RecurrentNetwork.")
 
-        # Activation test for 22 sensory inputs
-        inputs = [0.1 * i for i in range(22)]
+        # Activation test for 23 sensory inputs
+        inputs = [0.1 * i for i in range(23)]
         outputs = net.activate(inputs)
         self.assertEqual(len(outputs), 2, "RecurrentNetwork must return exactly 2 action outputs.")
         for out in outputs:

@@ -130,34 +130,41 @@ SENSORY_DETAILS: Dict[int, Dict[str, str]] = {
         "role": "Vertical orientation toward enemy tribe"
     },
     17: {
-        "name": "Nearest Ally Critical State",
-        "short": "Ally Critical",
-        "desc": "1.0 if tribe ally has <20% energy, otherwise 0.0",
-        "range": "{0.0, 1.0}",
-        "role": "Kin altruism trigger (+50 fit for aiding ally)"
+        "name": "Critical Ally Dir X",
+        "short": "Ally Dir X",
+        "desc": "X direction vector to nearest starving ally (<20% energy) [-1..1]",
+        "range": "[-1.0, 1.0]",
+        "role": "Kin altruism navigation: horizontal steering toward ally"
     },
     18: {
+        "name": "Critical Ally Dir Y",
+        "short": "Ally Dir Y",
+        "desc": "Y direction vector to nearest starving ally (<20% energy) [-1..1]",
+        "range": "[-1.0, 1.0]",
+        "role": "Kin altruism navigation: vertical steering toward ally"
+    },
+    19: {
         "name": "Nearest Enemy Rel Heading",
         "short": "Enemy Heading",
         "desc": "Enemy heading alignment: >0 fleeing back exposed, <0 charging head-on",
         "range": "[-1.0, 1.0]",
         "role": "Combat tactics: backstab hunting (+25 fit) vs parrying"
     },
-    19: {
+    20: {
         "name": "Local Tribe Herd Density",
         "short": "Tribe Density",
         "desc": "Density of allies from own tribe within 60px [0..1]",
         "range": "[0.0, 1.0]",
         "role": "Tribe herd defense (+15 reward for cooperative defense)"
     },
-    20: {
+    21: {
         "name": "Proximity to Nearest Wall",
         "short": "Wall Dist",
         "desc": "Distance to arena boundary (0 at wall, 1 at center)",
         "range": "[0.0, 1.0]",
         "role": "Boundary repulsion to avoid Deadly Zone (-2.0 energy/frame)"
     },
-    21: {
+    22: {
         "name": "Current Energy Level",
         "short": "Energy Level",
         "desc": "Current internal vital energy reserve [0.0..1.0]",
@@ -193,7 +200,7 @@ def format_node_label(node_id: int, is_source: bool = False) -> str:
     """
     Translates a NEAT or inspector node ID into human-readable string labels
     matching the Neural Inspector UI.
-    - Negative IDs (-1 to -22) map to sensory inputs (0 to 21) via SENSORY_INPUT_LABELS.
+    - Negative IDs (-1 to -23) map to sensory inputs (0 to 22) via SENSORY_INPUT_LABELS.
     - Output IDs (0, 1) map to action outputs via ACTION_OUTPUT_LABELS.
     - Hidden node IDs (>= 2 or non-standard) map to 'Node {node_id}'.
     """
@@ -351,10 +358,9 @@ class Environment:
         self.poison_count = poison_count
         self.hazard_count = hazard_count
 
-        self.foods: List[Food] = [
-            Food(random.randint(60, self.arena_width - 60), random.randint(60, self.height - 60))
-            for _ in range(self.food_count)
-        ]
+        self.foods: List[Food] = Food.create_clustered(
+            self.food_count, self.arena_width, self.height, margin=60
+        )
         self.poisons: List[Poison] = [
             Poison(random.randint(60, self.arena_width - 60), random.randint(60, self.height - 60))
             for _ in range(self.poison_count)
@@ -366,8 +372,7 @@ class Environment:
 
     def _reset_world_entities(self):
         """Resets food, poison, and hazard positions across the arena at the start of a new generation."""
-        for food in self.foods:
-            food.respawn(self.arena_width, self.height)
+        Food.respawn_clustered(self.foods, self.arena_width, self.height, margin=60)
         for poison in self.poisons:
             poison.respawn(self.arena_width, self.height)
         for hazard in self.hazards:
@@ -556,7 +561,8 @@ class Environment:
         title_surf = self.inspector_title_font.render(title_text, True, (0, 245, 212))
         self.screen.blit(title_surf, (modal_rect.x + 16, modal_rect.y + 11))
 
-        mode_text = "[TAB] Show: All 22 senses" if not self.inspector_show_all else "[TAB] Show: Active neurons only"
+        tot_senses = len(SENSORY_DETAILS)
+        mode_text = f"[TAB] Show: All {tot_senses} senses" if not self.inspector_show_all else "[TAB] Show: Active neurons only"
         tab_hint = self.small_font.render(mode_text, True, (88, 166, 255))
         esc_hint = self.title_font.render("[ESC] Close", True, (241, 196, 15))
         self.screen.blit(tab_hint, (modal_rect.right - 380, modal_rect.y + 14))
@@ -585,7 +591,7 @@ class Environment:
 
         # Decide which sensory inputs to display
         if self.inspector_show_all:
-            draw_inputs = [-(i + 1) for i in range(22)]
+            draw_inputs = [-(i + 1) for i in range(len(SENSORY_DETAILS))]
         else:
             draw_inputs = sorted(list(active_inputs)) if active_inputs else [-1, -2, -3]
 
@@ -785,7 +791,7 @@ class Environment:
 
         elif hovered_synapse is not None:
             in_k, out_k, w = hovered_synapse
-            src_str = SENSORY_DETAILS[-(in_k + 1)]['name'] if in_k < 0 else f"Neuron #{in_k}"
+            src_str = SENSORY_DETAILS.get(-(in_k + 1), {}).get('name', f"Input #{-(in_k + 1)}") if in_k < 0 else f"Neuron #{in_k}"
             dst_str = ACTION_DETAILS[out_k]['name'] if out_k in (0, 1) else f"Neuron #{out_k}"
             syn_type = "Excitatory" if w >= 0 else "Inhibitory"
             syn_color = (46, 204, 113) if w >= 0 else (231, 76, 60)
@@ -804,8 +810,9 @@ class Environment:
             tot_out = len(active_outputs)
             tot_syn = len(active_conns)
 
-            h_title = f"💡 BRAIN TOPOLOGY SUMMARY: {tot_in}/22 connected senses | {tot_hid} hidden neurons | {tot_out}/2 active actions | {tot_syn} synapses"
-            h_line1 = f"Display mode: {'Active neurons only (clean graph)' if not self.inspector_show_all else 'All 22 sensory inputs'} [Press TAB to toggle]"
+            tot_senses = len(SENSORY_DETAILS)
+            h_title = f"💡 BRAIN TOPOLOGY SUMMARY: {tot_in}/{tot_senses} connected senses | {tot_hid} hidden neurons | {tot_out}/2 active actions | {tot_syn} synapses"
+            h_line1 = f"Display mode: {'Active neurons only (clean graph)' if not self.inspector_show_all else f'All {tot_senses} sensory inputs'} [Press TAB to toggle]"
             h_line2 = "Hint: Hover mouse cursor over any node or synapse to inspect detailed biological parameters."
 
             self.screen.blit(self.font.render(h_title, True, (0, 245, 212)), (hud_rect.x + 12, hud_rect.y + 8))

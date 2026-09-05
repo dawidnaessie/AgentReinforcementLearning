@@ -198,8 +198,8 @@ class Agent:
         enemy_dir = pygame.math.Vector2(0, 0)
         nearest_enemy_heading = 0.0
 
-        nearest_ally_dist = max_dist
-        nearest_ally_critical = 0.0
+        nearest_critical_ally_dist = max_dist
+        critical_ally_dir = pygame.math.Vector2(0.0, 0.0)
         allies_in_herd = 0
 
         for other in all_agents:
@@ -213,10 +213,13 @@ class Agent:
                     # Count herd density of own tribe within 60px radius
                     if dist <= 60.0:
                         allies_in_herd += 1
-                    # Critical status of nearest ally
-                    if dist < nearest_ally_dist:
-                        nearest_ally_dist = dist
-                        nearest_ally_critical = 1.0 if other.energy < 20.0 else 0.0
+                    # Direction to nearest critical ally (<20% energy)
+                    if other.energy < 20.0 and dist < nearest_critical_ally_dist:
+                        nearest_critical_ally_dist = dist
+                        if dist > 0:
+                            critical_ally_dir = to_other / dist
+                        else:
+                            critical_ally_dir = pygame.math.Vector2(0.0, 0.0)
                 else:
                     # Enemy from another tribe:
                     if dist < nearest_enemy_dist:
@@ -233,16 +236,17 @@ class Agent:
         norm_agent_dist = min(nearest_enemy_dist / max_dist, 1.0)
         norm_agent_dx = enemy_dir.x
         norm_agent_dy = enemy_dir.y
-        norm_agent_critical = nearest_ally_critical
+        norm_critical_ally_dx = critical_ally_dir.x
+        norm_critical_ally_dy = critical_ally_dir.y
         norm_agent_rel_heading = nearest_enemy_heading
         norm_herd_density = min(1.0, allies_in_herd / 4.0)
 
-        # 21. Distance to nearest wall (0.0 at wall, 1.0 in center)
+        # 22. Distance to nearest wall (0.0 at wall, 1.0 in center)
         dist_to_wall = min(self.pos.x, width - self.pos.x, self.pos.y, height - self.pos.y)
         max_possible_wall_dist = min(width, height) / 2.0
         norm_wall_dist = max(0.0, min(dist_to_wall / max_possible_wall_dist, 1.0))
 
-        # 22. Self energy level [0.0, 1.0]
+        # 23. Self energy level [0.0, 1.0]
         norm_energy = max(0.0, min(self.energy / self.max_energy, 1.0))
 
         return (
@@ -252,7 +256,7 @@ class Agent:
             norm_poison_dist, norm_poison_dx, norm_poison_dy,
             norm_hazard_dist, norm_hazard_dx, norm_hazard_dy,
             norm_agent_dist, norm_agent_dx, norm_agent_dy,
-            norm_agent_critical,
+            norm_critical_ally_dx, norm_critical_ally_dy,
             norm_agent_rel_heading,
             norm_herd_density,
             norm_wall_dist,
@@ -268,7 +272,7 @@ class Agent:
         width: int,
         height: int
     ) -> Tuple[float, ...]:
-        """Calculates and returns the 22 normalized sensory inputs (Phase 9: Acoustic Lobotomy)."""
+        """Calculates and returns the 23 normalized sensory inputs (Phase 10: Directional Altruism)."""
         return self._get_sensory_inputs(foods, poisons, hazards, all_agents, width, height)
 
     def think_and_act(
@@ -290,7 +294,7 @@ class Agent:
         if self.combat_cooldown > 0:
             self.combat_cooldown -= 1
 
-        # 1. Senses and network activation (Phase 9: 22 inputs, 2 outputs)
+        # 1. Senses and network activation (Phase 10: 23 inputs, 2 outputs)
         inputs = self.get_state(foods, poisons, hazards, all_agents, width, height)
         outputs = self.net.activate(inputs)
         accel = pygame.math.Vector2(outputs[0], outputs[1])

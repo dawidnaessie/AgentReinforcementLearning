@@ -1,7 +1,7 @@
 # 🧬 Technical Documentation & System Evolution Log: AgentReinforcementLearning
 
 > **ALife Research Project & NEAT Neuroevolution (RNN) in Pygame**  
-> **Status:** Phase 10 (Automated Telemetry Analysis & Archiving) completed | **Test Coverage:** 86 unit tests (100% PASS, TDD)
+> **Status:** Phase 10 (Dynamic Resource Clustering & Directional Altruism) completed | **Test Coverage:** 90 unit tests (100% PASS, TDD)
 
 ---
 
@@ -11,7 +11,7 @@ The **AgentReinforcementLearning** project is an Artificial Life (ALife) researc
 
 ### 1.1. Core Architectural Tenets
 1. **Separation of Concerns (Logic vs. Presentation):**  
-   2D vector physics, kinematics, metabolism, and neuroevolution are 100% decoupled from Pygame rendering routines. This enables running the entire test suite headlessly (`SDL_VIDEODRIVER=dummy`) in under 1.5 seconds.
+   2D vector physics, kinematics, metabolism, and neuroevolution are 100% decoupled from Pygame rendering routines. This enables running the entire test suite headlessly (`SDL_VIDEODRIVER=dummy`) in under 1.8 seconds.
 2. **Minimalist Dependencies (Zero Over-Importing):**  
    The system relies strictly on the Python standard library (`math`, `random`, `time`, `unittest`), the `neat-python` package, and the optimized `pygame.math.Vector2` module. No heavy external dependencies (NumPy, SciPy, Pandas).
 3. **Memory Management & Steady Frame Rates:**  
@@ -33,7 +33,7 @@ graph TD
     P6 --> P7["Phase 7: Kin Selection & 4 Tribes"]
     P7 --> P8["Phase 8: Deadly Zone & Faction Balance"]
     P8 --> P9["Phase 9: Acoustic Lobotomy & Combat Economy Rebalance"]
-    P9 --> P10["Phase 10: Automated LLM Telemetry Analysis & Archiving"]
+    P9 --> P10["Phase 10: Dynamic Resource Clustering & Directional Altruism"]
 ```
 
 ### 🔹 Phase 1: Environment Foundations & 2D Kinematics
@@ -109,7 +109,7 @@ graph TD
   3. **Foraging Economy Buff (+40.0 Fitness):**
      - Increased nominal foraging fitness reward from +15.0 to +40.0 to strongly motivate exploration across the arena.
 
-### 🔹 Phase 10: Automated LLM Telemetry Analysis & Archiving Pipeline (`analyze.py`) (CURRENT)
+### 🔹 Tooling Milestone: Automated LLM Telemetry Analysis & Archiving Pipeline (`analyze.py`)
 - **Research Problem:** Manual inspection of raw multi-generation telemetry (`logs/logs.txt`) and mathematical neural topologies (`logs/brain_id_{key}.txt`) is time-intensive and risks cognitive bias. Furthermore, unarchived `.txt` files accumulate in `logs/` root, creating clutter across multiple experimental sessions.
 - **Implemented Solutions:**
   1. **Automated AI Architect & Neuroevolution Specialist Pipeline (`analyze.py`):**
@@ -120,7 +120,7 @@ graph TD
      - Scans `logs/` root exclusively for active `.txt` logs and `brain_id_*.txt` brain dumps, strictly skipping existing subdirectories to avoid reprocessing older sessions.
      - Gracefully truncates oversized generation tables while preserving the header run summary and the latest 1,000 generations.
   3. **Targeted Neuroevolution Master Prompt & KaTeX Compatibility:**
-     - Injects complete Phase 9 architectural parameters (22 sensors, 2 locomotive outputs, 4 balanced tribes, 30-frame combat cooldown, deadly border penalty, action-weighted fitness function).
+     - Injects complete architectural parameters (4 balanced tribes, 30-frame combat cooldown, deadly border penalty, action-weighted fitness function).
      - Directs Gemini to generate a four-part executive diagnostic: *Population Evolutionary Health & Dynamics*, *Behavioral Telemetry & Emergence*, *Reverse-Engineered Neural Topologies*, and *Architectural Recommendations*.
      - Enforces strict KaTeX math formatting constraints (forbidding unescaped underscores in `\text{...}` blocks) to ensure seamless formula rendering in GitHub Markdown.
   4. **Unified Timestamping, Local Raw Archiving & Version-Controlled Benchmarks:**
@@ -128,9 +128,26 @@ graph TD
      - **Raw Data Archiving (local and git-ignored):** Moves all processed root `.txt` telemetry and brain dumps into `logs/{timestamp}-LogsArchive/` using `shutil.move` only after the AI response is successfully received.
      - **Compiled Benchmark Reports (version-controlled):** Saves the LLM-generated executive analysis report directly to `benchmarks/{timestamp}-AnalyticsSummary.md`, establishing an empirical, version-controlled repository of scientific milestones.
 
+### 🔹 Phase 10: Dynamic Resource Clustering & Directional Altruism (CURRENT)
+- **Research Problem:** Post-Phase 9 telemetry and LLM analysis revealed that while acoustic shouting and corner camping were successfully eliminated, the population converged on a "Peaceful Forager Local Optimum". Because apples were uniformly scattered across the continuous arena, tribes spread out peacefully without territorial competition, and kin altruism rarely triggered because agents lacked spatial orientation to locate starving kin.
+- **Implemented Solutions:**
+  1. **Dynamic Resource Clustering (Patch Dispersion):**
+     - Replaced uniform random food distribution with Gaussian patch dispersion (`Food.create_clustered` and `Food.respawn_clustered`).
+     - Periodic hotspots $(c_x, c_y)$ generate contested resource clusters of 4–6 apples distributed via `random.gauss(0, 60)` and clamped to arena margins.
+     - Forces inter-tribal friction, territorial skirmishes, and strategic spatial defense over high-density feeding grounds.
+  2. **Directional Altruism Sensors (23 Perceptual Inputs):**
+     - Replaced the scalar binary flag `Nearest Ally Critical State` with two continuous directional components: `Critical Ally Dir X` (index 17) and `Critical Ally Dir Y` (index 18).
+     - Calculates the normalized unit vector to the nearest starving ally ($E < 20\%$) from the same tribe (returning $(0.0, 0.0)$ if no critical ally is nearby), providing direct spatial steering for kin rescue.
+  3. **NEAT Hyperparameter Optimization & Structural Pruning:**
+     - `num_inputs` adjusted from 22 to 23.
+     - `compatibility_threshold` elevated from 2.8 to 3.8 to protect emergent speciation niches.
+     - Pruned topological mutation probabilities (`conn_add_prob = 0.08`, `conn_delete_prob = 0.06`, `node_add_prob = 0.015`, `node_delete_prob = 0.025`) to favor synaptic refinement over uncontrolled recurrent topology bloat.
+  4. **Neural Inspector UI Synchronization:**
+     - Updated `SENSORY_DETAILS` and `SENSORY_INPUT_LABELS` in `src/environment.py`, dynamically driving graph layout, node hover tooltips, and tab toggle modes for 23 inputs with zero index out-of-range errors.
+
 ---
 
-## 3. Sensory-Motor Space Specification (22 Inputs / 2 Outputs)
+## 3. Sensory-Motor Space Specification (23 Inputs / 2 Outputs)
 
 | # | Sensory Label | Range | Ecological Role / RNN Application |
 |:--:|:-----------------|:------:|:--------------------------------------|
@@ -146,11 +163,12 @@ graph TD
 | **12-13**|`Hazard Dir (X, Y)` | `[-1.0, 1.0]` | Avoidance vector from moving hazard |
 | **14** | `Enemy Dist` | `[0.0, 1.0]` | Distance to nearest enemy (`other.tribe_id != self.tribe_id`) |
 | **15-16**|`Enemy Dir (X, Y)` | `[-1.0, 1.0]` | Targeting vector toward enemy tribe |
-| **17** | `Ally Critical` | `{0.0, 1.0}` | Ally in critical state ($E < 20\%$ within same tribe) |
-| **18** | `Enemy Heading` | `[-1.0, 1.0]` | Enemy orientation ($>0$ fleeing/back exposed, $<0$ head-on charge) |
-| **19** | `Tribe Density` | `[0.0, 1.0]` | Ally density from own tribe within 60px radius |
-| **20** | `Wall Dist` | `[0.0, 1.0]` | Distance to boundary ($0.0$ at wall, $1.0$ at arena center) |
-| **21** | `Energy Level` | `[0.0, 1.0]` | Remaining vital energy reserve |
+| **17** | `Critical Ally Dir X` | `[-1.0, 1.0]` | X direction vector to nearest starving ally (<20% energy) from same tribe |
+| **18** | `Critical Ally Dir Y` | `[-1.0, 1.0]` | Y direction vector to nearest starving ally (<20% energy) from same tribe |
+| **19** | `Enemy Heading` | `[-1.0, 1.0]` | Enemy orientation ($>0$ fleeing/back exposed, $<0$ head-on charge) |
+| **20** | `Tribe Density` | `[0.0, 1.0]` | Ally density from own tribe within 60px radius |
+| **21** | `Wall Dist` | `[0.0, 1.0]` | Distance to boundary ($0.0$ at wall, $1.0$ at arena center) |
+| **22** | `Energy Level` | `[0.0, 1.0]` | Remaining vital energy reserve |
 
 ### Motor & Behavioral Outputs:
 - **Output 0 (`Accel X`):** Horizontal acceleration force $[-1.0, 1.0]$ (`tanh`).
@@ -178,11 +196,11 @@ graph TD
 
 ## 5. Quality Assurance & Test-Driven Development (TDD)
 
-The project is backed by a complete suite of **86 unit tests** organized into focused logical modules:
-- `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, `node_add_prob = 0.15`, 22 inputs / 2 outputs architecture.
-- `tests/test_agent.py` (37 tests): Sensory perception (22 inputs), sprint metabolism without shout drain, combat cooldown anti-micro-farming (attacks, frontal defense, herd defense), Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination.
+The project is backed by a complete suite of **90 unit tests** organized into focused logical modules:
+- `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, structural pruning (`node_add_prob = 0.015`, `conn_add_prob = 0.08`, `compatibility_threshold = 3.8`), 23 inputs / 2 outputs architecture.
+- `tests/test_agent.py` (38 tests): Sensory perception (23 inputs), directional altruism sensors, sprint metabolism without shout drain, combat cooldown anti-micro-farming (attacks, frontal defense, herd defense), Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination.
 - `tests/test_environment.py` (19 tests): Generational lifecycle, headless rendering, event handling, Neural Inspector deepcopy isolation, pre-rendered Deadly Zone surface, balanced 4x10 tribal distribution, `export_brain_to_txt` topology file creation, `[S]` key trigger in active inspector, `[S]` ignored when inactive, and empty network handling.
-- `tests/test_entities.py` (5 tests): Boundary positioning, entity collisions, food and poison respawn mechanics, hazard reflection.
+- `tests/test_entities.py` (8 tests): Boundary positioning, entity collisions, clustered food creation (`Food.create_clustered`), dynamic Gaussian patch dispersion (`Food.respawn_clustered`), hotspot targeting, poison respawn mechanics, hazard reflection.
 - `tests/test_stats.py` (9 tests): Generational metrics tracking, telemetry summary, `logs/logs.txt` export, automatic directory creation, size-based rotation, manual archiving workflow, and `export_brain_to_txt` import exposure.
 - `tests/test_analyze.py` (12 tests): Custom `.env` parser, API key resolution, file gathering isolation (ignoring subdirectories), unified timestamp archive folder naming (`{timestamp}-LogsArchive`), duplicate collision resolution, saving compiled reports into `benchmarks/{timestamp}-AnalyticsSummary.md`, large log file truncation, master prompt structure, mock API responses, auth error handling, and end-to-end file movement and benchmark report persistence.
 

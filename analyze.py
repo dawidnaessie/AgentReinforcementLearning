@@ -9,7 +9,7 @@ Key Responsibilities:
 4. Queries Google Gemini API (gemini-3.6-flash / fallback models).
 5. Creates a timestamped archive folder: logs/HH-MM-DD-MM-YYYY-LogsArchive/
 6. Moves all processed .txt files into this archive folder using shutil.
-7. Saves the AI's textual response to AnaliticsSummary.txt inside the archive folder.
+7. Saves the AI's textual response to AnalyticsSummary.md inside the archive folder.
 """
 
 import os
@@ -138,24 +138,26 @@ def construct_prompt(log_contents: Dict[str, str], brain_contents: Dict[str, str
         prompt_sections.append(f"\n--- [BRAIN DUMP: {fname}] ---\n{content}\n")
 
     prompt_sections.extend([
-        "=== ANALYSIS DIRECTIVES ===",
+        "=== ANALYSIS DIRECTIVES & OUTPUT FORMAT ===",
+        "Format your entire response in professional, clean GitHub-flavored Markdown. Use `##` and `###` for section headers, bullet points for lists, and code blocks (or markdown tables) for any tabular data, metrics, or mathematical weights.",
+        "",
         "Provide an in-depth, structured diagnostic report with the following sections:",
-        "1. POPULATION EVOLUTIONARY HEALTH & DYNAMICS:",
+        "## 1. Population Evolutionary Health & Dynamics",
         "   - Progression of maximum vs. average fitness across generations.",
         "   - Lifespan trends, stability, diversity, and speciation behavior.",
         "   - Did the population avoid local optima or fall into passive camping / point-farming traps?",
         "",
-        "2. BEHAVIORAL TELEMETRY & EMERGENCE:",
+        "## 2. Behavioral Telemetry & Emergence",
         "   - Action distribution: Apples Eaten vs. Predator Attacks vs. Frontal Defenses vs. Herd Defenses vs. Altruism Rescues.",
         "   - Analysis of civilizational role specialization (foragers, predatory hunters, cooperative defenders).",
         "   - Effectiveness of the 30-frame Combat Cooldown and Deadly Margin.",
         "",
-        "3. REVERSE-ENGINEERED NEURAL TOPOLOGIES (BRAIN DUMPS):",
+        "## 3. Reverse-Engineered Neural Topologies (Brain Dumps)",
         "   - Mathematical breakdown of the dominant brains: inspect hidden interneurons (tanh/relu, biases) and active synapses.",
         "   - Identify key excitatory (+) and inhibitory (-) control pathways (e.g. food steering vs. hazard repulsion vs. enemy flanking).",
         "   - How do these synaptic weights translate into tangible spatial survival strategies in the arena?",
         "",
-        "4. ARCHITECTURAL RECOMMENDATIONS:",
+        "## 4. Architectural Recommendations",
         "   - Specific, concrete adjustments to NEAT hyperparameters (mutation rates, compatibility thresholds, speciation) or environmental parameters for subsequent evolutionary phases."
     ])
 
@@ -325,7 +327,7 @@ def main() -> int:
             print(f"   -> Moved: {os.path.basename(fpath)}")
 
         # Save AI analysis report
-        summary_path = os.path.join(archive_dir, "AnaliticsSummary.txt")
+        summary_path = os.path.join(archive_dir, "AnalyticsSummary.md")
         with open(summary_path, "w", encoding="utf-8") as f:
             f.write(summary_text)
 

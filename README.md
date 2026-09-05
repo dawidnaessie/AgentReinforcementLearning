@@ -42,7 +42,7 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
 - **Even Faction Balancing & RNN Mutation Tuning (Phase 8):**
   Deterministic allocation of **exactly 10 agents per tribe** (40 total across Cyan, Magenta, Yellow, White) ensuring symmetrical warfare, paired with `node_add_prob = 0.15` in `config-feedforward.txt` to accelerate recurrent hidden node emergence.
 - **Automated AI Telemetry Analysis & Archiving (`analyze.py`):**
-  Automated post-simulation evaluation powered by the Google Gemini API (`gemini-3.6-flash`). Ingests `logs/*.txt` telemetry and `brain_id_*.txt` neural topologies, produces a structured executive diagnostic report covering population health, emergence, and reverse-engineered synaptic circuits, and atomically packages all processed files into a timestamped archive (`logs/HH-MM-DD-MM-YYYY-LogsArchive/`) containing `AnaliticsSummary.txt`.
+  Automated post-simulation evaluation powered by the Google Gemini API (`gemini-3.6-flash`). Ingests `logs/*.txt` telemetry and `brain_id_*.txt` neural topologies, produces a structured executive diagnostic report covering population health, emergence, and reverse-engineered synaptic circuits, and atomically packages all processed files into a timestamped archive (`logs/HH-MM-DD-MM-YYYY-LogsArchive/`) containing `AnalyticsSummary.md`.
 
 ---
 
@@ -187,7 +187,7 @@ To streamline post-simulation research without manual log wrangling or subjectiv
   └── 14-30-05-09-2026-LogsArchive/
       ├── logs.txt
       ├── brain_id_12.txt
-      └── AnaliticsSummary.txt   # Complete executive AI report
+      └── AnalyticsSummary.md   # Complete executive AI report
   ```
 - **CLI Execution:**
   ```bash
@@ -206,7 +206,7 @@ AgentReinforcementLearning/
 ├── logs/                    # Automated run logs, brain dumps, and timestamped archives (gitignored)
 │   ├── logs.txt             # Primary log file (auto-rotates or accepts manual renaming to logs1.txt)
 │   ├── brain_id_{key}.txt   # Reverse engineering brain dumps exported via [S] in Neural Inspector
-│   └── HH-MM-DD-MM-YYYY-LogsArchive/ # Automated archives with AnaliticsSummary.txt
+│   └── HH-MM-DD-MM-YYYY-LogsArchive/ # Automated archives with AnalyticsSummary.md
 ├── README.md                # Project documentation
 ├── .gitignore               # Comprehensive ignores (pycache, venv, checkpoints, logs/*, .env*)
 ├── docs/                    # Architecture and developer guidelines

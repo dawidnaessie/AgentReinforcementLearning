@@ -23,7 +23,7 @@ Creation of an Artificial Life (ALife) simulation where a balanced population of
 - `/src/agent.py` – `Agent` class, sensory perception (22 inputs), metabolism, interaction mechanics (altruism, predation, defense, combat cooldown), fitness assignment.
 - `/src/entities.py` – Modular world entities (`Food`, `Poison`, `Hazard`).
 - `/src/stats.py` – `EvolutionTracker` gathering generational metrics, final simulation summary, and `export_brain_to_txt` export.
-- `/analyze.py` – Automated simulation telemetry and brain dump analysis with Google Gemini, timestamped folder archiving (`HH-MM-DD-MM-YYYY-LogsArchive`), and `AnaliticsSummary.txt` executive reporting.
+- `/analyze.py` – Automated simulation telemetry and brain dump analysis with Google Gemini, timestamped folder archiving (`HH-MM-DD-MM-YYYY-LogsArchive`), and `AnalyticsSummary.md` executive reporting.
 - `/.env.example` – Environment variable template for `GEMINI_API_KEY` and optional model overrides.
 - `/logs/` – Evolutionary telemetry run reports (`logs.txt`), reverse engineering brain dumps (`brain_id_{key}.txt`), and timestamped archive folders.
 - `/config-feedforward.txt` – NEAT algorithm hyperparameters (22 inputs, 2 outputs).

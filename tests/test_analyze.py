@@ -118,7 +118,8 @@ class TestAnalyze(unittest.TestCase):
         self.assertIn("Combat Cooldown", prompt)
         self.assertIn("LOG FILE: logs.txt", prompt)
         self.assertIn("BRAIN DUMP: brain_id_42.txt", prompt)
-        self.assertIn("REVERSE-ENGINEERED NEURAL TOPOLOGIES", prompt)
+        self.assertIn("Reverse-Engineered Neural Topologies", prompt)
+        self.assertIn("Markdown", prompt)
 
     @patch("requests.post")
     def test_call_gemini_api_success_mock(self, mock_post):
@@ -174,7 +175,7 @@ class TestAnalyze(unittest.TestCase):
 
     @patch("analyze.call_gemini_api")
     def test_main_full_workflow_success_mock(self, mock_call_api):
-        """Verifies full execution pipeline: gathers files, calls API, moves files, writes AnaliticsSummary.txt."""
+        """Verifies full execution pipeline: gathers files, calls API, moves files, writes AnalyticsSummary.md."""
         mock_call_api.return_value = "AI ARCHITECT REPORT: All populations converged to optimal strategies."
 
         logs_dir = os.path.join(self.test_dir, "logs")
@@ -204,8 +205,8 @@ class TestAnalyze(unittest.TestCase):
                     self.assertTrue(os.path.exists(os.path.join(archive_dir, "logs.txt")))
                     self.assertTrue(os.path.exists(os.path.join(archive_dir, "brain_id_100.txt")))
 
-                    # AnaliticsSummary.txt must exist inside archive folder
-                    summary_file = os.path.join(archive_dir, "AnaliticsSummary.txt")
+                    # AnalyticsSummary.md must exist inside archive folder
+                    summary_file = os.path.join(archive_dir, "AnalyticsSummary.md")
                     self.assertTrue(os.path.exists(summary_file))
                     with open(summary_file, "r", encoding="utf-8") as f:
                         summary_content = f.read()

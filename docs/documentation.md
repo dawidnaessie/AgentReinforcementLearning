@@ -125,7 +125,7 @@ graph TD
   4. **Timestamped Archiving & Cleanup Routine:**
      - Generates timestamped archive folders formatted as `logs/HH-MM-DD-MM-YYYY-LogsArchive/` (with collision counter resolution `_1`, `_2`).
      - Moves all processed root `.txt` files into the archive folder using `shutil.move` only after the AI response is successfully received.
-     - Saves the AI's textual analysis report to `AnaliticsSummary.txt` inside that same archive folder.
+     - Saves the AI's textual analysis report to `AnalyticsSummary.md` inside that same archive folder.
 
 ---
 
@@ -183,7 +183,7 @@ The project is backed by a complete suite of **85 unit tests** organized into fo
 - `tests/test_environment.py` (19 tests): Generational lifecycle, headless rendering, event handling, Neural Inspector deepcopy isolation, pre-rendered Deadly Zone surface, balanced 4x10 tribal distribution, `export_brain_to_txt` topology file creation, `[S]` key trigger in active inspector, `[S]` ignored when inactive, and empty network handling.
 - `tests/test_entities.py` (5 tests): Boundary positioning, entity collisions, food and poison respawn mechanics, hazard reflection.
 - `tests/test_stats.py` (9 tests): Generational metrics tracking, telemetry summary, `logs/logs.txt` export, automatic directory creation, size-based rotation, manual archiving workflow, and `export_brain_to_txt` import exposure.
-- `tests/test_analyze.py` (11 tests): Custom `.env` parser, API key resolution, file gathering isolation (ignoring subdirectories), exact timestamped archive folder naming (`HH-MM-DD-MM-YYYY-LogsArchive`) and duplicate collision resolution, large log file truncation, master prompt structure, mock API responses, auth error handling, and end-to-end file movement and `AnaliticsSummary.txt` persistence.
+- `tests/test_analyze.py` (11 tests): Custom `.env` parser, API key resolution, file gathering isolation (ignoring subdirectories), exact timestamped archive folder naming (`HH-MM-DD-MM-YYYY-LogsArchive`) and duplicate collision resolution, large log file truncation, master prompt structure, mock API responses, auth error handling, and end-to-end file movement and `AnalyticsSummary.md` persistence.
 
 All tests can be executed via:
 ```powershell

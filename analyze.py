@@ -140,6 +140,7 @@ def construct_prompt(log_contents: Dict[str, str], brain_contents: Dict[str, str
     prompt_sections.extend([
         "=== ANALYSIS DIRECTIVES & OUTPUT FORMAT ===",
         "Format your entire response in professional, clean GitHub-flavored Markdown. Use `##` and `###` for section headers, bullet points for lists, and code blocks (or markdown tables) for any tabular data, metrics, or mathematical weights.",
+        r"CRITICAL LaTeX FORMATTING RULE: When writing mathematical formulas using $ or $$, NEVER use raw underscores inside `\text{...}` blocks (e.g., never write `\text{Accel_Y}`). GitHub's KaTeX parser will crash. Instead, use proper math subscripts like `Accel_{Y}` or `Food_{1\_DirX}`.",
         "",
         "Provide an in-depth, structured diagnostic report with the following sections:",
         "## 1. Population Evolutionary Health & Dynamics",

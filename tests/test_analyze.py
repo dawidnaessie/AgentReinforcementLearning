@@ -135,6 +135,7 @@ class TestAnalyze(unittest.TestCase):
         self.assertIn("LOG FILE: logs.txt", prompt)
         self.assertIn("BRAIN DUMP: brain_id_42.txt", prompt)
         self.assertIn("Reverse-Engineered Neural Topologies", prompt)
+        self.assertIn("CRITICAL LaTeX FORMATTING RULE", prompt)
         self.assertIn("Markdown", prompt)
 
     @patch("requests.post")

@@ -119,9 +119,10 @@ graph TD
   2. **File Gathering & Token Optimization:**
      - Scans `logs/` root exclusively for active `.txt` logs and `brain_id_*.txt` brain dumps, strictly skipping existing subdirectories to avoid reprocessing older sessions.
      - Gracefully truncates oversized generation tables while preserving the header run summary and the latest 1,000 generations.
-  3. **Targeted Neuroevolution Master Prompt:**
+  3. **Targeted Neuroevolution Master Prompt & KaTeX Compatibility:**
      - Injects complete Phase 9 architectural parameters (22 sensors, 2 locomotive outputs, 4 balanced tribes, 30-frame combat cooldown, deadly border penalty, action-weighted fitness function).
      - Directs Gemini to generate a four-part executive diagnostic: *Population Evolutionary Health & Dynamics*, *Behavioral Telemetry & Emergence*, *Reverse-Engineered Neural Topologies*, and *Architectural Recommendations*.
+     - Enforces strict KaTeX math formatting constraints (forbidding unescaped underscores in `\text{...}` blocks) to ensure seamless formula rendering in GitHub Markdown.
   4. **Unified Timestamping, Local Raw Archiving & Version-Controlled Benchmarks:**
      - Generates a unified timestamp string formatted as `DD-MM-YYYY_HH-MM` (e.g., `05-09-2026_15-30`).
      - **Raw Data Archiving (local and git-ignored):** Moves all processed root `.txt` telemetry and brain dumps into `logs/{timestamp}-LogsArchive/` using `shutil.move` only after the AI response is successfully received.

@@ -180,18 +180,19 @@ To streamline post-simulation research without manual log wrangling or subjectiv
   2. *Behavioral Telemetry & Emergence* (foraging vs. predation vs. herd defenses).
   3. *Reverse-Engineered Neural Topologies* (excitatory and inhibitory synaptic weights, hidden layer circuits).
   4. *Architectural Recommendations* (concrete hyperparameter and environmental tuning for future runs).
+  - Enforces strict **KaTeX syntax safeguards** to guarantee all mathematical formulas render cleanly without parser crashes on GitHub.
 - **Unified Archiving & Benchmark Publishing:**
   Once the AI response is validated, the script generates a unified timestamp (`DD-MM-YYYY_HH-MM`), moves processed raw files into a local git-ignored archive, and saves the executive report into `benchmarks/`:
   ```text
   benchmarks/
-  └── 05-09-2026_15-30-AnalyticsSummary.md   # Version-controlled executive AI report
+  └── 05-09-2026_17-21-AnalyticsSummary.md   # Version-controlled executive AI report
 
   logs/                                      # Local & git-ignored
-  └── 05-09-2026_15-30-LogsArchive/
+  └── 05-09-2026_17-21-LogsArchive/
       ├── logs.txt
-      └── brain_id_12.txt
+      └── brain_id_1001.txt
   ```
-  > 📊 **Showcase Report:** Inspect a real-world generated AI diagnostic report in [`benchmarks/05-09-2026_03-32-AnalyticsSummary.md`](benchmarks/05-09-2026_03-32-AnalyticsSummary.md).
+  > 📊 **Showcase Report:** Inspect the latest real-world AI diagnostic report in [`benchmarks/05-09-2026_17-21-AnalyticsSummary.md`](benchmarks/05-09-2026_17-21-AnalyticsSummary.md).
 
 - **CLI Execution:**
   ```bash

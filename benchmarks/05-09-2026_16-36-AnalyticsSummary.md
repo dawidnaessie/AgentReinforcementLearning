@@ -91,8 +91,8 @@ Reverse-engineering the brain dumps of top-performing genomes reveals how sensor
 ```
 
 *   **Primary Guidance Pathway:**
-    *   $\text{Accel\_Y} = \tanh(3.0565 \cdot \text{Food1\_DirY} - 1.0976 \cdot \text{Food1\_Dist} - 0.5718 \cdot \text{Enemy\_Dist} + \dots)$
-    *   $\text{Accel\_X} = \tanh(1.6736 \cdot \text{Food1\_DirX} + 1.6129 \cdot \text{Enemy\_Dist} + 0.3010 \cdot \text{Wall\_Prox} + \dots)$
+    *   $Accel_{Y} = \tanh(3.0565 \cdot Food_{1\_DirY} - 1.0976 \cdot Food_{1\_Dist} - 0.5718 \cdot Enemy_{Dist} + \dots)$
+    *   $Accel_{X} = \tanh(1.6736 \cdot Food_{1\_DirX} + 1.6129 \cdot Enemy_{Dist} + 0.3010 \cdot Wall_{Prox} + \dots)$
 *   **Vector Interpretation:** Direct proportional steering toward primary food sources. The strong positive coupling from `Enemy Distance` (+1.6129) to `Accel X` causes the agent to accelerate *away* sideways when an enemy closes in, converting tactical flee maneuvers into perpendicular orbital drifts around the enemy's attack radius.
 *   **Energy Saver Subroutine:** `Current Energy Level` heavily inhibits `Node 23` (weight: -2.5959). As energy drops toward 0, `Node 23` un-clamps, dampening erratic acceleration outputs and extending lifespan during localized food droughts.
 

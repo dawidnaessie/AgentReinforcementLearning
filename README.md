@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-RNN-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-85%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-86%20passed-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
 ---
@@ -42,7 +42,7 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
 - **Even Faction Balancing & RNN Mutation Tuning (Phase 8):**
   Deterministic allocation of **exactly 10 agents per tribe** (40 total across Cyan, Magenta, Yellow, White) ensuring symmetrical warfare, paired with `node_add_prob = 0.15` in `config-feedforward.txt` to accelerate recurrent hidden node emergence.
 - **Automated AI Telemetry Analysis & Archiving (`analyze.py`):**
-  Automated post-simulation evaluation powered by the Google Gemini API (`gemini-3.6-flash`). Ingests `logs/*.txt` telemetry and `brain_id_*.txt` neural topologies, produces a structured executive diagnostic report covering population health, emergence, and reverse-engineered synaptic circuits, and atomically packages all processed files into a timestamped archive (`logs/HH-MM-DD-MM-YYYY-LogsArchive/`) containing `AnalyticsSummary.md`.
+  Automated post-simulation evaluation powered by the Google Gemini API (`gemini-3.6-flash`). Ingests `logs/*.txt` telemetry and `brain_id_*.txt` neural topologies, produces a structured executive diagnostic report covering population health, emergence, and reverse-engineered synaptic circuits, atomically packages all raw processed files into a local timestamped archive (`logs/{timestamp}-LogsArchive/`), and saves the compiled, version-controlled analytical report directly into `benchmarks/{timestamp}-AnalyticsSummary.md`.
 
 ---
 
@@ -180,15 +180,19 @@ To streamline post-simulation research without manual log wrangling or subjectiv
   2. *Behavioral Telemetry & Emergence* (foraging vs. predation vs. herd defenses).
   3. *Reverse-Engineered Neural Topologies* (excitatory and inhibitory synaptic weights, hidden layer circuits).
   4. *Architectural Recommendations* (concrete hyperparameter and environmental tuning for future runs).
-- **Atomic Archiving & Cleanup Routine:**
-  Once the AI response is validated, the script generates a timestamped directory and cleanly moves all processed files:
+- **Unified Archiving & Benchmark Publishing:**
+  Once the AI response is validated, the script generates a unified timestamp (`DD-MM-YYYY_HH-MM`), moves processed raw files into a local git-ignored archive, and saves the executive report into `benchmarks/`:
   ```text
-  logs/
-  └── 14-30-05-09-2026-LogsArchive/
+  benchmarks/
+  └── 05-09-2026_15-30-AnalyticsSummary.md   # Version-controlled executive AI report
+
+  logs/                                      # Local & git-ignored
+  └── 05-09-2026_15-30-LogsArchive/
       ├── logs.txt
-      ├── brain_id_12.txt
-      └── AnalyticsSummary.md   # Complete executive AI report
+      └── brain_id_12.txt
   ```
+  > 📊 **Showcase Report:** Inspect a real-world generated AI diagnostic report in [`benchmarks/05-09-2026_03-32-AnalyticsSummary.md`](benchmarks/05-09-2026_03-32-AnalyticsSummary.md).
+
 - **CLI Execution:**
   ```bash
   python analyze.py
@@ -200,13 +204,15 @@ To streamline post-simulation research without manual log wrangling or subjectiv
 
 ```text
 AgentReinforcementLearning/
+├── benchmarks/              # Compiled, version-controlled ALife evolutionary reports
+│   └── {timestamp}-AnalyticsSummary.md # Executive AI diagnostic report (e.g., 05-09-2026_15-30-AnalyticsSummary.md)
 ├── config-feedforward.txt   # NEAT hyperparameters (RNN enabled, mutation probabilities)
 ├── analyze.py               # Automated simulation log & brain dump analysis with Google Gemini
 ├── .env.example             # Template for GEMINI_API_KEY configuration
 ├── logs/                    # Automated run logs, brain dumps, and timestamped archives (gitignored)
 │   ├── logs.txt             # Primary log file (auto-rotates or accepts manual renaming to logs1.txt)
 │   ├── brain_id_{key}.txt   # Reverse engineering brain dumps exported via [S] in Neural Inspector
-│   └── HH-MM-DD-MM-YYYY-LogsArchive/ # Automated archives with AnalyticsSummary.md
+│   └── {timestamp}-LogsArchive/ # Local archives of processed telemetry and brain dumps
 ├── README.md                # Project documentation
 ├── .gitignore               # Comprehensive ignores (pycache, venv, checkpoints, logs/*, .env*)
 ├── docs/                    # Architecture and developer guidelines
@@ -220,7 +226,7 @@ AgentReinforcementLearning/
 │   ├── environment.py       # Simulation loop, HUD, Neural Inspector, Top 4 slots, brain dump export
 │   ├── main.py              # Runner entry point, eval loop, graceful exit handlers
 │   └── stats.py             # EvolutionTracker statistics, summary printer, dump_to_file, export_brain_to_txt
-└── tests/                   # Comprehensive headless unit test suite (85 tests)
+└── tests/                   # Comprehensive headless unit test suite (86 tests)
     ├── test_agent.py        # Agent physics, sensors, combat, tribal rules, altruism, deadly zone
     ├── test_analyze.py      # Automated analysis pipeline, .env parser, API mocking, archiving
     ├── test_config.py       # NEAT configuration, RNN recurrent validation, pop_size=40, node_add_prob=0.15
@@ -283,7 +289,7 @@ python -m unittest discover tests -v
 The codebase strictly adheres to **Test-Driven Development (TDD)** and clean separation of concerns:
 - **Headless Testing:** All agent mechanics, RNN outputs, tribal interactions, and telemetry are 100% executable headlessly without opening display windows.
 - **Deepcopy Isolation:** Neural inspection uses isolated deepcopies to avoid mutation or state corruption during live evolution.
-- **Fast Execution:** All **85 unit tests** execute in under 1.8 seconds.
+- **Fast Execution:** All **86 unit tests** execute in under 1.8 seconds.
 
 ---
 

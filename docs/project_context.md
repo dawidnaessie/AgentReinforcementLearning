@@ -7,8 +7,8 @@ Creation of an Artificial Life (ALife) simulation where a balanced population of
 - **Language:** Python 3.x (Pure Python, standard library `math`, `random`, `time`, `shutil`, `datetime`)
 - **Neuroevolution:** `neat-python` (recurrent neural networks RNN, internal hidden state memory, weight and topology mutations, crossover, speciation, and Top 4 elitism).
 - **Environment & Physics:** `pygame` (built-in `pygame.math.Vector2`, simulation loop, headless unit tests, pre-rendered Deadly Zone red border).
-- **MLOps & Telemetry Analysis:** `requests` (Google Gemini REST API client with model fallback: `gemini-3.6-flash`, standalone `.env` loader, automated log & brain dump archiving into `logs/HH-MM-DD-MM-YYYY-LogsArchive/`).
-- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 85 tests).
+- **MLOps & Telemetry Analysis:** `requests` (Google Gemini REST API client with model fallback: `gemini-3.6-flash`, standalone `.env` loader, automated raw log archiving into `logs/{timestamp}-LogsArchive/`, and compiled benchmark reports saved to `benchmarks/{timestamp}-AnalyticsSummary.md`).
+- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 86 tests).
 
 ## Core Evolutionary Principles
 1. **Generational Cycle:** Each generation runs for a predefined frame duration or terminates early upon population extinction.
@@ -23,8 +23,9 @@ Creation of an Artificial Life (ALife) simulation where a balanced population of
 - `/src/agent.py` – `Agent` class, sensory perception (22 inputs), metabolism, interaction mechanics (altruism, predation, defense, combat cooldown), fitness assignment.
 - `/src/entities.py` – Modular world entities (`Food`, `Poison`, `Hazard`).
 - `/src/stats.py` – `EvolutionTracker` gathering generational metrics, final simulation summary, and `export_brain_to_txt` export.
-- `/analyze.py` – Automated simulation telemetry and brain dump analysis with Google Gemini, timestamped folder archiving (`HH-MM-DD-MM-YYYY-LogsArchive`), and `AnalyticsSummary.md` executive reporting.
+- `/analyze.py` – Automated simulation telemetry and brain dump analysis with Google Gemini, local folder archiving (`{timestamp}-LogsArchive`), and compiled `benchmarks/{timestamp}-AnalyticsSummary.md` executive reporting.
+- `/benchmarks/` – Compiled, version-controlled ALife evolutionary diagnostic reports.
 - `/.env.example` – Environment variable template for `GEMINI_API_KEY` and optional model overrides.
-- `/logs/` – Evolutionary telemetry run reports (`logs.txt`), reverse engineering brain dumps (`brain_id_{key}.txt`), and timestamped archive folders.
+- `/logs/` – Local evolutionary telemetry run reports (`logs.txt`), reverse engineering brain dumps (`brain_id_{key}.txt`), and timestamped archive folders (git-ignored).
 - `/config-feedforward.txt` – NEAT algorithm hyperparameters (22 inputs, 2 outputs).
-- `/tests/` – Comprehensive headless unit test suite (TDD, 85 tests including simulation and analysis tests).
+- `/tests/` – Comprehensive headless unit test suite (TDD, 86 tests including simulation and analysis tests).

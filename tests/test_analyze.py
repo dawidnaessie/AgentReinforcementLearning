@@ -73,7 +73,7 @@ class TestAnalyze(unittest.TestCase):
         self.assertIn(f_brain2, brains)
 
     def test_create_archive_directory_naming_and_collision(self):
-        """Verifies archive directory format HH-MM-DD-MM-YYYY-LogsArchive and duplicate resolution."""
+        """Verifies archive directory format DD-MM-YYYY_HH-MM-LogsArchive and duplicate resolution."""
         logs_dir = os.path.join(self.test_dir, "logs")
         os.makedirs(logs_dir)
 
@@ -81,7 +81,7 @@ class TestAnalyze(unittest.TestCase):
         self.assertTrue(os.path.isdir(path1))
         folder_name1 = os.path.basename(path1)
 
-        pattern = r"^\d{2}-\d{2}-\d{2}-\d{2}-\d{4}-LogsArchive$"
+        pattern = r"^\d{2}-\d{2}-\d{4}_\d{2}-\d{2}-LogsArchive$"
         self.assertTrue(re.match(pattern, folder_name1), f"Folder name '{folder_name1}' does not match format.")
 
         # Immediate second creation should handle collision by appending _1
@@ -89,6 +89,22 @@ class TestAnalyze(unittest.TestCase):
         self.assertTrue(os.path.isdir(path2))
         folder_name2 = os.path.basename(path2)
         self.assertEqual(folder_name2, f"{folder_name1}_1")
+
+    def test_save_compiled_report_creation_and_collision(self):
+        """Verifies saving compiled reports into benchmarks/ with unified timestamp and collision handling."""
+        benchmarks_dir = os.path.join(self.test_dir, "benchmarks")
+        ts = "05-09-2026_15-30"
+        report_content = "# Test Benchmark Report"
+
+        # 1. First save creates directory and exact file
+        path1 = analyze.save_compiled_report(report_content, ts, benchmarks_dir=benchmarks_dir)
+        self.assertTrue(os.path.isfile(path1))
+        self.assertEqual(os.path.basename(path1), "05-09-2026_15-30-AnalyticsSummary.md")
+
+        # 2. Collision resolution appends _1
+        path2 = analyze.save_compiled_report(report_content, ts, benchmarks_dir=benchmarks_dir)
+        self.assertTrue(os.path.isfile(path2))
+        self.assertEqual(os.path.basename(path2), "05-09-2026_15-30_1-AnalyticsSummary.md")
 
     def test_read_file_content(self):
         """Verifies reading files normally and truncating over-sized files cleanly."""
@@ -175,10 +191,11 @@ class TestAnalyze(unittest.TestCase):
 
     @patch("analyze.call_gemini_api")
     def test_main_full_workflow_success_mock(self, mock_call_api):
-        """Verifies full execution pipeline: gathers files, calls API, moves files, writes AnalyticsSummary.md."""
+        """Verifies full execution pipeline: gathers files, calls API, moves files, writes report to benchmarks/."""
         mock_call_api.return_value = "AI ARCHITECT REPORT: All populations converged to optimal strategies."
 
         logs_dir = os.path.join(self.test_dir, "logs")
+        benchmarks_dir = os.path.join(self.test_dir, "benchmarks")
         os.makedirs(logs_dir)
 
         sample_log = os.path.join(logs_dir, "logs.txt")
@@ -196,7 +213,7 @@ class TestAnalyze(unittest.TestCase):
                     os.makedirs(archive_dir)
                     mock_create_arch.return_value = archive_dir
 
-                    ret = analyze.main()
+                    ret = analyze.main(logs_dir=logs_dir, benchmarks_dir=benchmarks_dir)
                     self.assertEqual(ret, 0)
 
                     # Original files in root should have moved to archive
@@ -205,10 +222,17 @@ class TestAnalyze(unittest.TestCase):
                     self.assertTrue(os.path.exists(os.path.join(archive_dir, "logs.txt")))
                     self.assertTrue(os.path.exists(os.path.join(archive_dir, "brain_id_100.txt")))
 
-                    # AnalyticsSummary.md must exist inside archive folder
-                    summary_file = os.path.join(archive_dir, "AnalyticsSummary.md")
-                    self.assertTrue(os.path.exists(summary_file))
-                    with open(summary_file, "r", encoding="utf-8") as f:
+                    # AnalyticsSummary.md must NOT exist inside archive folder
+                    self.assertFalse(os.path.exists(os.path.join(archive_dir, "AnalyticsSummary.md")))
+
+                    # Compiled report must exist inside benchmarks/
+                    benchmark_files = os.listdir(benchmarks_dir)
+                    self.assertEqual(len(benchmark_files), 1)
+                    report_name = benchmark_files[0]
+                    self.assertTrue(report_name.endswith("-AnalyticsSummary.md"))
+
+                    report_path = os.path.join(benchmarks_dir, report_name)
+                    with open(report_path, "r", encoding="utf-8") as f:
                         summary_content = f.read()
                     self.assertIn("AI ARCHITECT REPORT", summary_content)
 

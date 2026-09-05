@@ -1,7 +1,7 @@
 # 🧬 Technical Documentation & System Evolution Log: AgentReinforcementLearning
 
 > **ALife Research Project & NEAT Neuroevolution (RNN) in Pygame**  
-> **Status:** Phase 10 (Automated Telemetry Analysis & Archiving) completed | **Test Coverage:** 85 unit tests (100% PASS, TDD)
+> **Status:** Phase 10 (Automated Telemetry Analysis & Archiving) completed | **Test Coverage:** 86 unit tests (100% PASS, TDD)
 
 ---
 
@@ -19,7 +19,7 @@ The **AgentReinforcementLearning** project is an Artificial Life (ALife) researc
 
 ---
 
-## 2. Chronological Evolution Roadmap (Phases 1 – 9)
+## 2. Chronological Evolution Roadmap (Phases 1 – 10)
 
 The following log documents the evolutionary milestones, engineering motivations, and key innovations implemented throughout the project.
 
@@ -122,10 +122,10 @@ graph TD
   3. **Targeted Neuroevolution Master Prompt:**
      - Injects complete Phase 9 architectural parameters (22 sensors, 2 locomotive outputs, 4 balanced tribes, 30-frame combat cooldown, deadly border penalty, action-weighted fitness function).
      - Directs Gemini to generate a four-part executive diagnostic: *Population Evolutionary Health & Dynamics*, *Behavioral Telemetry & Emergence*, *Reverse-Engineered Neural Topologies*, and *Architectural Recommendations*.
-  4. **Timestamped Archiving & Cleanup Routine:**
-     - Generates timestamped archive folders formatted as `logs/HH-MM-DD-MM-YYYY-LogsArchive/` (with collision counter resolution `_1`, `_2`).
-     - Moves all processed root `.txt` files into the archive folder using `shutil.move` only after the AI response is successfully received.
-     - Saves the AI's textual analysis report to `AnalyticsSummary.md` inside that same archive folder.
+  4. **Unified Timestamping, Local Raw Archiving & Version-Controlled Benchmarks:**
+     - Generates a unified timestamp string formatted as `DD-MM-YYYY_HH-MM` (e.g., `05-09-2026_15-30`).
+     - **Raw Data Archiving (local and git-ignored):** Moves all processed root `.txt` telemetry and brain dumps into `logs/{timestamp}-LogsArchive/` using `shutil.move` only after the AI response is successfully received.
+     - **Compiled Benchmark Reports (version-controlled):** Saves the LLM-generated executive analysis report directly to `benchmarks/{timestamp}-AnalyticsSummary.md`, establishing an empirical, version-controlled repository of scientific milestones.
 
 ---
 
@@ -177,13 +177,13 @@ graph TD
 
 ## 5. Quality Assurance & Test-Driven Development (TDD)
 
-The project is backed by a complete suite of **85 unit tests** organized into focused logical modules:
+The project is backed by a complete suite of **86 unit tests** organized into focused logical modules:
 - `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, `node_add_prob = 0.15`, 22 inputs / 2 outputs architecture.
 - `tests/test_agent.py` (37 tests): Sensory perception (22 inputs), sprint metabolism without shout drain, combat cooldown anti-micro-farming (attacks, frontal defense, herd defense), Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination.
 - `tests/test_environment.py` (19 tests): Generational lifecycle, headless rendering, event handling, Neural Inspector deepcopy isolation, pre-rendered Deadly Zone surface, balanced 4x10 tribal distribution, `export_brain_to_txt` topology file creation, `[S]` key trigger in active inspector, `[S]` ignored when inactive, and empty network handling.
 - `tests/test_entities.py` (5 tests): Boundary positioning, entity collisions, food and poison respawn mechanics, hazard reflection.
 - `tests/test_stats.py` (9 tests): Generational metrics tracking, telemetry summary, `logs/logs.txt` export, automatic directory creation, size-based rotation, manual archiving workflow, and `export_brain_to_txt` import exposure.
-- `tests/test_analyze.py` (11 tests): Custom `.env` parser, API key resolution, file gathering isolation (ignoring subdirectories), exact timestamped archive folder naming (`HH-MM-DD-MM-YYYY-LogsArchive`) and duplicate collision resolution, large log file truncation, master prompt structure, mock API responses, auth error handling, and end-to-end file movement and `AnalyticsSummary.md` persistence.
+- `tests/test_analyze.py` (12 tests): Custom `.env` parser, API key resolution, file gathering isolation (ignoring subdirectories), unified timestamp archive folder naming (`{timestamp}-LogsArchive`), duplicate collision resolution, saving compiled reports into `benchmarks/{timestamp}-AnalyticsSummary.md`, large log file truncation, master prompt structure, mock API responses, auth error handling, and end-to-end file movement and benchmark report persistence.
 
 All tests can be executed via:
 ```powershell

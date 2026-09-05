@@ -7,9 +7,9 @@ Key Responsibilities:
 2. Scans logs/ root directory for simulation logs (*.txt) and brain dumps (brain_id_*.txt).
 3. Injects collected telemetry and neural topologies into a structured prompt.
 4. Queries Google Gemini API (gemini-3.6-flash / fallback models).
-5. Creates a timestamped archive folder: logs/HH-MM-DD-MM-YYYY-LogsArchive/
-6. Moves all processed .txt files into this archive folder using shutil.
-7. Saves the AI's textual response to AnalyticsSummary.md inside the archive folder.
+5. Generates a unified timestamp string in format: DD-MM-YYYY_HH-MM.
+6. Moves all processed .txt files into a local, git-ignored archive: logs/{timestamp}-LogsArchive/
+7. Saves the compiled AI analytical report to benchmarks/{timestamp}-AnalyticsSummary.md.
 """
 
 import os
@@ -242,14 +242,42 @@ def call_gemini_api(prompt: str, api_key: str, requested_model: Optional[str] = 
     raise RuntimeError(f"All candidate Gemini models failed. Last error: {last_error}")
 
 
-def create_archive_directory(logs_dir: str = "logs") -> str:
+def generate_unified_timestamp() -> str:
+    """
+    Generates a unified timestamp string in format: DD-MM-YYYY_HH-MM
+    (e.g., 05-09-2026_15-30).
+    """
+    return datetime.datetime.now().strftime("%d-%m-%Y_%H-%M")
+
+
+def resolve_unique_timestamp(
+    base_timestamp: str,
+    logs_dir: str = "logs",
+    benchmarks_dir: str = "benchmarks"
+) -> str:
+    """
+    Ensures that both the archive folder in logs_dir and the report in benchmarks_dir
+    will be uniquely named without overwriting or mismatched suffixes.
+    """
+    ts = base_timestamp
+    counter = 1
+    while (
+        os.path.exists(os.path.join(logs_dir, f"{ts}-LogsArchive"))
+        or os.path.exists(os.path.join(benchmarks_dir, f"{ts}-AnalyticsSummary.md"))
+    ):
+        ts = f"{base_timestamp}_{counter}"
+        counter += 1
+    return ts
+
+
+def create_archive_directory(logs_dir: str = "logs", timestamp: Optional[str] = None) -> str:
     """
     Generates a timestamped archive directory inside logs/ in format:
-    HH-MM-DD-MM-YYYY-LogsArchive.
-    Handles duplicate runs within the same minute by appending a suffix.
+    {timestamp}-LogsArchive/ (where timestamp is DD-MM-YYYY_HH-MM).
+    Handles duplicate runs within the same minute by appending an incremental suffix.
     """
-    now = datetime.datetime.now()
-    base_name = now.strftime("%H-%M-%d-%m-%Y-LogsArchive")
+    ts = timestamp if timestamp else generate_unified_timestamp()
+    base_name = f"{ts}-LogsArchive"
     archive_path = os.path.join(logs_dir, base_name)
 
     counter = 1
@@ -262,8 +290,35 @@ def create_archive_directory(logs_dir: str = "logs") -> str:
     return target_path
 
 
-def main() -> int:
-    """Main execution pipeline for automated log analysis and archiving."""
+def save_compiled_report(
+    summary_text: str,
+    timestamp: str,
+    benchmarks_dir: str = "benchmarks"
+) -> str:
+    """
+    Ensures benchmarks_dir exists and saves the LLM-generated Markdown report
+    directly into benchmarks/ using the format: {timestamp}-AnalyticsSummary.md.
+    Handles duplicate runs within the same minute by appending an incremental suffix.
+    Returns the file path of the saved report.
+    """
+    os.makedirs(benchmarks_dir, exist_ok=True)
+    base_filename = f"{timestamp}-AnalyticsSummary.md"
+    report_path = os.path.join(benchmarks_dir, base_filename)
+
+    counter = 1
+    target_path = report_path
+    while os.path.exists(target_path):
+        target_path = os.path.join(benchmarks_dir, f"{timestamp}_{counter}-AnalyticsSummary.md")
+        counter += 1
+
+    with open(target_path, "w", encoding="utf-8") as f:
+        f.write(summary_text)
+
+    return target_path
+
+
+def main(logs_dir: str = "logs", benchmarks_dir: str = "benchmarks") -> int:
+    """Main execution pipeline for automated log analysis, raw archiving, and benchmark reporting."""
     print("=" * 70)
     print("NEAT AI ARCHITECT - AUTOMATED TELEMETRY & BRAIN DUMP ANALYSIS")
     print("=" * 70)
@@ -276,7 +331,6 @@ def main() -> int:
         print("   GEMINI_API_KEY=your_google_gemini_api_key")
         return 1
 
-    logs_dir = "logs"
     if not os.path.exists(logs_dir):
         print(f"[INFO] Directory '{logs_dir}' does not exist. Nothing to analyze.")
         return 0
@@ -314,10 +368,14 @@ def main() -> int:
         print("[WARNING] Archiving aborted: Original log and brain dump files remain untouched.")
         return 1
 
-    # 5. Archiving and Cleanup
-    print("\n[INFO] Initializing archive and cleanup routine...")
+    # 5. Archiving and Report Persistence
+    print("\n[INFO] Initializing archive and benchmark reporting routine...")
     try:
-        archive_dir = create_archive_directory(logs_dir)
+        raw_timestamp = generate_unified_timestamp()
+        timestamp = resolve_unique_timestamp(raw_timestamp, logs_dir=logs_dir, benchmarks_dir=benchmarks_dir)
+
+        # 5a. Raw Data Archiving (local and git-ignored)
+        archive_dir = create_archive_directory(logs_dir=logs_dir, timestamp=timestamp)
         print(f"[ARCHIVE] Created archive folder: {archive_dir}")
 
         # Move all processed files into archive
@@ -326,14 +384,12 @@ def main() -> int:
             shutil.move(fpath, dest_path)
             print(f"   -> Moved: {os.path.basename(fpath)}")
 
-        # Save AI analysis report
-        summary_path = os.path.join(archive_dir, "AnalyticsSummary.md")
-        with open(summary_path, "w", encoding="utf-8") as f:
-            f.write(summary_text)
+        # 5b. Compiled Report Destination (version-controlled benchmarks/)
+        summary_path = save_compiled_report(summary_text, timestamp, benchmarks_dir=benchmarks_dir)
+        print(f"[SUCCESS] Saved compiled benchmark report to: {summary_path}")
 
-        print(f"[SUCCESS] Saved executive analysis to: {summary_path}")
         print("\n" + "=" * 70)
-        print("[SUCCESS] All logs processed, analyzed, and archived cleanly!")
+        print("[SUCCESS] All logs archived locally and compiled report saved to benchmarks/!")
         print("=" * 70)
         return 0
 

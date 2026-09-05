@@ -4,10 +4,11 @@
 Creation of an Artificial Life (ALife) simulation where a balanced population of 40 AI agents (divided into 4 equal tribes of 10 individuals, governed by NEAT Recurrent Neural Networks - RNN) operates within a shared, continuous 2D environment. The primary objective is observing the emergence of social behaviors, division of civilizational roles (forager, predator, defender), and cooperation (altruistic energy transfer) enforced by an engineered environment featuring a Deadly Margin (20px), a 30-frame Combat Cooldown (anti-micro-farming), and an acoustic lobotomy leaving a streamlined 22-input / 2-output neural architecture.
 
 ## Technology Stack
-- **Language:** Python 3.x (Pure Python, standard library `math`, `random`, `time`)
+- **Language:** Python 3.x (Pure Python, standard library `math`, `random`, `time`, `shutil`, `datetime`)
 - **Neuroevolution:** `neat-python` (recurrent neural networks RNN, internal hidden state memory, weight and topology mutations, crossover, speciation, and Top 4 elitism).
 - **Environment & Physics:** `pygame` (built-in `pygame.math.Vector2`, simulation loop, headless unit tests, pre-rendered Deadly Zone red border).
-- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 74 tests).
+- **MLOps & Telemetry Analysis:** `requests` (Google Gemini REST API client with model fallback: `gemini-3.6-flash`, standalone `.env` loader, automated log & brain dump archiving into `logs/HH-MM-DD-MM-YYYY-LogsArchive/`).
+- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 85 tests).
 
 ## Core Evolutionary Principles
 1. **Generational Cycle:** Each generation runs for a predefined frame duration or terminates early upon population extinction.
@@ -22,6 +23,8 @@ Creation of an Artificial Life (ALife) simulation where a balanced population of
 - `/src/agent.py` – `Agent` class, sensory perception (22 inputs), metabolism, interaction mechanics (altruism, predation, defense, combat cooldown), fitness assignment.
 - `/src/entities.py` – Modular world entities (`Food`, `Poison`, `Hazard`).
 - `/src/stats.py` – `EvolutionTracker` gathering generational metrics, final simulation summary, and `export_brain_to_txt` export.
-- `/logs/` – Evolutionary telemetry run reports (`logs.txt`) and reverse engineering brain dumps (`brain_id_{key}.txt`).
+- `/analyze.py` – Automated simulation telemetry and brain dump analysis with Google Gemini, timestamped folder archiving (`HH-MM-DD-MM-YYYY-LogsArchive`), and `AnaliticsSummary.txt` executive reporting.
+- `/.env.example` – Environment variable template for `GEMINI_API_KEY` and optional model overrides.
+- `/logs/` – Evolutionary telemetry run reports (`logs.txt`), reverse engineering brain dumps (`brain_id_{key}.txt`), and timestamped archive folders.
 - `/config-feedforward.txt` – NEAT algorithm hyperparameters (22 inputs, 2 outputs).
-- `/tests/` – Comprehensive headless unit test suite (TDD, 74 tests).
+- `/tests/` – Comprehensive headless unit test suite (TDD, 85 tests including simulation and analysis tests).

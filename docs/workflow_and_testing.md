@@ -8,7 +8,7 @@ To prevent destabilizing the entire system, the assistant must strictly adopt an
 
 ## 2. Always Write Tests (Test-Driven Development)
 - Every new class, method, or business logic function must be backed by a corresponding unit test (using the standard `unittest` or `pytest` framework).
-- Store all tests in a dedicated `/tests/` directory at the project root (e.g., `tests/test_agent.py`, `tests/test_environment.py`).
+- Store all tests in a dedicated `/tests/` directory at the project root (e.g., `tests/test_agent.py`, `tests/test_environment.py`, `tests/test_analyze.py`).
 
 ## 3. Separation of Logic from Rendering (Pygame)
 - For tests to execute automatically and headlessly, game logic (mathematics, collision detection, genetics) must be strictly decoupled from rendering routines (`pygame.draw`).

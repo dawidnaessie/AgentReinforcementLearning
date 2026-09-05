@@ -1,7 +1,7 @@
 # 🧬 Technical Documentation & System Evolution Log: AgentReinforcementLearning
 
 > **ALife Research Project & NEAT Neuroevolution (RNN) in Pygame**  
-> **Status:** Phase 9 successfully completed | **Test Coverage:** 71 unit tests (100% PASS, TDD)
+> **Status:** Phase 10 (Automated Telemetry Analysis & Archiving) completed | **Test Coverage:** 85 unit tests (100% PASS, TDD)
 
 ---
 
@@ -33,6 +33,7 @@ graph TD
     P6 --> P7["Phase 7: Kin Selection & 4 Tribes"]
     P7 --> P8["Phase 8: Deadly Zone & Faction Balance"]
     P8 --> P9["Phase 9: Acoustic Lobotomy & Combat Economy Rebalance"]
+    P9 --> P10["Phase 10: Automated LLM Telemetry Analysis & Archiving"]
 ```
 
 ### 🔹 Phase 1: Environment Foundations & 2D Kinematics
@@ -95,7 +96,7 @@ graph TD
   4. **RNN Topology Mutation Tuning (`node_add_prob = 0.15`):**
      - Increasing node addition probability from 0.05 to 0.15 facilitates the growth of recurrent hidden nodes and feedback loops without network bloat.
 
-### 🔹 Phase 9: Acoustic Lobotomy & Combat Economy Rebalance (CURRENT)
+### 🔹 Phase 9: Acoustic Lobotomy & Combat Economy Rebalance
 - **Research Problem:** Neural brain dumps and evolutionary telemetry revealed a population collapse into a "micro-farming" local optimum. The acoustic shout mechanic was evolutionarily unviable (agents actively suppressed the output to conserve vital energy), while agents survived by jamming into dense collision clusters to farm collision and defense points rather than hunting or foraging.
 - **Implemented Solutions:**
   1. **Acoustic Lobotomy (22 Inputs / 2 Outputs):**
@@ -107,6 +108,24 @@ graph TD
      - While `combat_cooldown > 0`, agents are barred from gaining fitness points or stolen energy from combat collisions (damage is still sustained), eliminating parasitic collision micro-farming.
   3. **Foraging Economy Buff (+40.0 Fitness):**
      - Increased nominal foraging fitness reward from +15.0 to +40.0 to strongly motivate exploration across the arena.
+
+### 🔹 Phase 10: Automated LLM Telemetry Analysis & Archiving Pipeline (`analyze.py`) (CURRENT)
+- **Research Problem:** Manual inspection of raw multi-generation telemetry (`logs/logs.txt`) and mathematical neural topologies (`logs/brain_id_{key}.txt`) is time-intensive and risks cognitive bias. Furthermore, unarchived `.txt` files accumulate in `logs/` root, creating clutter across multiple experimental sessions.
+- **Implemented Solutions:**
+  1. **Automated AI Architect & Neuroevolution Specialist Pipeline (`analyze.py`):**
+     - Implemented an automated analysis script leveraging Google Gemini (`gemini-3.6-flash` with automatic fallback sequence to `gemini-3.5-flash`, `gemini-flash-latest`, and `gemini-2.5-flash`).
+     - Standalone `.env` parser (zero mandatory third-party dotenv dependencies) reading `GEMINI_API_KEY` (or `GOOGLE_API_KEY`).
+     - Direct HTTP REST communication via Python `requests` with robust error handling (authentication failures, rate quotas, network timeouts).
+  2. **File Gathering & Token Optimization:**
+     - Scans `logs/` root exclusively for active `.txt` logs and `brain_id_*.txt` brain dumps, strictly skipping existing subdirectories to avoid reprocessing older sessions.
+     - Gracefully truncates oversized generation tables while preserving the header run summary and the latest 1,000 generations.
+  3. **Targeted Neuroevolution Master Prompt:**
+     - Injects complete Phase 9 architectural parameters (22 sensors, 2 locomotive outputs, 4 balanced tribes, 30-frame combat cooldown, deadly border penalty, action-weighted fitness function).
+     - Directs Gemini to generate a four-part executive diagnostic: *Population Evolutionary Health & Dynamics*, *Behavioral Telemetry & Emergence*, *Reverse-Engineered Neural Topologies*, and *Architectural Recommendations*.
+  4. **Timestamped Archiving & Cleanup Routine:**
+     - Generates timestamped archive folders formatted as `logs/HH-MM-DD-MM-YYYY-LogsArchive/` (with collision counter resolution `_1`, `_2`).
+     - Moves all processed root `.txt` files into the archive folder using `shutil.move` only after the AI response is successfully received.
+     - Saves the AI's textual analysis report to `AnaliticsSummary.txt` inside that same archive folder.
 
 ---
 
@@ -158,15 +177,16 @@ graph TD
 
 ## 5. Quality Assurance & Test-Driven Development (TDD)
 
-The project is backed by a complete suite of **74 unit tests** organized into focused logical modules:
+The project is backed by a complete suite of **85 unit tests** organized into focused logical modules:
 - `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, `node_add_prob = 0.15`, 22 inputs / 2 outputs architecture.
 - `tests/test_agent.py` (37 tests): Sensory perception (22 inputs), sprint metabolism without shout drain, combat cooldown anti-micro-farming (attacks, frontal defense, herd defense), Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination.
 - `tests/test_environment.py` (19 tests): Generational lifecycle, headless rendering, event handling, Neural Inspector deepcopy isolation, pre-rendered Deadly Zone surface, balanced 4x10 tribal distribution, `export_brain_to_txt` topology file creation, `[S]` key trigger in active inspector, `[S]` ignored when inactive, and empty network handling.
 - `tests/test_entities.py` (5 tests): Boundary positioning, entity collisions, food and poison respawn mechanics, hazard reflection.
 - `tests/test_stats.py` (9 tests): Generational metrics tracking, telemetry summary, `logs/logs.txt` export, automatic directory creation, size-based rotation, manual archiving workflow, and `export_brain_to_txt` import exposure.
+- `tests/test_analyze.py` (11 tests): Custom `.env` parser, API key resolution, file gathering isolation (ignoring subdirectories), exact timestamped archive folder naming (`HH-MM-DD-MM-YYYY-LogsArchive`) and duplicate collision resolution, large log file truncation, master prompt structure, mock API responses, auth error handling, and end-to-end file movement and `AnaliticsSummary.txt` persistence.
 
 All tests can be executed via:
 ```powershell
 python -m unittest discover tests -v
 ```
-executing headlessly in ~1.5 seconds.
+executing headlessly in ~1.8 seconds.

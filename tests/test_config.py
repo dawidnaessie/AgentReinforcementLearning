@@ -31,13 +31,13 @@ class TestNeatConfig(unittest.TestCase):
         self.assertEqual(config.reproduction_config.elitism, 4, "Elitism must be 4 (Top 4 unchanged).")
         self.assertFalse(getattr(config, 'reset_on_extinction'))
 
-        # Phase 10: Structural pruning optimization and compatibility threshold
+        # Phase 11: Structural innovation & speciation parameters (Economic Shock Therapy)
         self.assertFalse(config.genome_config.feed_forward, "Network architecture must have feed_forward = False for RNN.")
-        self.assertAlmostEqual(config.genome_config.node_add_prob, 0.015, places=3)
+        self.assertAlmostEqual(config.genome_config.node_add_prob, 0.08, places=2)
         self.assertAlmostEqual(config.genome_config.node_delete_prob, 0.025, places=3)
-        self.assertAlmostEqual(config.genome_config.conn_add_prob, 0.08, places=2)
-        self.assertAlmostEqual(config.genome_config.conn_delete_prob, 0.06, places=2)
-        self.assertAlmostEqual(config.species_set_config.compatibility_threshold, 3.8, places=2)
+        self.assertAlmostEqual(config.genome_config.conn_add_prob, 0.15, places=2)
+        self.assertAlmostEqual(config.genome_config.conn_delete_prob, 0.03, places=2)
+        self.assertAlmostEqual(config.species_set_config.compatibility_threshold, 2.5, places=2)
 
     def test_recurrent_network_creation_and_activation(self):
         """Verifies RecurrentNetwork creation from population and activation of 23 inputs to 2 outputs."""

@@ -1,7 +1,7 @@
 # 🧬 Technical Documentation & System Evolution Log: AgentReinforcementLearning
 
 > **ALife Research Project & NEAT Neuroevolution (RNN) in Pygame**  
-> **Status:** Phase 10 (Dynamic Resource Clustering & Directional Altruism) completed | **Test Coverage:** 90 unit tests (100% PASS, TDD)
+> **Status:** Phase 11 (Economic Shock Therapy & Social Evolution) completed | **Test Coverage:** 92 unit tests (100% PASS, TDD)
 
 ---
 
@@ -19,7 +19,7 @@ The **AgentReinforcementLearning** project is an Artificial Life (ALife) researc
 
 ---
 
-## 2. Chronological Evolution Roadmap (Phases 1 – 10)
+## 2. Chronological Evolution Roadmap (Phases 1 – 11)
 
 The following log documents the evolutionary milestones, engineering motivations, and key innovations implemented throughout the project.
 
@@ -34,6 +34,7 @@ graph TD
     P7 --> P8["Phase 8: Deadly Zone & Faction Balance"]
     P8 --> P9["Phase 9: Acoustic Lobotomy & Combat Economy Rebalance"]
     P9 --> P10["Phase 10: Dynamic Resource Clustering & Directional Altruism"]
+    P10 --> P11["Phase 11: Economic Shock Therapy & Social Evolution"]
 ```
 
 ### 🔹 Phase 1: Environment Foundations & 2D Kinematics
@@ -128,7 +129,7 @@ graph TD
      - **Raw Data Archiving (local and git-ignored):** Moves all processed root `.txt` telemetry and brain dumps into `logs/{timestamp}-LogsArchive/` using `shutil.move` only after the AI response is successfully received.
      - **Compiled Benchmark Reports (version-controlled):** Saves the LLM-generated executive analysis report directly to `benchmarks/{timestamp}-AnalyticsSummary.md`, establishing an empirical, version-controlled repository of scientific milestones.
 
-### 🔹 Phase 10: Dynamic Resource Clustering & Directional Altruism (CURRENT)
+### 🔹 Phase 10: Dynamic Resource Clustering & Directional Altruism
 - **Research Problem:** Post-Phase 9 telemetry and LLM analysis revealed that while acoustic shouting and corner camping were successfully eliminated, the population converged on a "Peaceful Forager Local Optimum". Because apples were uniformly scattered across the continuous arena, tribes spread out peacefully without territorial competition, and kin altruism rarely triggered because agents lacked spatial orientation to locate starving kin.
 - **Implemented Solutions:**
   1. **Dynamic Resource Clustering (Patch Dispersion):**
@@ -144,6 +145,20 @@ graph TD
      - Pruned topological mutation probabilities (`conn_add_prob = 0.08`, `conn_delete_prob = 0.06`, `node_add_prob = 0.015`, `node_delete_prob = 0.025`) to favor synaptic refinement over uncontrolled recurrent topology bloat.
   4. **Neural Inspector UI Synchronization:**
      - Updated `SENSORY_DETAILS` and `SENSORY_INPUT_LABELS` in `src/environment.py`, dynamically driving graph layout, node hover tooltips, and tab toggle modes for 23 inputs with zero index out-of-range errors.
+
+### 🔹 Phase 11: Economic Shock Therapy & Social Evolution (CURRENT)
+- **Research Problem:** Post-Phase 10 telemetry and neural brain dumps revealed the "Parsimony Paradox": the population regressed into 2–3 synapse Braitenberg Vehicles that pruned away defensive and social connections because basic foraging was disproportionately rewarded compared to complex social behaviors (kin rescue and herd defense).
+- **Implemented Solutions:**
+  1. **Action Fitness Function Re-scaling:**
+     - Apple consumption multiplier scaled down from 1.0 to 0.5 (0.5x).
+     - Herd Defense multiplier scaled up from 1.0 to 4.0 (4.0x).
+     - Kin Altruism Rescues scaled up from 3.0 to 15.0 (15.0x, providing a 30:1 fitness advantage per event over solo foraging).
+     - Defined cleanly as configurable constants on `Agent` and module level (`FITNESS_WEIGHT_FOOD`, `FITNESS_WEIGHT_HERD_DEFENSE`, `FITNESS_WEIGHT_ALTRUISM`, `FITNESS_WEIGHT_FRONTAL_DEFENSE`, `FITNESS_WEIGHT_HUNT`).
+  2. **NEAT Hyperparameter Re-tuning (Loosening Structural Constraints):**
+     - `compatibility_threshold` lowered from 3.8 to 2.5 to foster speciation niche diversity.
+     - `conn_add_prob` increased from 0.08 to 0.15 to encourage structural innovation.
+     - `conn_delete_prob` decreased from 0.06 to 0.03 to protect emerging neural circuits from aggressive pruning.
+     - `node_add_prob` increased from 0.015 to 0.08 to accelerate recurrent hidden interneuron evolution.
 
 ---
 
@@ -196,9 +211,9 @@ graph TD
 
 ## 5. Quality Assurance & Test-Driven Development (TDD)
 
-The project is backed by a complete suite of **90 unit tests** organized into focused logical modules:
-- `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, structural pruning (`node_add_prob = 0.015`, `conn_add_prob = 0.08`, `compatibility_threshold = 3.8`), 23 inputs / 2 outputs architecture.
-- `tests/test_agent.py` (38 tests): Sensory perception (23 inputs), directional altruism sensors, sprint metabolism without shout drain, combat cooldown anti-micro-farming (attacks, frontal defense, herd defense), Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination.
+The project is backed by a complete suite of **92 unit tests** organized into focused logical modules:
+- `tests/test_config.py` (4 tests): NEAT configuration validation, RNN parameters, Top 4 elitism, `pop_size = 40`, structural innovation (`node_add_prob = 0.08`, `conn_add_prob = 0.15`, `conn_delete_prob = 0.03`, `compatibility_threshold = 2.5`), 23 inputs / 2 outputs architecture.
+- `tests/test_agent.py` (40 tests): Sensory perception (23 inputs), directional altruism sensors, sprint metabolism without shout drain, combat cooldown anti-micro-farming (attacks, frontal defense, herd defense), Grace Period, kin selection, predation, herd defense, altruism, Deadly Zone drainage across all 4 boundaries, corner exploit elimination, Phase 11 action fitness scaling (altruism, herd defense, food).
 - `tests/test_environment.py` (19 tests): Generational lifecycle, headless rendering, event handling, Neural Inspector deepcopy isolation, pre-rendered Deadly Zone surface, balanced 4x10 tribal distribution, `export_brain_to_txt` topology file creation, `[S]` key trigger in active inspector, `[S]` ignored when inactive, and empty network handling.
 - `tests/test_entities.py` (8 tests): Boundary positioning, entity collisions, clustered food creation (`Food.create_clustered`), dynamic Gaussian patch dispersion (`Food.respawn_clustered`), hotspot targeting, poison respawn mechanics, hazard reflection.
 - `tests/test_stats.py` (9 tests): Generational metrics tracking, telemetry summary, `logs/logs.txt` export, automatic directory creation, size-based rotation, manual archiving workflow, and `export_brain_to_txt` import exposure.

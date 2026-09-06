@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![NEAT](https://img.shields.io/badge/NEAT--Python-RNN-green.svg)
 ![Pygame](https://img.shields.io/badge/Pygame-2.6.1-orange.svg)
-![Tests](https://img.shields.io/badge/tests-90%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-92%20passed-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
 ---
@@ -18,6 +18,8 @@ Built on a **1600 x 720 Research Dashboard** (1280px continuous arena + 320px te
 
 ### 🌟 Key Evolutionary Milestones:
 
+- **Economic Shock Therapy & Social Evolution (Phase 11):**
+  Drastic fitness function scaling to force social cooperation over solo foraging. Telemetry and brain dumps revealed that the population regressed into 2–3 synapse "Braitenberg Vehicles" that over-specialized in solitary foraging while shedding defensive and altruistic neural circuits. Phase 11 executes a massive economic rebalance: scaling down the food reward multiplier to a minimal weight (`0.5x`), scaling up **Herd Defense** to a massive multiplier (`4.0x`), and scaling up **Kin Altruism Rescues** to an extreme multiplier (`15.0x`, giving a 30:1 fitness advantage per event over apples). Concurrently, NEAT structural constraints are loosened (`compatibility_threshold = 2.5`, `conn_add_prob = 0.15`, `conn_delete_prob = 0.03`, `node_add_prob = 0.08`) to encourage recurrent interneuron innovation, speciation niche diversification, and the evolution of complex social topologies.
 - **Recurrent Neural Networks (RNN) with Short-Term Memory:**
   Agents are governed by recurrent neural topologies (`feed_forward = False`). By forming recurrent cycles and self-feedback loops, agents preserve internal states across frames—enabling temporal awareness (e.g., remembering a predator or prey even when it momentarily disappears from immediate sensory sight).
 - **Kin Selection & Tribal Warfare (4 Tribes):**
@@ -229,7 +231,7 @@ AgentReinforcementLearning/
 │   ├── environment.py       # Simulation loop, HUD, Neural Inspector, Top 4 slots, brain dump export
 │   ├── main.py              # Runner entry point, eval loop, graceful exit handlers
 │   └── stats.py             # EvolutionTracker statistics, summary printer, dump_to_file, export_brain_to_txt
-└── tests/                   # Comprehensive headless unit test suite (90 tests)
+└── tests/                   # Comprehensive headless unit test suite (92 tests)
     ├── test_agent.py        # Agent physics, sensors, combat, tribal rules, altruism, deadly zone
     ├── test_analyze.py      # Automated analysis pipeline, .env parser, API mocking, archiving
     ├── test_config.py       # NEAT configuration, RNN recurrent validation, pop_size=40, node_add_prob=0.15
@@ -292,7 +294,7 @@ python -m unittest discover tests -v
 The codebase strictly adheres to **Test-Driven Development (TDD)** and clean separation of concerns:
 - **Headless Testing:** All agent mechanics, RNN outputs, tribal interactions, and telemetry are 100% executable headlessly without opening display windows.
 - **Deepcopy Isolation:** Neural inspection uses isolated deepcopies to avoid mutation or state corruption during live evolution.
-- **Fast Execution:** All **90 unit tests** execute in under 1.8 seconds.
+- **Fast Execution:** All **92 unit tests** execute in under 1.8 seconds.
 
 ---
 

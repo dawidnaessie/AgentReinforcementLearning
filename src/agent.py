@@ -17,9 +17,23 @@ TRIBE_COLORS = {
 DEADLY_ZONE_MARGIN = 20  # Deadly Zone: -2.0 energy / frame
 TOXIC_ZONE_MARGIN = 50   # Warning buffer zone: -0.5 energy / frame
 
+# Phase 11: Economic Shock Therapy & Social Evolution Action Fitness Multipliers
+FITNESS_WEIGHT_FOOD = 0.5            # Scaled down from 1.0 (0.5x) to curb Braitenberg foraging over-specialization
+FITNESS_WEIGHT_FRONTAL_DEFENSE = 1.0 # Head-on parry / collision defense
+FITNESS_WEIGHT_HERD_DEFENSE = 4.0    # Scaled up from 1.0 (4.0x) to encourage cooperative grouping
+FITNESS_WEIGHT_HUNT = 2.0            # Inter-tribal predation / flank attack
+FITNESS_WEIGHT_ALTRUISM = 15.0       # Scaled up from 3.0 (15.0x) to strongly enforce kin selection rescues
+
 
 class Agent:
-    """Class representing an agent controlled by a NEAT neural network (Phase 8: Tribe Balancing & Death Zone)."""
+    """Class representing an agent controlled by a NEAT neural network (Phase 11: Economic Shock Therapy & Social Evolution)."""
+
+    # Configurable Action Fitness Multipliers (Phase 11)
+    FITNESS_WEIGHT_FOOD = FITNESS_WEIGHT_FOOD
+    FITNESS_WEIGHT_FRONTAL_DEFENSE = FITNESS_WEIGHT_FRONTAL_DEFENSE
+    FITNESS_WEIGHT_HERD_DEFENSE = FITNESS_WEIGHT_HERD_DEFENSE
+    FITNESS_WEIGHT_HUNT = FITNESS_WEIGHT_HUNT
+    FITNESS_WEIGHT_ALTRUISM = FITNESS_WEIGHT_ALTRUISM
 
     def __init__(
         self,
@@ -74,17 +88,19 @@ class Agent:
 
     def get_action_fitness(self) -> float:
         """
-        Calculates F_actions: weighted sum of beneficial actions taken during life:
-        - Apple Eaten (+1)
-        - Defended Attack / Herd Defense (+1)
-        - Successful Hunt (+2)
-        - Act of Altruism (+3)
+        Calculates F_actions: weighted sum of beneficial actions taken during life (Phase 11):
+        - Apple Eaten (+0.5)
+        - Frontal Defense (+1.0)
+        - Herd Defense (+4.0)
+        - Successful Hunt (+2.0)
+        - Act of Altruism (+15.0)
         """
         return (
-            1.0 * self.foods_eaten +
-            1.0 * (self.defenses_made + self.herd_defenses) +
-            2.0 * self.attacks_made +
-            3.0 * self.allies_saved
+            self.FITNESS_WEIGHT_FOOD * self.foods_eaten +
+            self.FITNESS_WEIGHT_FRONTAL_DEFENSE * self.defenses_made +
+            self.FITNESS_WEIGHT_HERD_DEFENSE * self.herd_defenses +
+            self.FITNESS_WEIGHT_HUNT * self.attacks_made +
+            self.FITNESS_WEIGHT_ALTRUISM * self.allies_saved
         )
 
     def finalize_fitness(self) -> float:

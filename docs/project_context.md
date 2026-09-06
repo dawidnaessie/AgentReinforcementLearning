@@ -8,12 +8,12 @@ Creation of an Artificial Life (ALife) simulation where a balanced population of
 - **Neuroevolution:** `neat-python` (recurrent neural networks RNN, internal hidden state memory, weight and topology mutations, structural pruning, speciation, and Top 4 elitism).
 - **Environment & Physics:** `pygame` (built-in `pygame.math.Vector2`, simulation loop, headless unit tests, pre-rendered Deadly Zone red border).
 - **MLOps & Telemetry Analysis:** `requests` (Google Gemini REST API client with model fallback: `gemini-3.6-flash`, standalone `.env` loader, automated raw log archiving into `logs/{timestamp}-LogsArchive/`, and compiled benchmark reports saved to `benchmarks/{timestamp}-AnalyticsSummary.md`).
-- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 90 tests).
+- **Testing:** `unittest` (TDD, complete separation of game logic without display window requirements, 92 tests).
 
 ## Core Evolutionary Principles
 1. **Generational Cycle:** Each generation runs for a predefined frame duration or terminates early upon population extinction.
 2. **Elitism:** The top 4 genomes (Top 4) advance to the next generation without mutation.
-3. **Initial Minimalism & RNN:** Networks initialize with 23 sensory inputs and 2 locomotive action outputs (`Accel X`, `Accel Y`) with 0 hidden layers (direct input-output connections supporting recurrent feedback loops) and expand/prune their topology via optimized structural mutations (`node_add_prob = 0.015`, `conn_add_prob = 0.08`, `compatibility_threshold = 3.8`).
+3. **Initial Minimalism & RNN:** Networks initialize with 23 sensory inputs and 2 locomotive action outputs (`Accel X`, `Accel Y`) with 0 hidden layers (direct input-output connections supporting recurrent feedback loops) and expand their topology via loosened structural mutations and lower speciation threshold (`node_add_prob = 0.08`, `conn_add_prob = 0.15`, `conn_delete_prob = 0.03`, `compatibility_threshold = 2.5`).
 4. **Metabolism & Clustered Resources:** Every step costs energy; eating food replenishes vitality (+40.0 Fitness), poison and predation drain energy, and the Deadly Zone (20px) rapidly drains energy (-2.0/frame), eliminating idling and corner camping exploits. Combat cooldown (30 frames) prevents parasitic collision micro-farming. Dynamic Gaussian patch dispersion clusters food in contested hotspots (4-6 apples), forcing territorial friction and rewarding directional altruism.
 5. **Autonomy & Tribal Balance:** The ecosystem is distributed evenly across 4 tribes of 10 agents (Cyan, Magenta, Yellow, White), investigating intra-tribal cooperation, directional kin rescue, and inter-tribal combat dynamics.
 
@@ -28,4 +28,4 @@ Creation of an Artificial Life (ALife) simulation where a balanced population of
 - `/.env.example` – Environment variable template for `GEMINI_API_KEY` and optional model overrides.
 - `/logs/` – Local evolutionary telemetry run reports (`logs.txt`), reverse engineering brain dumps (`brain_id_{key}.txt`), and timestamped archive folders (git-ignored).
 - `/config-feedforward.txt` – NEAT algorithm hyperparameters (23 inputs, 2 outputs, structural pruning).
-- `/tests/` – Comprehensive headless unit test suite (TDD, 90 tests including simulation and analysis tests).
+- `/tests/` – Comprehensive headless unit test suite (TDD, 92 tests including simulation and analysis tests).

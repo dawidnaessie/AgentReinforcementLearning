@@ -404,49 +404,49 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(agent.genome.fitness, 0.0)
 
     def test_holistic_fitness_formula_and_action_weights(self):
-        """Verification of F_actions weights: Apple (+1), Defense (+1), Hunt (+2), Altruism (+3), and formula."""
+        """Verification of F_actions weights (Phase 11): Apple (+0.5), Defense (+1), Herd (+4), Hunt (+2), Altruism (+15), and formula."""
         agent = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         agent.frames_alive = 250
-        agent.foods_eaten = 2          # 2 * 1 = 2
-        agent.defenses_made = 1        # 1 * 1 = 1
-        agent.herd_defenses = 1        # 1 * 1 = 1
-        agent.attacks_made = 3         # 3 * 2 = 6
-        agent.allies_saved = 1         # 1 * 3 = 3
-        # F_actions = 2 + 1 + 1 + 6 + 3 = 13.0
+        agent.foods_eaten = 2          # 2 * 0.5 = 1.0
+        agent.defenses_made = 1        # 1 * 1.0 = 1.0
+        agent.herd_defenses = 1        # 1 * 4.0 = 4.0
+        agent.attacks_made = 3         # 3 * 2.0 = 6.0
+        agent.allies_saved = 1         # 1 * 15.0 = 15.0
+        # F_actions = 1.0 + 1.0 + 4.0 + 6.0 + 15.0 = 27.0
 
         # Test for combat death: M_death = 1.0
         agent.death_cause = "combat"
         fitness = agent.finalize_fitness()
-        # F_total = ((250 * 13.0) / 25.0) * 1.0 = (3250.0 / 25.0) = 130.0
-        self.assertAlmostEqual(fitness, 130.0, places=2)
-        self.assertAlmostEqual(agent.genome.fitness, 130.0, places=2)
+        # F_total = ((250 * 27.0) / 25.0) * 1.0 = (6750.0 / 25.0) = 270.0
+        self.assertAlmostEqual(fitness, 270.0, places=2)
+        self.assertAlmostEqual(agent.genome.fitness, 270.0, places=2)
 
     def test_death_multipliers(self):
         """Verification of M_death multipliers: Survived (1.2), Combat (1.0), Starvation (0.7), Toxic/Poison (0.3)."""
         agent = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
         agent.frames_alive = 100
-        agent.foods_eaten = 5  # F_actions = 5.0
-        # Base score before M_death = (100 * 5.0) / 25.0 = 20.0
+        agent.foods_eaten = 5  # F_actions = 5 * 0.5 = 2.5
+        # Base score before M_death = (100 * 2.5) / 25.0 = 10.0
 
         # 1. Survived entire epoch -> 1.2
         agent.death_cause = "survived"
-        self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 1.2, places=2)
+        self.assertAlmostEqual(agent.finalize_fitness(), 10.0 * 1.2, places=2)
 
         # 2. Death in combat -> 1.0
         agent.death_cause = "combat"
-        self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 1.0, places=2)
+        self.assertAlmostEqual(agent.finalize_fitness(), 10.0 * 1.0, places=2)
 
         # 3. Death from starvation -> 0.7
         agent.death_cause = "starvation"
-        self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 0.7, places=2)
+        self.assertAlmostEqual(agent.finalize_fitness(), 10.0 * 0.7, places=2)
 
         # 4. Death from toxic edge -> 0.3
         agent.death_cause = "toxic_edge"
-        self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 0.3, places=2)
+        self.assertAlmostEqual(agent.finalize_fitness(), 10.0 * 0.3, places=2)
 
         # 5. Death from poison -> 0.3
         agent.death_cause = "poison"
-        self.assertAlmostEqual(agent.finalize_fitness(), 20.0 * 0.3, places=2)
+        self.assertAlmostEqual(agent.finalize_fitness(), 10.0 * 0.3, places=2)
 
     def test_toxic_edges_all_boundaries_set_0_3_multiplier(self):
         """Verification that death in 50px zone (top, bottom, left, right) assigns death_cause='toxic_edge' and M_death=0.3."""
@@ -458,8 +458,8 @@ class TestAgent(unittest.TestCase):
         agent_top.think_and_act([], [], [], [agent_top], 1280, 720)
         self.assertFalse(agent_top.is_alive)
         self.assertEqual(agent_top.death_cause, "toxic_edge")
-        # ((101 * 5) / 25) * 0.3 = 20.2 * 0.3 = 6.06
-        self.assertAlmostEqual(agent_top.genome.fitness, ((101 * 5.0) / 25.0) * 0.3, places=2)
+        # ((101 * (5 * 0.5)) / 25) * 0.3 = ((101 * 2.5) / 25) * 0.3 = 10.1 * 0.3 = 3.03
+        self.assertAlmostEqual(agent_top.genome.fitness, ((101 * (5 * Agent.FITNESS_WEIGHT_FOOD)) / 25.0) * 0.3, places=2)
 
         # Test 2: Bottom wall (y > 720 - 50 = 670)
         agent_bottom = Agent(DummyNetwork(output_x=0.0, output_y=0.0), DummyGenome(), width=1280, height=720, start_pos=(300, 700))
@@ -728,7 +728,8 @@ class TestAgent(unittest.TestCase):
             self.assertEqual(agent.death_cause, "toxic_edge")
             # M_death multiplier for edge death should be 0.3
             agent.foods_eaten = 2
-            self.assertAlmostEqual(agent.finalize_fitness(), ((101 * 2.0) / 25.0) * 0.3, places=2)
+            expected_fitness = ((101 * (2 * Agent.FITNESS_WEIGHT_FOOD)) / 25.0) * 0.3
+            self.assertAlmostEqual(agent.finalize_fitness(), expected_fitness, places=2)
 
     def test_deadly_zone_corner_exploit_rapid_kill(self):
         """Corner Exploit elimination: agent in corner (10, 10) with 10 energy points dies within a few frames."""
@@ -745,6 +746,61 @@ class TestAgent(unittest.TestCase):
         self.assertFalse(corner_camper.is_alive)
         self.assertLessEqual(frames, 5, "Agent in corner must die within a fraction of a second (<= 5 frames).")
         self.assertEqual(corner_camper.death_cause, "toxic_edge")
+
+    # =========================================================================
+    # PHASE 11: ECONOMIC SHOCK THERAPY & SOCIAL EVOLUTION TESTS
+    # =========================================================================
+
+    def test_phase_11_configurable_fitness_constants(self):
+        """Verifies Phase 11 configurable action fitness constants are defined on Agent class and module."""
+        from src import agent
+        self.assertEqual(agent.FITNESS_WEIGHT_FOOD, 0.5)
+        self.assertEqual(agent.FITNESS_WEIGHT_HERD_DEFENSE, 4.0)
+        self.assertEqual(agent.FITNESS_WEIGHT_ALTRUISM, 15.0)
+        self.assertEqual(agent.FITNESS_WEIGHT_FRONTAL_DEFENSE, 1.0)
+        self.assertEqual(agent.FITNESS_WEIGHT_HUNT, 2.0)
+
+        self.assertEqual(Agent.FITNESS_WEIGHT_FOOD, 0.5)
+        self.assertEqual(Agent.FITNESS_WEIGHT_HERD_DEFENSE, 4.0)
+        self.assertEqual(Agent.FITNESS_WEIGHT_ALTRUISM, 15.0)
+        self.assertEqual(Agent.FITNESS_WEIGHT_FRONTAL_DEFENSE, 1.0)
+        self.assertEqual(Agent.FITNESS_WEIGHT_HUNT, 2.0)
+
+    def test_phase_11_altruism_and_social_multipliers_dominate_foraging(self):
+        """
+        Verifies that Phase 11 economic reform heavily prioritizes social evolution over solo foraging:
+        - 1 Altruism rescue (15.0) equals 30 eaten apples (0.5 each).
+        - 1 Herd defense (4.0) equals 8 eaten apples (0.5 each).
+        """
+        forager = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
+        forager.foods_eaten = 10  # 10 * 0.5 = 5.0
+        forager.frames_alive = 100
+
+        rescuer = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
+        rescuer.allies_saved = 1  # 1 * 15.0 = 15.0
+        rescuer.frames_alive = 100
+
+        defender = Agent(DummyNetwork(), DummyGenome(), width=1280, height=720, start_pos=(400, 300))
+        defender.herd_defenses = 2  # 2 * 4.0 = 8.0
+        defender.frames_alive = 100
+
+        # Action fitness comparison: altruism rescuer action fitness is 3x that of a 10-apple forager
+        self.assertEqual(forager.get_action_fitness(), 5.0)
+        self.assertEqual(rescuer.get_action_fitness(), 15.0)
+        self.assertEqual(defender.get_action_fitness(), 8.0)
+        self.assertGreater(rescuer.get_action_fitness(), forager.get_action_fitness())
+        self.assertGreater(defender.get_action_fitness(), forager.get_action_fitness())
+
+        # An altruism event yields significantly more fitness than a food consumption event (30x ratio)
+        self.assertAlmostEqual(Agent.FITNESS_WEIGHT_ALTRUISM / Agent.FITNESS_WEIGHT_FOOD, 30.0)
+        self.assertAlmostEqual(Agent.FITNESS_WEIGHT_HERD_DEFENSE / Agent.FITNESS_WEIGHT_FOOD, 8.0)
+
+        # Holistic fitness verification
+        rescuer.death_cause = "survived"
+        forager.death_cause = "survived"
+        self.assertAlmostEqual(rescuer.finalize_fitness(), ((100 * 15.0) / 25.0) * 1.2)
+        self.assertAlmostEqual(forager.finalize_fitness(), ((100 * 5.0) / 25.0) * 1.2)
+        self.assertGreater(rescuer.genome.fitness, forager.genome.fitness * 2.5)
 
 
 if __name__ == '__main__':
